@@ -1,0 +1,176 @@
+====================================================================
+  FISCALE — COMO USAR NAS OUTRAS MAQUINAS DO ESCRITORIO
+====================================================================
+
+
+A IDEIA, EM UMA FRASE
+---------------------
+UMA maquina roda o Fiscale. Todas as outras abrem pelo navegador.
+
+Nao se instala o Fiscale nas outras maquinas. Nao se copia pasta,
+nao se sincroniza nada, nao existe "o Fiscale daqui" e "o de la".
+Existe UM Fiscale, e todo mundo trabalha dentro dele.
+
+
+POR QUE ASSIM
+-------------
+Porque duas copias do sistema significam duas verdades. Se cada
+maquina baixasse notas por conta propria, cada uma teria a sua
+contagem — e na hora de apurar o DAS voce teria dois valores
+diferentes e nenhum jeito de saber qual esta certo.
+
+Pior: a leitura das notas na Receita anda por um contador (o NSU).
+Duas copias andam com esse contador em separado, e nota que uma
+pulou a outra nao busca. No CT-e isso e' definitivo: nao existe
+consulta por chave para recuperar depois. Documento pulado e'
+documento perdido.
+
+Com um servidor so, nada disso pode acontecer. Nao e' que o
+problema fique resolvido: ele deixa de existir.
+
+
+--------------------------------------------------------------------
+PARTE 1 — A MAQUINA QUE RODA O FISCALE (so uma vez)
+--------------------------------------------------------------------
+Escolha a maquina que fica ligada durante o expediente. Hoje e' a
+AMMOURIM.
+
+  1. Ponha o Fiscale nela, se ainda nao estiver.
+
+     NAO use o Fiscale.exe nem o FiscaleInstalador.exe. O Smart App
+     Control do Windows bloqueia executavel nao assinado, e eles
+     simplesmente nao abrem — sem mensagem que explique.
+
+     Use a versao PORTATIL, que nao instala nada:
+
+       a) No Google Drive, em "FISCALE 2026\dist", baixe
+          FISCALE-Portable.zip  (cerca de 34 MB).
+
+       b) Extraia a pasta INTEIRA para o disco da maquina, por exemplo
+          em C:\FISCALE. Nao extraia para dentro do Google Drive: o
+          Drive sincroniza arquivo em uso e o banco de sessoes e'
+          SQLite — e' receita de arquivo corrompido.
+
+       c) Abra a pasta e clique em Fiscale.bat.
+
+     O Python vem dentro da pasta e e' assinado pela propria Python
+     Software Foundation, entao o Smart App Control deixa passar.
+
+     ATENCAO AOS DADOS. O portatil guarda tudo AO LADO dele, na
+     subpasta "dados". Se esta maquina ja tinha um Fiscale, os dados
+     antigos NAO vem sozinhos: restaure um backup .fbk pelo proprio
+     sistema (Home > Backup > Restaurar). Os .fbk estao no Drive, em
+     "FISCALE 2026\backups".
+
+     E AS SENHAS DOS CERTIFICADOS NAO VIAJAM. Elas sao cifradas com o
+     DPAPI do Windows, que amarra a senha a maquina e ao usuario que a
+     gravou. Numa maquina nova voce redigita cada uma — ou restaura de
+     um .fbk, que leva os .pfx num cofre AES-256 aberto pela frase que
+     voce escolheu ao criar o backup. Sem a frase, nao ha como abrir:
+     ela nao fica salva em canto nenhum.
+
+  2. Clique com o botao direito em `rede_configurar.bat` e escolha
+     "Executar como administrador".
+
+     Ele mostra tudo o que pretende fazer, pergunta, e so entao faz:
+     poe a rede como Privada, cria a regra de firewall da porta 8777,
+     tira o Fiscale das redes publicas, impede a maquina de dormir e
+     cria a tarefa que sobe o sistema quando voce entra no Windows.
+
+     Para so ver a lista sem alterar nada, rode antes:
+         rede_configurar.bat  ->  responda N
+     ou, no PowerShell:  .\rede_configurar.ps1 -Simular
+
+  3. Confira com `rede_diagnostico.bat`. Ele so olha, nunca altera.
+     Onde aparecer [!], ele diz o que fazer.
+
+  4. No roteador, reserve o IP desta maquina (pelo endereco MAC).
+     Sem isso, o nome dela pode parar de resolver de vez em quando.
+
+
+--------------------------------------------------------------------
+PARTE 2 — AS OUTRAS MAQUINAS (nao instalam nada)
+--------------------------------------------------------------------
+  1. Abra o navegador.
+  2. Digite:   http://AMMOURIM:8777
+  3. Entre com o seu usuario e a sua senha.
+
+Fim. Nao ha passo 4.
+
+Use sempre o NOME da maquina, nunca o numero de IP: o IP muda
+sozinho de tempos em tempos, o nome nao.
+
+Se nao abrir, veja "SE DER PROBLEMA", no fim.
+
+
+--------------------------------------------------------------------
+PARTE 3 — USAR DE FORA DO ESCRITORIO
+--------------------------------------------------------------------
+De casa, do cliente, do celular. Sem abrir porta em roteador e sem
+publicar o Fiscale na internet — as duas coisas estao fora de
+questao para um sistema com certificado digital dentro.
+
+  1. Instale o Tailscale (tailscale.com/download) na maquina que
+     roda o Fiscale e em cada aparelho que for usar de fora.
+  2. Entre com a MESMA conta em todos.
+  3. De fora, abra o endereco que o Tailscale mostra para a maquina
+     do Fiscale.
+
+Isso cria uma rede privada entre os seus aparelhos, com HTTPS de
+verdade (cadeado no navegador, sem aviso de seguranca). Quem nao
+esta na sua conta nao enxerga nada — nem sabe que existe.
+
+
+--------------------------------------------------------------------
+CADA PESSOA TEM O SEU LOGIN
+--------------------------------------------------------------------
+Nao compartilhe usuario. Ha dois tipos:
+
+  ADMINISTRADOR   faz tudo: cadastra empresa e certificado, informa
+                  senha de certificado e de portal, cria usuarios,
+                  faz backup, define a pasta vigiada.
+
+  OPERADOR        faz o trabalho fiscal inteiro: consulta notas,
+                  apura, baixa da Receita, importa XML, exporta.
+                  Nao mexe em certificado, usuario, backup nem
+                  configuracao.
+
+A maioria das pessoas do escritorio deve ser OPERADOR. Crie os
+usuarios em Home > Usuarios (so o administrador ve esse botao).
+
+O que o operador nao alcanca simplesmente nao aparece na tela dele
+— e, se tentar por fora, o servidor recusa.
+
+
+--------------------------------------------------------------------
+O QUE CONTINUA SO NA MAQUINA DO FISCALE
+--------------------------------------------------------------------
+  - Backup e restauracao (Home > Backup). O arquivo .fbk carrega o
+    escritorio inteiro, certificados inclusive: ele nao sai por
+    navegador de outra maquina. E' de proposito.
+  - O botao "Encerrar". Pela rede ele derrubaria o sistema de todo
+    mundo, entao so funciona no proprio computador.
+
+
+--------------------------------------------------------------------
+SE DER PROBLEMA
+--------------------------------------------------------------------
+"Nao consigo abrir http://AMMOURIM:8777 de outra maquina"
+  -> A maquina do Fiscale esta ligada e com o Fiscale aberto?
+  -> Rode `rede_diagnostico.bat` NELA e veja se ha algum [!].
+  -> A rede esta como "Privada" nas DUAS maquinas? No perfil
+     Publico o Windows bloqueia, e essa e' a causa mais comum.
+
+"Abre pelo IP mas nao pelo nome"
+  -> Falta a reserva de IP no roteador (Parte 1, passo 4). Enquanto
+     isso, da' para acrescentar o nome no arquivo
+     C:\Windows\System32\drivers\etc\hosts das outras maquinas.
+
+"O sistema abre, mas um botao some / da' erro de permissao"
+  -> Seu usuario e' operador. E' o esperado: peca ao administrador.
+
+"Ninguem consegue entrar de manha"
+  -> A maquina do Fiscale dormiu ou desligou. O `rede_configurar`
+     impede o sono; conferir se ela nao foi desligada no botao.
+
+====================================================================

@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0F8A5F">
+<title>Plano de Saúde — Portal Integrado</title>
+<style>
+  :root{
+    --fundo:#EFF2F3; --superficie:#FFFFFF; --tinta:#1B2328; --tinta-suave:#5C6B72;
+    --borda:#C7CDD1; --petroleo:#10444E; --verde:#0F8A5F; --verde-claro:#EAF6F0;
+    --raio:16px; --sombra:0 1px 2px rgba(27,35,40,.06), 0 6px 18px rgba(27,35,40,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Roboto,-apple-system,Arial,sans-serif;background:var(--fundo);color:var(--tinta);-webkit-tap-highlight-color:transparent}
+  header{background:var(--superficie);border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:20}
+  .barra{max-width:1160px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:12px 20px}
+  .voltar{font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta);
+          background:var(--superficie);border:2px solid var(--borda);border-radius:11px;padding:9px 16px;cursor:pointer}
+  .voltar:hover{border-color:var(--petroleo);color:var(--petroleo)}
+  .modulo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+  .modulo .ponto{width:12px;height:12px;border-radius:4px;background:var(--verde)}
+
+  /* abas */
+  .abas{max-width:1160px;margin:0 auto;display:flex;gap:4px;padding:0 20px;overflow-x:auto}
+  .aba{border:none;background:transparent;font-size:13.5px;font-weight:600;color:var(--tinta-suave);
+       padding:12px 16px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+  .aba:hover{color:var(--tinta)}
+  .aba.on{color:var(--verde);border-bottom-color:var(--verde)}
+
+  main{max-width:1160px;margin:0 auto;padding:20px}
+  .tab{display:none}.tab.on{display:block}
+
+  .painel{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra)}
+  .painel h2{font-size:14px;padding:14px 16px;border-bottom:1px solid var(--borda);display:flex;align-items:center;justify-content:space-between}
+  .painel .corpo{padding:16px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:820px){.cols{grid-template-columns:1fr}}
+
+  label{display:block;font-size:12px;font-weight:600;color:var(--tinta-suave);margin:0 0 5px}
+  .campo{margin-bottom:12px}
+  .linha{display:flex;gap:10px;flex-wrap:wrap}.linha>*{flex:1;min-width:120px}
+  input,select{width:100%;font-size:14px;padding:9px 11px;border:1px solid var(--borda);border-radius:9px;background:#fff;color:var(--tinta)}
+  input:focus,select:focus{outline:none;border-color:var(--verde);box-shadow:0 0 0 3px rgba(15,138,95,.15)}
+
+  .btn{font-size:13.5px;font-weight:700;padding:9px 14px;border-radius:9px;border:none;cursor:pointer}
+  .btn-primario{background:var(--verde);color:#fff}.btn-primario:hover{background:#0c744f}
+  .btn-sec{background:#fff;border:1px solid var(--borda);color:var(--tinta)}.btn-sec:hover{border-color:var(--verde);color:var(--verde)}
+  .btn-mini{padding:6px 10px;font-size:12px}
+  .btn-full{width:100%;margin-top:4px}
+  .btn-perigo{background:#fff;border:1px solid #E7C3C0;color:#B3382C}
+
+  .aviso{font-size:11.5px;color:var(--tinta-suave);line-height:1.45;margin-top:10px;background:#F7F9FA;border:1px solid var(--borda);border-radius:10px;padding:10px 12px}
+  .aviso b{color:var(--tinta)}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--verde-claro);color:var(--verde)}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:11px;letter-spacing:.03em;color:var(--tinta-suave);text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--borda)}
+  td{padding:9px 10px;border-bottom:1px solid #EDF1F2}
+  tr:last-child td{border-bottom:none}
+  .vazio{color:var(--tinta-suave);font-size:13px;padding:14px 4px}
+  .direita{text-align:right}
+  .total{font-weight:800;color:var(--petroleo)}
+
+  .dep-row{display:flex;gap:8px;align-items:end;margin-bottom:8px}
+  .dep-row .campo{margin:0}
+  .dep-row .rm{flex:0 0 auto}
+
+  .chip{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:6px 11px;border-radius:999px;border:1px solid var(--borda);background:#fff;margin:0 6px 6px 0}
+  .chip .pt{width:9px;height:9px;border-radius:50%}
+  .chip .x{cursor:pointer;color:var(--tinta-suave);font-weight:700}
+
+  .caminho{margin-top:12px;border:1px solid var(--borda);border-radius:12px;overflow:hidden}
+  .caminho .cab{background:var(--verde-claro);color:var(--verde);font-weight:700;font-size:12.5px;padding:9px 12px}
+  .passos{list-style:none;padding:8px 12px 12px;counter-reset:p}
+  .passos li{position:relative;padding:7px 0 7px 30px;font-size:13px;border-bottom:1px dashed #E4E9EB}
+  .passos li:last-child{border-bottom:none}
+  .passos li::before{counter-increment:p;content:counter(p);position:absolute;left:0;top:6px;width:20px;height:20px;border-radius:50%;
+     background:var(--petroleo);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .passos li b{color:var(--petroleo)}
+
+  .drop{border:2px dashed var(--borda);border-radius:14px;padding:24px 16px;text-align:center;color:var(--tinta-suave);background:#FAFBFB;cursor:pointer;transition:.15s}
+  .drop:hover,.drop.hover{border-color:var(--verde);background:var(--verde-claro);color:var(--verde)}
+  .drop svg{width:32px;height:32px;stroke:currentColor;fill:none;stroke-width:1.6;margin-bottom:6px}
+  .drop b{display:block;color:var(--tinta);font-size:14px;margin-bottom:2px}
+  iframe.visor{width:100%;height:520px;border:none;border-radius:0 0 16px 16px;background:#f5f5f5}
+</style>
+</head>
+<body>
+<script src="fiscale.js"></script>
+<header>
+  <div class="barra">
+    <button class="voltar" onclick="location.href='home_portal.html'">◄ Home</button>
+    <div class="modulo"><span class="ponto"></span> Plano de Saúde</div>
+  </div>
+  <nav class="abas">
+    <button class="aba on" onclick="irAba('comp',this)">Competências</button>
+    <button class="aba" onclick="irAba('rel',this)">Importar relatórios</button>
+    <button class="aba" onclick="irAba('benef',this)">Beneficiários</button>
+    <button class="aba" onclick="irAba('conf',this)">Conferências</button>
+    <button class="aba" onclick="irAba('hist',this)">Histórico</button>
+    <button class="aba" onclick="irAba('cli',this)">Clientes</button>
+    <button class="aba" onclick="irAba('oper',this)">Operadoras</button>
+    <button class="aba" onclick="irAba('imp',this)">Faturas (PDF do mês)</button>
+    <button class="aba" onclick="irAba('lanc',this)">Lançamentos</button>
+    <button class="aba" onclick="irAba('ecac',this)">e-CAC · EFD-Reinf</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ===== barra de empresa: vale para as 5 abas novas ===== -->
+<div class="painel" id="barraEmpresa" style="margin-bottom:14px">
+  <div class="corpo" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+    <div class="campo" style="margin:0;flex:1;min-width:240px">
+      <label>Empresa (conta com certificado)</label>
+      <select id="s_conta" onchange="saudeTrocouEmpresa()"><option value="">— carregando —</option></select>
+    </div>
+    <button class="btn btn-sec" onclick="saudeCarregarTudo()">↻ Atualizar</button>
+  </div>
+</div>
+
+<!-- ================= COMPETÊNCIAS ================= -->
+<section id="tab-comp" class="tab on">
+  <div class="painel">
+    <h2>Competências importadas <span id="s_compTag" class="tag">—</span></h2>
+    <div class="corpo" style="padding:0"><div id="s_competencias"></div></div>
+  </div>
+  <div class="aviso">Cada linha é uma <b>competência × operadora</b>. O status
+    <b>CONFERIDO</b> significa que a soma das vidas bate com os totais que o próprio
+    relatório declara. <b>CONFERIR</b> significa que há diferença — clique para ver onde.</div>
+</section>
+
+<!-- ================= IMPORTAR RELATÓRIOS ================= -->
+<section id="tab-rel" class="tab">
+  <div class="painel">
+    <h2>Importar relatórios das operadoras <span class="tag">vários de uma vez</span></h2>
+    <div class="corpo">
+      <div id="s_drop" class="drop" onclick="s_arquivo.click()"
+           ondragover="event.preventDefault();this.classList.add('hover')"
+           ondragleave="this.classList.remove('hover')" ondrop="saudeSoltar(event)">
+        <svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
+        <b>Arraste os relatórios (PDF) ou clique para escolher</b>
+        A operadora e a competência saem do próprio arquivo.
+        <input id="s_arquivo" type="file" accept="application/pdf" multiple hidden onchange="saudeEscolheu(event)">
+      </div>
+      <div class="linha" style="margin-top:12px;align-items:flex-end">
+        <div class="campo" style="margin:0">
+          <label>Operadora (só se o sistema pedir confirmação)</label>
+          <select id="s_operadora"><option value="">— detectar pelo conteúdo —</option></select>
+        </div>
+        <div class="campo" style="flex:0 0 auto;margin:0">
+          <label>&nbsp;</label>
+          <label style="font-weight:600;font-size:12.5px;color:var(--tinta)">
+            <input type="checkbox" id="s_substituir" style="width:auto"> reimportar por cima
+          </label>
+        </div>
+      </div>
+      <div id="s_resultadoImport" style="margin-top:12px"></div>
+      <div class="aviso">O <b>arquivo original é guardado</b> como veio — é ele que vale
+        diante da operadora, e é ele que permite reprocessar se a leitura for corrigida.
+        Importar o <b>mesmo arquivo duas vezes não duplica</b> nada.
+        Um arquivo com problema <b>não cancela os outros</b> do lote.</div>
+      <div id="s_operadorasInfo" class="aviso"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= BENEFICIÁRIOS ================= -->
+<section id="tab-benef" class="tab">
+  <div class="painel">
+    <h2>Beneficiários <span id="s_benefTag" class="tag">—</span></h2>
+    <div class="corpo">
+      <div class="linha" style="align-items:flex-end;margin-bottom:10px">
+        <div class="campo" style="margin:0;flex:0 0 190px"><label>Competência</label>
+          <select id="s_benefComp" onchange="saudeBeneficiarios()"><option value="">todas</option></select></div>
+        <div class="campo" style="margin:0"><label>Buscar por nome, CPF ou código</label>
+          <input id="s_benefBusca" oninput="saudeRenderBeneficiarios()" placeholder="digite para filtrar"></div>
+      </div>
+      <div id="s_beneficiarios"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CONFERÊNCIAS ================= -->
+<section id="tab-conf" class="tab">
+  <div class="painel">
+    <h2>Conferências <span id="s_confTag" class="tag">—</span></h2>
+    <div class="corpo" style="padding:0"><div id="s_conferencias"></div></div>
+  </div>
+</section>
+
+<!-- ================= HISTÓRICO ================= -->
+<section id="tab-hist" class="tab">
+  <div class="painel">
+    <h2>Histórico de um beneficiário</h2>
+    <div class="corpo">
+      <div class="campo"><label>Beneficiário</label>
+        <select id="s_histChave" onchange="saudeHistorico()"><option value="">— selecione —</option></select></div>
+      <div id="s_historico"></div>
+      <div class="aviso">A pessoa é reconhecida entre competências pelo <b>CPF</b> ou pelo
+        <b>código/certificado</b> da operadora — nunca pelo nome, que muda de grafia e se repete.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LANÇAMENTOS ================= -->
+<section id="tab-lanc" class="tab">
+  <div class="cols">
+    <div class="painel">
+      <h2>Registrar fato (período)</h2>
+      <div class="corpo">
+        <div class="linha">
+          <div class="campo"><label>Competência (MM/AAAA)</label><input id="l_comp" placeholder="07/2026"></div>
+          <div class="campo"><label>Operadora</label><select id="l_oper"></select></div>
+        </div>
+        <div class="campo"><label>Cliente titular</label>
+          <select id="l_titular" onchange="montarValores()"><option value="">— selecione —</option></select>
+        </div>
+        <div id="l_valores"></div>
+        <button class="btn btn-primario btn-full" onclick="salvarLancamento()">Salvar lançamento</button>
+        <div class="aviso">O titular e seus dependentes vêm do cadastro de <b>Clientes</b>.
+          Informe o valor pago por cada um; o total é somado automaticamente.</div>
+      </div>
+    </div>
+    <div class="painel">
+      <h2>Lançamentos registrados <span id="l_totalGeral" class="tag">R$ 0,00</span></h2>
+      <div class="corpo" style="padding:0">
+        <div id="l_lista"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CLIENTES ================= -->
+<section id="tab-cli" class="tab">
+  <div class="cols">
+    <div class="painel">
+      <h2>Cadastro de cliente (titular)</h2>
+      <div class="corpo">
+        <div class="linha">
+          <div class="campo"><label>Nome completo</label><input id="c_nome" placeholder="Nome do titular"></div>
+          <div class="campo"><label>CPF</label><input id="c_cpf" placeholder="000.000.000-00"></div>
+        </div>
+        <div class="linha">
+          <div class="campo"><label>Data de nascimento</label><input id="c_nasc" type="date"></div>
+          <div class="campo"><label>Telefone</label><input id="c_tel" placeholder="(00) 00000-0000"></div>
+        </div>
+        <div class="campo"><label>E-mail</label><input id="c_email" type="email" placeholder="email@empresa.com"></div>
+
+        <label style="margin-top:6px">Dependentes</label>
+        <div id="c_deps"></div>
+        <button class="btn btn-sec btn-mini" onclick="addDepRow()">+ Adicionar dependente</button>
+
+        <button class="btn btn-primario btn-full" id="btnSalvarCli" style="margin-top:12px" onclick="salvarCliente()">Salvar cliente</button>
+        <button class="btn btn-sec btn-full" id="btnCancelarCli" style="display:none" onclick="cancelarEdicaoCliente()">Cancelar edição</button>
+        <div class="aviso">Cada dependente guarda <b>nome, data de nascimento, CPF e parentesco</b>.
+          Use <b>✏️ Editar</b> ou <b>🗑 Excluir</b> na lista ao lado para alterar um cadastro.</div>
+      </div>
+    </div>
+    <div class="painel">
+      <h2>Clientes cadastrados</h2>
+      <div class="corpo" style="padding:0"><div id="c_lista"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= OPERADORAS ================= -->
+<section id="tab-oper" class="tab">
+  <div class="cols">
+    <div class="painel">
+      <h2>Cadastro de operadora</h2>
+      <div class="corpo">
+        <div class="linha">
+          <div class="campo"><label>Operadora</label><input id="o_nome" placeholder="Ex.: SulAmérica"></div>
+          <div class="campo"><label>Registro ANS</label><input id="o_ans" placeholder="Ex.: 006246"></div>
+        </div>
+        <div class="campo"><label>CNPJ</label><input id="o_cnpj" placeholder="00.000.000/0000-00"></div>
+        <div class="campo"><label>Site de login</label><input id="o_url" placeholder="https://..."></div>
+        <div class="linha">
+          <div class="campo"><label>Campos de login (vírgula)</label><input id="o_campos" placeholder="Código, Usuário, Senha"></div>
+          <div class="campo" style="flex:0 0 70px"><label>Cor</label><input id="o_cor" type="color" value="#0F8A5F" style="height:40px;padding:4px"></div>
+        </div>
+        <div class="campo"><label>Caminho até o PDF (vírgula)</label><input id="o_caminho" placeholder="Faturamento, Anexos, Relatório"></div>
+        <button class="btn btn-primario btn-full" onclick="salvarOperadora()">Salvar operadora</button>
+      </div>
+    </div>
+    <div class="painel">
+      <h2>Operadoras cadastradas</h2>
+      <div class="corpo" style="padding:0"><div id="o_lista"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FATURAS POR EMPRESA/MÊS ================= -->
+<section id="tab-imp" class="tab">
+  <!-- CONSULTA (principal): empresa + competência -> PDF na tela, sem site -->
+  <div class="painel">
+    <h2>Ver fatura por competência</h2>
+    <div class="corpo">
+      <div class="linha" style="align-items:flex-end">
+        <div class="campo" style="margin:0"><label>Empresa</label>
+          <select id="fe_emp" onchange="renderFaturasEmpresa()"><option value="">— selecione —</option></select></div>
+        <div class="campo" style="flex:0 0 160px;margin:0"><label>Competência (MM/AAAA)</label><input id="fe_comp" placeholder="07/2026"></div>
+        <div class="campo" style="flex:0 0 auto;margin:0"><button class="btn btn-primario" onclick="buscarFatura()">📄 Ver fatura</button></div>
+      </div>
+      <div id="fe_resultado"></div>
+      <div id="fe_arquivadas"></div>
+      <div class="aviso">Selecione a <b>empresa</b> e a <b>competência</b>: se a fatura já foi importada, ela
+        <b>abre aqui na hora</b>, de qualquer máquina da rede — <b>sem acessar o site do plano de saúde</b>.</div>
+    </div>
+  </div>
+
+  <!-- VISOR do PDF -->
+  <div class="painel" id="visorPainelWrap" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px">
+      <span id="visorTitulo" style="font-size:13px;font-weight:600"></span>
+      <button class="btn btn-sec btn-mini" onclick="fecharVisor()">✕ Fechar</button>
+    </div>
+    <iframe id="visor" class="visor" title="Visualização do PDF"></iframe>
+  </div>
+
+  <!-- ALIMENTAR (secundário): quem tem a fatura em mãos importa o PDF -->
+  <div class="painel">
+    <h2>Alimentar o sistema — importar faturas <span class="tag">quem recebe a fatura</span></h2>
+    <div class="corpo">
+      <div class="cols">
+        <div>
+          <label style="margin-bottom:6px">Importar o PDF de uma competência</label>
+          <div class="linha">
+            <div class="campo"><label>Empresa</label><select id="imp_emp"></select></div>
+            <div class="campo" style="flex:0 0 150px"><label>Competência (MM/AAAA)</label><input id="imp_comp" placeholder="07/2026"></div>
+          </div>
+          <div id="drop" class="drop" onclick="arquivo.click()"
+               ondragover="event.preventDefault();this.classList.add('hover')"
+               ondragleave="this.classList.remove('hover')" ondrop="soltar(event)">
+            <svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
+            <b>Arraste o PDF da fatura ou clique para escolher</b>
+            Selecione a empresa e a competência acima; fica arquivado nelas.
+            <input id="arquivo" type="file" accept="application/pdf" hidden onchange="soltarInput(event)">
+          </div>
+        </div>
+        <div>
+          <label style="margin-bottom:6px">Adicionar empresa (do módulo Clientes)</label>
+          <div class="campo"><label>Empresa</label><select id="ve_cliente"></select></div>
+          <div class="campo"><label>Operadora (opcional, só para organizar)</label><select id="ve_oper"></select></div>
+          <button class="btn btn-sec btn-full" onclick="vincularEmpresa()">Adicionar empresa</button>
+          <div id="ve_lista" style="margin-top:10px"></div>
+          <div id="portalPendencias" style="margin-top:10px"></div>
+        </div>
+      </div>
+      <div class="aviso">Quem tem a fatura em mãos importa o PDF aqui <b>uma vez por competência</b>. Depois,
+        <b>todos consultam por competência</b> na parte de cima, <b>sem abrir o site do plano</b>.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= e-CAC / EFD-Reinf ================= -->
+<section id="tab-ecac" class="tab">
+  <div class="cols">
+    <div class="painel">
+      <h2>Certificado ÚNICO do escritório (procurador) <span class="tag">EFD-Reinf</span></h2>
+      <div class="corpo">
+        <div class="linha">
+          <div class="campo"><label>Nome do procurador / escritório</label><input id="p_nome" placeholder="Nome / razão social"></div>
+          <div class="campo"><label>CPF/CNPJ do procurador</label><input id="p_doc" placeholder="000.000.000-00"></div>
+        </div>
+        <div class="linha">
+          <div class="campo"><label>Certificado A1 (.pfx)</label><input id="p_pfx" type="file" accept=".pfx,.p12"></div>
+          <div class="campo"><label>Senha do certificado</label><input id="p_senha" type="password" placeholder="só para ler o CNPJ"></div>
+        </div>
+        <button class="btn btn-primario btn-full" onclick="salvarProcurador()">Salvar certificado do escritório</button>
+        <div id="p_lista" style="margin-top:12px"></div>
+        <div class="aviso">É <b>um certificado só para todas as empresas</b>: o do escritório (procurador),
+          usado em todas as transmissões no e-CAC. Salvar de novo <b>substitui</b> o anterior. O <b>.pfx</b> fica
+          guardado localmente e é usado só para assinar/transmitir pelo <b>web service oficial da EFD-Reinf</b>.</div>
+      </div>
+    </div>
+    <div class="painel">
+      <h2>Enviar R-4000</h2>
+      <div class="corpo">
+        <div class="campo"><label>Certificado usado (único do escritório)</label>
+          <div id="r_procInfo" class="aviso" style="margin:0">— nenhum certificado salvo ainda —</div></div>
+        <div class="linha">
+          <div class="campo"><label>CNPJ da empresa (contribuinte)</label><input id="r_cnpj" placeholder="00.000.000/0000-00"></div>
+          <div class="campo"><label>Competência (MM/AAAA)</label><input id="r_comp" placeholder="07/2026"></div>
+        </div>
+        <div class="campo"><label>Operadora referente</label><select id="r_oper"></select></div>
+        <button class="btn btn-primario btn-full" onclick="prepararReinf()">Preparar e transmitir R-4000</button>
+        <div id="r_lista" style="margin-top:12px"></div>
+        <div class="aviso"><b>Fluxo:</b> certificado A1 do procurador → CNPJ da empresa referente →
+          série <b>R-4000</b> da EFD-Reinf com os valores do período. A transmissão real roda no app
+          empacotado (backend + web service oficial). Confirme regras com a contabilidade/Receita.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+/* ===== ESTADO EM MEMÓRIA (no app: tudo criptografado/persistido) ===== */
+const operadoras = [
+  {nome:"SulAmérica", cnpj:"01.685.053/0001-56", ans:"006246", cor:"#E30613",
+   url:"https://saude.sulamericaseguros.com.br/empresa/login/",
+   campos:["Código da empresa","Usuário","Senha"],
+   caminho:["Faturamento","Emissão Fatura Prêmio","Anexos","Relação dos Segurados Ativos"]},
+  {nome:"Bradesco Saúde", cnpj:"92.693.118/0001-60", ans:"005711", cor:"#CC092F",
+   url:"https://www.bradescoseguros.com.br/clientes/login",
+   campos:["CNPJ","CPF","Senha","Apólice"],
+   caminho:["Início","Informações Financeiras","Histórico de Pagamento","Ano"]},
+  {nome:"Unimed", cnpj:"", ans:"", cor:"#00995D",
+   url:"https://www.unimed.coop.br/",
+   campos:["Usuário","Senha"], caminho:["Movimentação e Faturamento"]},
+  {nome:"Amil", cnpj:"29.309.127/0001-79", ans:"326305", cor:"#0072CE",
+   url:"https://www.amil.com.br/",
+   campos:["Login","Senha"], caminho:["Gestão Financeira e Demonstrativos","Demonstrativo Analítico do Faturamento"]},
+];
+
+let seqCli=1;
+const clientes = [
+  {id:seqCli++, nome:"Ana Beatriz Ferreira Lima", cpf:"111.111.111-11", nasc:"1985-03-12", tel:"", email:"",
+   deps:[{nome:"Marina Lima Souza",nasc:"2015-07-05",cpf:"",parentesco:"Filho(a)"},
+         {nome:"Rafael Lima Souza",nasc:"2018-11-22",cpf:"",parentesco:"Filho(a)"}]},
+  {id:seqCli++, nome:"Gustavo Henrique Dias", cpf:"222.222.222-22", nasc:"1975-08-11", tel:"", email:"",
+   deps:[{nome:"Sônia Regina Dias",nasc:"1977-09-09",cpf:"",parentesco:"Cônjuge"},
+         {nome:"Lucas Dias",nasc:"2008-04-01",cpf:"",parentesco:"Filho(a)"}]},
+];
+const lancamentos=[]; let seqLanc=1;
+const procuradores=[];
+const reinfEnvios=[];
+const competencias=[];
+
+const brl=v=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const operByNome=n=>operadoras.find(o=>o.nome===n);
+const cliById=id=>clientes.find(c=>c.id==id);
+
+/* ---- navegação de abas ---- */
+function irAba(id,btn){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("on"));
+  document.getElementById("tab-"+id).classList.add("on");
+  document.querySelectorAll(".aba").forEach(a=>a.classList.remove("on"));
+  btn.classList.add("on");
+}
+
+/* ---- selects que dependem de operadoras/clientes ---- */
+function preencherSelects(){
+  const op=operadoras.map(o=>`<option>${o.nome}</option>`).join("");
+  ["l_oper","r_oper"].forEach(id=>document.getElementById(id).innerHTML=op);
+  ve_oper.innerHTML='<option value="">— (opcional) —</option>'+op;
+  l_titular.innerHTML='<option value="">— selecione —</option>'+clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join("");
+}
+
+/* ================= LANÇAMENTOS ================= */
+function montarValores(){
+  const c=cliById(l_titular.value);
+  if(!c){l_valores.innerHTML="";return;}
+  let html=`<div class="campo"><label>Valor pago — TITULAR (${c.nome})</label>
+      <input id="v_tit" type="number" step="0.01" placeholder="0,00"></div>
+      <label>Valores pagos — dependentes</label>`;
+  c.deps.forEach((d,i)=>{
+    html+=`<div class="linha" style="margin-bottom:8px">
+      <div class="campo" style="margin:0"><input value="${d.nome} (${d.parentesco})" disabled></div>
+      <div class="campo" style="margin:0;flex:0 0 130px"><input id="v_dep_${i}" type="number" step="0.01" placeholder="0,00"></div>
+    </div>`;
+  });
+  if(!c.deps.length) html+='<div class="vazio">Este titular não tem dependentes.</div>';
+  l_valores.innerHTML=html;
+}
+function salvarLancamento(){
+  const c=cliById(l_titular.value);
+  if(!c){alert("Selecione o cliente titular.");return;}
+  if(!l_comp.value.trim()){alert("Informe a competência.");return;}
+  const valorTit=parseFloat(v_tit.value||0);
+  const deps=c.deps.map((d,i)=>({nome:d.nome,parentesco:d.parentesco,valor:parseFloat((document.getElementById("v_dep_"+i)||{}).value||0)}));
+  const total=valorTit+deps.reduce((s,d)=>s+d.valor,0);
+  lancamentos.unshift({id:seqLanc++,periodo:l_comp.value.trim(),operadora:l_oper.value,cliente:c.nome,valorTit,deps,total});
+  l_comp.value=""; l_titular.value=""; l_valores.innerHTML="";
+  renderLancamentos(); persistir();
+}
+function renderLancamentos(){
+  if(!lancamentos.length){l_lista.innerHTML='<div class="vazio" style="padding:16px">Nenhum lançamento ainda.</div>';l_totalGeral.textContent=brl(0);return;}
+  let geral=0;
+  l_lista.innerHTML=lancamentos.map(l=>{
+    geral+=l.total;
+    const cor=(operByNome(l.operadora)||{}).cor||"#0F8A5F";
+    const linhasDep=l.deps.map(d=>`<tr><td style="padding-left:22px;color:var(--tinta-suave)">↳ ${d.nome} <span style="font-size:11px">(${d.parentesco})</span></td><td class="direita">${brl(d.valor)}</td></tr>`).join("");
+    return `<div style="border-bottom:6px solid var(--fundo)">
+      <table>
+        <tr><th style="color:${cor}">${l.periodo} · ${l.operadora}</th><th class="direita">Valor</th></tr>
+        <tr><td><b>${l.cliente}</b> <span style="font-size:11px;color:var(--tinta-suave)">titular</span></td><td class="direita">${brl(l.valorTit)}</td></tr>
+        ${linhasDep}
+        <tr><td class="total">Total do fato</td><td class="direita total">${brl(l.total)}</td></tr>
+      </table></div>`;
+  }).join("");
+  l_totalGeral.textContent=brl(geral);
+}
+
+/* ================= CLIENTES ================= */
+function addDepRow(d={}){
+  const div=document.createElement("div");
+  div.className="dep-row";
+  div.innerHTML=`
+    <div class="campo" style="flex:2"><label>Nome</label><input class="d_nome" value="${d.nome||''}"></div>
+    <div class="campo"><label>Nascimento</label><input class="d_nasc" type="date" value="${d.nasc||''}"></div>
+    <div class="campo"><label>CPF</label><input class="d_cpf" value="${d.cpf||''}"></div>
+    <div class="campo"><label>Parentesco</label>
+      <select class="d_par">${["Cônjuge","Filho(a)","Enteado(a)","Outro"].map(p=>`<option ${d.parentesco===p?'selected':''}>${p}</option>`).join("")}</select></div>
+    <button class="btn btn-perigo btn-mini rm" onclick="this.parentElement.remove()">✕</button>`;
+  c_deps.appendChild(div);
+}
+let editandoCliId = null;
+function salvarCliente(){
+  if(!c_nome.value.trim()){alert("Informe o nome do titular.");return;}
+  const deps=[...c_deps.querySelectorAll(".dep-row")].map(r=>({
+    nome:r.querySelector(".d_nome").value.trim(),
+    nasc:r.querySelector(".d_nasc").value,
+    cpf:r.querySelector(".d_cpf").value.trim(),
+    parentesco:r.querySelector(".d_par").value
+  })).filter(d=>d.nome);
+  const dados={nome:c_nome.value.trim(),cpf:c_cpf.value.trim(),nasc:c_nasc.value,tel:c_tel.value.trim(),email:c_email.value.trim(),deps};
+  if(editandoCliId){
+    Object.assign(cliById(editandoCliId), dados);
+    cancelarEdicaoCliente();
+  }else{
+    clientes.push(Object.assign({id:seqCli++}, dados));
+    c_nome.value=c_cpf.value=c_nasc.value=c_tel.value=c_email.value=""; c_deps.innerHTML="";
+  }
+  renderClientes(); preencherSelects(); persistir();
+}
+function editarCliente(id){
+  const c=cliById(id); if(!c) return;
+  editandoCliId=id;
+  c_nome.value=c.nome; c_cpf.value=c.cpf||""; c_nasc.value=c.nasc||""; c_tel.value=c.tel||""; c_email.value=c.email||"";
+  c_deps.innerHTML=""; (c.deps||[]).forEach(d=>addDepRow(d));
+  document.querySelector('#tab-cli .painel h2').textContent="Editando: "+c.nome;
+  btnSalvarCli.textContent="Salvar alterações";
+  btnCancelarCli.style.display="block";
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function cancelarEdicaoCliente(){
+  editandoCliId=null;
+  c_nome.value=c_cpf.value=c_nasc.value=c_tel.value=c_email.value=""; c_deps.innerHTML=""; addDepRow();
+  document.querySelector('#tab-cli .painel h2').textContent="Cadastro de cliente (titular)";
+  btnSalvarCli.textContent="Salvar cliente";
+  btnCancelarCli.style.display="none";
+}
+function excluirCliente(id){
+  const c=cliById(id); if(!c) return;
+  if(!confirm(`Excluir o cliente "${c.nome}"?\n\nOs lançamentos já registrados dele são mantidos no histórico.`)) return;
+  clientes.splice(clientes.indexOf(c),1);
+  if(editandoCliId===id) cancelarEdicaoCliente();
+  renderClientes(); preencherSelects(); persistir();
+}
+function renderClientes(){
+  if(!clientes.length){c_lista.innerHTML='<div class="vazio" style="padding:16px">Nenhum cliente cadastrado.</div>';return;}
+  c_lista.innerHTML=clientes.map(c=>`
+    <div style="padding:12px 16px;border-bottom:1px solid #EDF1F2">
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700">${c.nome} <span style="font-size:11px;color:var(--tinta-suave)">${c.cpf||''}</span></div>
+        </div>
+        <button class="btn btn-sec btn-mini" onclick="editarCliente(${c.id})">✏️ Editar</button>
+        <button class="btn btn-perigo btn-mini" onclick="excluirCliente(${c.id})">🗑 Excluir</button>
+      </div>
+      ${c.deps.length?`<div style="margin-top:6px;font-size:12.5px;color:var(--tinta-suave)">
+        ${c.deps.map(d=>`• ${d.nome} <span style="font-size:11px">(${d.parentesco}${d.nasc?`, ${d.nasc.split('-').reverse().join('/')}`:''})</span>`).join("<br>")}</div>`
+        :`<div style="font-size:12px;color:var(--tinta-suave);margin-top:4px">sem dependentes</div>`}
+    </div>`).join("");
+}
+
+/* ================= OPERADORAS ================= */
+function salvarOperadora(){
+  if(!o_nome.value.trim()){alert("Informe a operadora.");return;}
+  operadoras.push({nome:o_nome.value.trim(),cnpj:o_cnpj.value.trim(),ans:o_ans.value.trim(),cor:o_cor.value,url:o_url.value.trim(),
+    campos:(o_campos.value||"Usuário,Senha").split(",").map(s=>s.trim()).filter(Boolean),
+    caminho:(o_caminho.value||"").split(",").map(s=>s.trim()).filter(Boolean)});
+  o_nome.value=o_cnpj.value=o_ans.value=o_url.value=o_campos.value=o_caminho.value="";
+  renderOperadoras(); preencherSelects(); persistir();
+}
+function renderOperadoras(){
+  o_lista.innerHTML=operadoras.map(o=>`
+    <div style="padding:12px 16px;border-bottom:1px solid #EDF1F2;display:flex;align-items:center;gap:10px">
+      <span style="width:10px;height:10px;border-radius:50%;background:${o.cor};flex:0 0 auto"></span>
+      <div><div style="font-weight:700">${o.nome}</div>
+        <div style="font-size:12px;color:var(--tinta-suave)">CNPJ: ${o.cnpj||'—'} · ANS: ${o.ans||'—'}</div></div>
+    </div>`).join("");
+}
+
+/* ================= FATURAS POR EMPRESA/MÊS ================= */
+const empresasPlano=[]; let seqEmp=1;
+const faturas=[];      // {empresaId, comp:"MM/AAAA", arquivo, url, em}
+let clientesMaster=[]; // empresas do módulo Clientes (cadastro unificado)
+let buscaAtiva=null;   // {empresaId, comp} aguardando importação do PDF
+
+const empById=id=>empresasPlano.find(e=>e.id==id);
+function normComp(t){
+  const m=(t||'').trim().match(/^(\d{1,2})[\/\-](\d{4})$/); if(!m) return null;
+  return String(parseInt(m[1])).padStart(2,'0')+'/'+m[2];
+}
+function preencherClientesPlano(){
+  ve_cliente.innerHTML = clientesMaster.length
+    ? '<option value="">— selecione —</option>'+clientesMaster.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('')
+    : '<option value="">— cadastre a empresa no módulo Clientes —</option>';
+}
+function vincularEmpresa(){
+  const cli=clientesMaster.find(c=>String(c.id)===ve_cliente.value);
+  if(!cli){alert('Escolha a empresa (cadastrada no módulo Clientes).');return;}
+  const oper=ve_oper.value||'';
+  const jah=empresasPlano.find(e=>e.clienteId==cli.id && (e.operadora||'')===oper);
+  if(!jah) empresasPlano.push({id:seqEmp++, clienteId:cli.id, nome:cli.nome, operadora:oper, acesso:{}});
+  renderVinculos(); preencherEmpresasFatura(); persistir();
+}
+function renderVinculos(){
+  ve_lista.innerHTML=empresasPlano.length?empresasPlano.map(e=>{
+    const cor=(operByNome(e.operadora)||{}).cor||'#0F8A5F';
+    return `<div class="chip"><span class="pt" style="background:${cor}"></span>${e.nome}${e.operadora?' · '+e.operadora:''}
+      <span class="x" onclick="desvincular(${e.id})" title="Remover">✕</span></div>`;
+  }).join(''):'<div class="vazio">Nenhuma empresa adicionada ainda.</div>';
+}
+function desvincular(id){ const e=empById(id); if(!e)return;
+  if(!confirm(`Remover "${e.nome}"?\n\n(As faturas já importadas são mantidas.)`))return;
+  empresasPlano.splice(empresasPlano.indexOf(e),1); renderVinculos(); preencherEmpresasFatura(); persistir(); }
+function preencherEmpresasFatura(){
+  const opts = empresasPlano.length
+    ? empresasPlano.map(e=>`<option value="${e.id}">${e.nome}${e.operadora?' — '+e.operadora:''}</option>`).join('')
+    : '';
+  fe_emp.innerHTML ='<option value="">— selecione —</option>'+opts;
+  imp_emp.innerHTML='<option value="">— selecione —</option>'+opts;
+  renderFaturasEmpresa();
+}
+function renderFaturasEmpresa(){
+  const e=empById(fe_emp.value);
+  if(!e){fe_arquivadas.innerHTML='';return;}
+  const chave=c=>c.split('/').reverse().join('');
+  const fs=faturas.filter(f=>f.empresaId==e.id).sort((a,b)=>chave(b.comp).localeCompare(chave(a.comp)));
+  fe_arquivadas.innerHTML=fs.length
+    ?`<label style="margin-top:10px">Faturas de ${e.nome} — clique para abrir</label>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:6px">`+
+      fs.map(f=>`<span class="chip" style="cursor:pointer" onclick="abrirFatura('${f.url}','${e.nome} · ${f.comp}')">📄 ${f.comp}</span>`).join('')+`</div>`
+    :'';
+}
+// CONSULTA: só empresa + competência -> abre o PDF arquivado (sem site)
+function buscarFatura(){
+  const e=empById(fe_emp.value); if(!e){alert('Selecione a empresa.');return;}
+  const comp=normComp(fe_comp.value); if(!comp){alert('Competência inválida — use MM/AAAA.');return;}
+  const achados=faturas.filter(x=>x.empresaId==e.id&&x.comp===comp);
+  if(achados.length){
+    fe_resultado.innerHTML=`<div class="aviso" style="background:#EAF6F0;border-color:#BFE3D2">
+      <b>✓ Fatura de ${comp}</b> — abrindo abaixo (importada em ${achados[0].em||'—'}).</div>`;
+    abrirFatura(achados[0].url, `${e.nome} · ${comp}`);
+  } else {
+    fe_resultado.innerHTML=`<div class="aviso">Ainda não há fatura importada para <b>${e.nome} · ${comp}</b>.
+      Ela precisa ser importada <b>uma vez</b> em "Alimentar o sistema" (abaixo); depois abre aqui na hora.</div>`;
+  }
+}
+function abrirFatura(url,titulo){ visor.src=url; visorTitulo.textContent=titulo; visorPainelWrap.style.display='block';
+  visorPainelWrap.scrollIntoView({behavior:'smooth'}); }
+
+// IMPORTAÇÃO (alimentar o sistema): empresa + competência escolhidas no painel de baixo
+function soltar(ev){ev.preventDefault();drop.classList.remove("hover");const f=ev.dataTransfer.files[0];if(f)importarFatura(f);}
+function soltarInput(ev){const f=ev.target.files[0];if(f)importarFatura(f);}
+async function importarFatura(f){
+  if(f.type!=="application/pdf"){alert("Envie um PDF.");return;}
+  const e=empById(imp_emp.value); if(!e){alert('Selecione a empresa em "Alimentar o sistema".');return;}
+  const comp=normComp(imp_comp.value); if(!comp){alert('Informe a competência (MM/AAAA) para arquivar.');return;}
+  const nomeArq=`fatura_${e.id}_${comp.replace('/','-')}_${f.name}`.replace(/[^\w.\-]+/g,'_');
+  const res=await Fiscale.enviarArquivo(new File([f],nomeArq,{type:'application/pdf'}),'pdf');
+  if(res&&res.url){
+    const i=faturas.findIndex(x=>x.empresaId==e.id&&x.comp===comp);   // substitui se já houver a mesma competência
+    const reg={empresaId:e.id, comp, arquivo:res.arquivo, url:res.url, em:new Date().toLocaleDateString('pt-BR')};
+    if(i>=0) faturas[i]=reg; else faturas.push(reg);
+    persistir();
+    fe_emp.value=String(e.id); renderFaturasEmpresa();
+    abrirFatura(res.url, `${e.nome} · ${comp}`);
+    imp_comp.value='';
+  } else alert('Não foi possível salvar o PDF no servidor.');
+}
+function fecharVisor(){visor.src="about:blank";visorPainelWrap.style.display="none";}
+
+/* ================= e-CAC / EFD-Reinf ================= */
+async function salvarProcurador(){
+  if(!p_nome.value.trim()){alert("Informe o nome do procurador.");return;}
+  const arq=p_pfx.files[0];
+  let cert="(não anexado)", cnpjLido="";
+  if(arq){
+    const res=await Fiscale.enviarArquivo(arq,'cert',{senha:(p_senha?p_senha.value:"")});
+    cert=res.arquivo||arq.name;
+    if(res.cnpj) cnpjLido=res.cnpj;
+    if(res.titular) p_nome.value=p_nome.value.trim()||res.titular;
+    if(arq && !res.leu && res.temCrypto) alert("Certificado salvo, mas não consegui ler o CNPJ — confira a senha.");
+    if(p_senha) p_senha.value="";
+  }
+  // certificado ÚNICO: salvar substitui o anterior
+  procuradores.length=0;
+  procuradores.push({nome:p_nome.value.trim(),doc:p_doc.value.trim()||cnpjLido,cert});
+  p_nome.value=p_doc.value=""; p_pfx.value="";
+  renderProcuradores(); persistir();
+}
+function renderProcuradores(){
+  const p=procuradores[0];
+  p_lista.innerHTML=p?`
+    <div class="chip"><span class="pt" style="background:var(--verde)"></span>${p.nome} · ${p.doc||'—'} <span style="font-size:11px;color:var(--tinta-suave)">(${p.cert})</span></div>`:'';
+  const info=document.getElementById('r_procInfo');
+  if(info) info.innerHTML=p?`🔒 <b>${p.nome}</b> · ${p.doc||'—'} <span style="font-size:11px">(${p.cert})</span>`
+                          :'— nenhum certificado salvo ainda —';
+}
+function prepararReinf(){
+  if(!procuradores.length){alert("Cadastre o certificado do escritório primeiro (painel ao lado).");return;}
+  if(!r_cnpj.value.trim()||!r_comp.value.trim()){alert("Informe o CNPJ da empresa e a competência.");return;}
+  const proc=procuradores[0];
+  reinfEnvios.unshift({proc:proc.nome,cnpj:r_cnpj.value.trim(),comp:r_comp.value.trim(),oper:r_oper.value,status:"Preparado"});
+  renderReinf(); persistir();
+  alert(`R-4000 preparado.\n\nProcurador: ${proc.nome}\nCNPJ empresa: ${r_cnpj.value.trim()}\nCompetência: ${r_comp.value.trim()}\n\nNo app empacotado, aqui ocorre a assinatura com o A1 e a transmissão pelo web service oficial da EFD-Reinf.`);
+}
+function renderReinf(){
+  r_lista.innerHTML=reinfEnvios.length?`<table>
+    <tr><th>Competência</th><th>CNPJ</th><th>Status</th></tr>
+    ${reinfEnvios.map(e=>`<tr><td>${e.comp}</td><td>${e.cnpj}</td><td><span class="tag">${e.status}</span></td></tr>`).join("")}
+    </table>`:'';
+}
+
+/* =====================================================================
+   HEALTH 1 — importação e normalização (backend real: /api/saude/*)
+   As abas antigas (Clientes, Operadoras, Faturas, Lançamentos, e-CAC)
+   continuam no estado local de tela; o que está abaixo fala com o backend.
+   ===================================================================== */
+const S = {conta:"", competencias:[], extratos:[], beneficiarios:[], operadoras:[]};
+
+const api = async (rota) => { const r = await fetch(rota); return r.ok ? r.json() : null; };
+const apiPost = async (rota, corpo) => {
+  const r = await fetch(rota,{method:'POST',headers:{'Content-Type':'application/json'},
+                              body:JSON.stringify(corpo)});
+  return r.ok ? r.json() : {erro:`HTTP ${r.status}`};
+};
+const esc = t => String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dinheiro = v => brl(parseFloat(v||0));
+const selo = st => {
+  const cor = st==='CONFERIDO' ? 'background:#EAF6F0;color:#0F8A5F'
+            : st==='ERRO'      ? 'background:#FBEDEC;color:#B3382C'
+            :                    'background:#FDF3E3;color:#9A6412';
+  return `<span class="tag" style="${cor}">${esc(st||'—')}</span>`;
+};
+
+async function saudeContas(){
+  const r = await api('/api/certificados');
+  const lista = (r && (r.certificados||r.contas||r)) || [];
+  const itens = Array.isArray(lista) ? lista : [];
+  s_conta.innerHTML = itens.length
+    ? itens.map(c=>`<option value="${esc(c.id)}">${esc(c.apelido||c.nome)} — ${esc(c.cnpj||'')}</option>`).join('')
+    : '<option value="">— nenhuma empresa cadastrada —</option>';
+  S.conta = s_conta.value || "";
+}
+
+async function saudeOperadoras(){
+  const r = await api('/api/saude/operadoras');
+  if(!r) return;
+  S.operadoras = r.com_parser||[];
+  s_operadora.innerHTML = '<option value="">— detectar pelo conteúdo —</option>'
+    + S.operadoras.map(o=>`<option value="${esc(o.nome)}">${esc(o.nome)}</option>`).join('');
+  s_operadorasInfo.innerHTML =
+    `<b>Leio hoje:</b> ${S.operadoras.map(o=>esc(o.nome)).join(' · ')||'—'}.<br>`
+    + `<b>Aguardando amostra:</b> ${(r.aguardando_amostra||[]).map(esc).join(' · ')||'—'}. `
+    + esc(r.observacao||'');
+}
+
+function saudeTrocouEmpresa(){ S.conta = s_conta.value; saudeCarregarTudo(); }
+
+async function saudeCarregarTudo(){
+  if(!S.conta){ S.conta = s_conta.value; }
+  if(!S.conta) return;
+  const c = await api('/api/saude/competencias?id='+encodeURIComponent(S.conta));
+  S.competencias = (c&&c.competencias)||[];
+  const e = await api('/api/saude/extratos?id='+encodeURIComponent(S.conta));
+  S.extratos = (e&&e.extratos)||[];
+  saudeRenderCompetencias();
+  saudeRenderConferencias();
+  const opts = '<option value="">todas</option>'
+    + S.competencias.map(g=>`<option value="${esc(g.competencia)}">${esc(g.competencia)}</option>`).join('');
+  s_benefComp.innerHTML = opts;
+  await saudeBeneficiarios();
+}
+
+/* ---- Competências ---- */
+function saudeRenderCompetencias(){
+  s_compTag.textContent = S.competencias.length ? S.competencias.length+' competência(s)' : '—';
+  if(!S.competencias.length){
+    s_competencias.innerHTML='<div class="vazio" style="padding:16px">Nenhum relatório importado ainda. Use a aba <b>Importar relatórios</b>.</div>';
+    return;
+  }
+  s_competencias.innerHTML = S.competencias.map(g=>`
+    <div style="padding:14px 16px;border-bottom:1px solid #EDF1F2">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="font-weight:800;font-size:15px">${esc(g.competencia)} · ${esc(g.operadora)}
+          <span style="font-weight:500;font-size:12.5px;color:var(--tinta-suave)">${esc(g.empresa)}</span></div>
+        ${selo(g.status)}
+      </div>
+      <table style="margin-top:8px">
+        <tr><td>Titulares</td><td class="direita">${g.titulares}</td>
+            <td>Dependentes</td><td class="direita">${g.dependentes}</td>
+            <td>Vidas</td><td class="direita"><b>${g.vidas}</b></td></tr>
+        <tr><td>Valor individualizado</td><td class="direita">${dinheiro(g.individualizado)}</td>
+            <td>Acertos</td><td class="direita">${dinheiro(g.acertos)}</td>
+            <td>IOF</td><td class="direita">${dinheiro(g.iof)}</td></tr>
+        <tr><td class="total">Total da fatura</td><td class="direita total">${dinheiro(g.total)}</td>
+            <td colspan="4"></td></tr>
+      </table>
+      <div style="margin-top:6px">${(g.extratos||[]).map(id=>
+        `<button class="btn btn-sec btn-mini" onclick="saudeFamilias('${esc(id)}')">👪 Famílias</button>
+         <a class="btn btn-sec btn-mini" style="text-decoration:none" target="_blank"
+            href="/api/saude/original?id=${encodeURIComponent(S.conta)}&extrato=${encodeURIComponent(id)}">📄 Original</a>`).join(' ')}</div>
+      <div id="fam-${esc((g.extratos||[])[0]||'')}"></div>
+    </div>`).join('');
+}
+
+/* ---- Famílias de um extrato ---- */
+function saudeFamilias(extratoId){
+  const e = S.extratos.find(x=>x.id===extratoId);
+  const alvo = document.getElementById('fam-'+extratoId);
+  if(!e || !alvo) return;
+  if(alvo.dataset.aberto==='1'){ alvo.innerHTML=''; alvo.dataset.aberto='0'; return; }
+  alvo.dataset.aberto='1';
+  alvo.innerHTML = (e.familias||[]).map(f=>{
+    const vidas = (f.titular?[f.titular]:[]).concat(f.dependentes||[]);
+    const bate = f.total_declarado===null || Math.abs(parseFloat(f.total_declarado)-parseFloat(f.total_calculado))<=0.02;
+    return `<div style="margin-top:10px;border:1px solid var(--borda);border-radius:12px;overflow:hidden">
+      <table>
+        <tr><th>${esc((f.titular||{}).nome||'(família sem titular identificado)')}</th>
+            <th>Parentesco</th><th>Plano</th><th class="direita">Valor</th></tr>
+        ${vidas.map(b=>`<tr>
+          <td>${b.parentesco==='TITULAR'?'':'↳ '}${esc(b.nome)}
+              ${b.cpf?`<span style="font-size:11px;color:var(--tinta-suave)">${esc(b.cpf)}${b.cpf_ok?'':' ⚠'}</span>`:''}</td>
+          <td style="font-size:12px">${esc(b.parentesco)}</td>
+          <td style="font-size:12px">${esc(b.plano)}</td>
+          <td class="direita">${dinheiro(b.cobranca.total)}</td></tr>`).join('')}
+        <tr><td class="total" colspan="3">Total da família${f.total_declarado!==null&&!bate?' (não fecha)':''}</td>
+            <td class="direita total" style="${bate?'':'color:#B3382C'}">${dinheiro(f.total_calculado)}</td></tr>
+      </table></div>`;
+  }).join('') || '<div class="vazio">Sem famílias neste extrato.</div>';
+}
+
+/* ---- Conferências ---- */
+function saudeRenderConferencias(){
+  const comProblema = S.extratos.filter(e=>e.status!=='CONFERIDO');
+  s_confTag.textContent = comProblema.length ? comProblema.length+' a conferir' : 'tudo conferido';
+  if(!S.extratos.length){ s_conferencias.innerHTML='<div class="vazio" style="padding:16px">Nada importado ainda.</div>'; return; }
+  s_conferencias.innerHTML = S.extratos.map(e=>`
+    <div style="padding:14px 16px;border-bottom:1px solid #EDF1F2">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+        <div><b>${esc(e.competencia||'—')} · ${esc(e.operadora||'—')}</b>
+          <div style="font-size:11.5px;color:var(--tinta-suave)">${esc(e.arquivo_nome)} ·
+            leitura ${esc(e.parser||'—')} v${esc(e.parser_versao||'—')} · importado ${esc(e.importado_em||'—')}</div></div>
+        ${selo(e.status)}
+      </div>
+      ${e.erro?`<div class="aviso" style="background:#FBEDEC;border-color:#E7C3C0"><b>Erro:</b> ${esc(e.erro)}</div>`:''}
+      ${(e.avisos||[]).length?`<div class="aviso"><b>Avisos:</b><br>${e.avisos.map(a=>'• '+esc(a)).join('<br>')}</div>`:''}
+      ${e.conferencia&&e.conferencia.regra?`<div style="font-size:11.5px;color:var(--tinta-suave);margin-top:8px">
+         <b>Regra desta operadora:</b> ${esc(e.conferencia.regra)}</div>`:''}
+      ${(e.conferencia&&e.conferencia.divergencias||[]).length?`<table style="margin-top:6px">
+        <tr><th>Item</th><th class="direita">Valor do relatório</th><th class="direita">Valor identificado</th>
+            <th class="direita">Diferença</th><th></th></tr>
+        ${e.conferencia.divergencias.map(d=>`<tr>
+          <td>${esc(d.o_que)}<div style="font-size:11px;color:var(--tinta-suave)">${esc(d.contexto)}</div></td>
+          <td class="direita">${dinheiro(d.declarado)}</td>
+          <td class="direita">${dinheiro(d.identificado)}</td>
+          <td class="direita" style="${d.relevante?'color:#B3382C;font-weight:700':''}">${dinheiro(d.diferenca)}</td>
+          <td class="direita">${d.relevante?'<span class="tag" style="background:#FDF3E3;color:#9A6412">CONFERIR</span>':'✓'}</td>
+        </tr>`).join('')}</table>`:''}
+      <div style="margin-top:8px">
+        <button class="btn btn-sec btn-mini" onclick="saudeReprocessar('${esc(e.id)}')">↻ Reprocessar o original</button>
+        <a class="btn btn-sec btn-mini" style="text-decoration:none" target="_blank"
+           href="/api/saude/original?id=${encodeURIComponent(S.conta)}&extrato=${encodeURIComponent(e.id)}">📄 Ver o arquivo original</a>
+        ${(e.historico||[]).length?`<span class="tag">${e.historico.length} leitura(s) anterior(es) no histórico</span>`:''}
+      </div>
+    </div>`).join('');
+}
+
+async function saudeReprocessar(id){
+  const r = await apiPost('/api/saude/reprocessar',{id:S.conta, extrato:id});
+  if(r && r.erro){ alert(r.erro); return; }
+  await saudeCarregarTudo();
+}
+
+/* ---- Beneficiários ---- */
+async function saudeBeneficiarios(){
+  if(!S.conta) return;
+  const q = '/api/saude/beneficiarios?id='+encodeURIComponent(S.conta)
+          + (s_benefComp.value?'&competencia='+encodeURIComponent(s_benefComp.value):'');
+  const r = await api(q);
+  S.beneficiarios = (r&&r.beneficiarios)||[];
+  s_histChave.innerHTML = '<option value="">— selecione —</option>'
+    + S.beneficiarios.map(b=>`<option value="${esc(b.chave)}">${esc(b.nome)}${b.titular&&b.titular!==b.nome?' (dep. de '+esc(b.titular)+')':''}</option>`).join('');
+  saudeRenderBeneficiarios();
+}
+function saudeRenderBeneficiarios(){
+  const f = (s_benefBusca.value||'').trim().toLowerCase();
+  const itens = S.beneficiarios.filter(b=>!f ||
+    (b.nome||'').toLowerCase().includes(f) || (b.cpf||'').includes(f) ||
+    (b.codigo||'').toLowerCase().includes(f));
+  s_benefTag.textContent = itens.length+' vida(s)';
+  s_beneficiarios.innerHTML = itens.length ? `<table>
+    <tr><th>Nome</th><th>Parentesco</th><th>Titular</th><th>CPF</th><th>Código</th>
+        <th>Plano</th><th>Operadora</th><th class="direita">Última competência</th><th class="direita">Valor</th></tr>
+    ${itens.map(b=>`<tr>
+      <td><b>${esc(b.nome)}</b>${(b.avisos||[]).length?` <span title="${esc((b.avisos||[]).join(' | '))}">⚠</span>`:''}</td>
+      <td style="font-size:12px">${esc(b.parentesco)}</td>
+      <td style="font-size:12px">${esc(b.titular)}</td>
+      <td style="font-size:12px">${esc(b.cpf||'—')}${b.cpf&&!b.cpf_ok?' ⚠':''}</td>
+      <td style="font-size:11px;color:var(--tinta-suave)">${esc(b.codigo||'—')}</td>
+      <td style="font-size:12px">${esc(b.plano)}</td>
+      <td style="font-size:12px">${esc(b.operadora)}</td>
+      <td class="direita">${esc(b.ultima_competencia)}</td>
+      <td class="direita">${dinheiro(b.ultimo_valor)}</td></tr>`).join('')}</table>`
+    : '<div class="vazio">Nenhum beneficiário — importe um relatório primeiro.</div>';
+}
+
+/* ---- Histórico ---- */
+async function saudeHistorico(){
+  const chave = s_histChave.value;
+  if(!chave){ s_historico.innerHTML=''; return; }
+  const r = await api('/api/saude/historico?id='+encodeURIComponent(S.conta)+'&chave='+encodeURIComponent(chave));
+  const linha = (r&&r.linha)||[];
+  if(!linha.length){ s_historico.innerHTML='<div class="vazio">Sem histórico.</div>'; return; }
+  let anterior=null;
+  s_historico.innerHTML = `<table>
+    <tr><th>Competência</th><th>Operadora</th><th>Plano</th><th>Parentesco</th>
+        <th class="direita">Valor</th><th class="direita">Variação</th></tr>
+    ${linha.map(x=>{
+      const v = parseFloat(x.valor||0);
+      const dif = anterior===null ? null : v-anterior;
+      anterior = v;
+      const txt = dif===null ? '—'
+        : (Math.abs(dif)<0.005 ? '=' : (dif>0?'▲ ':'▼ ')+brl(Math.abs(dif)));
+      return `<tr><td><b>${esc(x.competencia)}</b></td><td style="font-size:12px">${esc(x.operadora)}</td>
+        <td style="font-size:12px">${esc(x.plano)}</td><td style="font-size:12px">${esc(x.parentesco)}</td>
+        <td class="direita">${brl(v)}</td>
+        <td class="direita" style="${dif&&dif>0?'color:#B3382C':(dif&&dif<0?'color:#0F8A5F':'')}">${txt}</td></tr>`;
+    }).join('')}</table>`;
+}
+
+/* ---- Importação em lote ---- */
+function saudeSoltar(ev){ ev.preventDefault(); s_drop.classList.remove('hover');
+  saudeImportar([...ev.dataTransfer.files]); }
+function saudeEscolheu(ev){ saudeImportar([...ev.target.files]); ev.target.value=''; }
+
+const paraBase64 = f => new Promise(res=>{
+  const r=new FileReader(); r.onload=()=>res(String(r.result).split(',').pop()); r.readAsDataURL(f);
+});
+
+async function saudeImportar(arquivos){
+  if(!S.conta){ alert('Escolha a empresa no topo da tela.'); return; }
+  if(!arquivos.length) return;
+  s_resultadoImport.innerHTML = '<div class="aviso">Lendo '+arquivos.length+' arquivo(s)…</div>';
+  const pacote = [];
+  for(const f of arquivos) pacote.push({nome:f.name, conteudo: await paraBase64(f)});
+  const r = await apiPost('/api/saude/importar',{
+    id:S.conta, arquivos:pacote,
+    operadora: s_operadora.value || null,
+    substituir: s_substituir.checked});
+  if(r && r.erro){ s_resultadoImport.innerHTML=`<div class="aviso">Falhou: ${esc(r.erro)}</div>`; return; }
+  const res = r.resumo||{};
+  s_resultadoImport.innerHTML = `
+    <div class="aviso" style="background:#EAF6F0;border-color:#BFE3D2">
+      <b>${res.total} arquivo(s):</b> ${res.novo||0} importado(s) · ${res.duplicado||0} já existia(m) ·
+      ${res.reprocessado||0} reprocessado(s) · ${res.confirmar||0} precisa(m) de confirmação ·
+      ${res.erro||0} com erro.
+    </div>
+    <table style="margin-top:8px">
+      <tr><th>Arquivo</th><th>Resultado</th><th>Operadora</th><th>Competência</th>
+          <th class="direita">Vidas</th><th class="direita">Total</th><th>Observação</th></tr>
+      ${(r.itens||[]).map(i=>{
+        const e = i.extrato||{};
+        const obs = i.resultado==='confirmar' ? esc(i.mensagem||'')
+                  : i.resultado==='duplicado' ? 'Este arquivo já foi importado nesta competência — nada foi duplicado.'
+                  : esc(e.erro||(e.avisos||[]).join(' | ')||'');
+        return `<tr><td style="font-size:12px">${esc(i.arquivo)}</td>
+          <td>${selo(i.resultado.toUpperCase())}</td>
+          <td style="font-size:12px">${esc(e.operadora||(i.deteccao&&i.deteccao.operadora)||'—')}</td>
+          <td style="font-size:12px">${esc(e.competencia||'—')}</td>
+          <td class="direita">${e.vidas??'—'}</td>
+          <td class="direita">${e.total_fatura_declarado?dinheiro(e.total_fatura_declarado):'—'}</td>
+          <td style="font-size:11.5px;color:var(--tinta-suave)">${obs}</td></tr>`;
+      }).join('')}
+    </table>`;
+  await saudeCarregarTudo();
+}
+
+/* ===== SENHA DO PORTAL DA OPERADORA =====
+   A senha nunca chega ao navegador: o servidor manda só a situação. Depois de
+   restaurar um backup em outro computador ela fica "aguardando", porque é
+   protegida pelo Windows da máquina que a guardou. */
+async function carregarPendenciasPortal(){
+  const alvo = document.getElementById('portalPendencias');
+  if(!alvo) return;
+  let r = null;
+  try{ const q = await fetch('/api/plano/pendencias'); if(q.ok) r = await q.json(); }catch(e){}
+  const lista = (r && r.pendentes) || [];
+  if(!lista.length){ alvo.innerHTML=''; return; }
+  alvo.innerHTML = `<div class="aviso" style="background:#FDF3E3;border-color:#EBD6A8;color:#6B4A11">
+      <b>Aguardando senha do portal</b><br>
+      ${lista.length} empresa(s) estão sem a senha de acesso ao portal da operadora
+      nesta máquina. Informe de novo — o resto da configuração do plano está intacto.
+    </div>` + lista.map(p=>`
+    <div style="border:1px solid var(--borda);border-radius:11px;padding:11px;margin-top:8px">
+      <div style="font-weight:700;font-size:13px">${esc(p.nome||'(empresa)')}
+        <span style="font-weight:500;font-size:11.5px;color:var(--tinta-suave)">${esc(p.operadora||'')}</span></div>
+      <div class="linha" style="margin-top:7px;align-items:flex-end">
+        <div class="campo" style="margin:0"><label>Senha do portal</label>
+          <input type="password" id="pw_${esc(p.id)}" placeholder="senha de acesso ao site da operadora"></div>
+        <div class="campo" style="flex:0 0 auto;margin:0">
+          <button class="btn btn-primario btn-mini" onclick="informarSenhaPortal('${esc(p.id)}')">Guardar</button></div>
+      </div>
+    </div>`).join('');
+}
+
+async function informarSenhaPortal(id){
+  const campo = document.getElementById('pw_'+id);
+  const senha = campo ? campo.value : '';
+  if(!senha){ alert('Digite a senha do portal.'); return; }
+  const r = await fetch('/api/plano/senha',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id, campo:'Senha', senha})});
+  const d = await r.json().catch(()=>({}));
+  if(campo) campo.value = '';
+  if(d.erro){ alert(d.erro); return; }
+  await carregarPendenciasPortal();
+}
+
+/* init */
+function persistir(){
+  Fiscale.salvar('plano', {operadoras, clientes, lancamentos, procuradores, reinfEnvios,
+    empresasPlano, faturas, seqEmp, seqCli, seqLanc});
+}
+async function iniciar(){
+  const s = await Fiscale.carregar('plano');
+  if(s){
+    if(s.operadoras&&s.operadoras.length) Fiscale.repor(operadoras, s.operadoras);
+    if(s.clientes) Fiscale.repor(clientes, s.clientes);
+    if(s.lancamentos) Fiscale.repor(lancamentos, s.lancamentos);
+    if(s.procuradores) Fiscale.repor(procuradores, s.procuradores.slice(0,1));
+    if(s.reinfEnvios) Fiscale.repor(reinfEnvios, s.reinfEnvios);
+    if(s.empresasPlano) Fiscale.repor(empresasPlano, s.empresasPlano);
+    if(s.faturas) Fiscale.repor(faturas, s.faturas);
+    if(s.seqEmp) seqEmp = s.seqEmp;
+    if(s.seqCli) seqCli = s.seqCli;
+    if(s.seqLanc) seqLanc = s.seqLanc;
+  }
+  const cm = await Fiscale.carregar('clientes');
+  if(cm && cm.clientes) clientesMaster = cm.clientes;
+  preencherClientesPlano();
+  preencherSelects();renderLancamentos();renderClientes();renderOperadoras();renderProcuradores();renderReinf();addDepRow();
+  renderVinculos();preencherEmpresasFatura();
+  carregarPendenciasPortal();
+
+  // HEALTH 1 — backend real. Falhar aqui não pode derrubar o resto da tela.
+  try{
+    await saudeContas();
+    await saudeOperadoras();
+    await saudeCarregarTudo();
+  }catch(e){
+    s_competencias.innerHTML =
+      '<div class="vazio" style="padding:16px">Não consegui falar com o backend de Plano de Saúde. '
+      + 'Verifique se o módulo NFS-e subiu.</div>';
+  }
+}
+iniciar();
+</script>
+<script src="fiscale-nav.js"></script>
+</body>
+</html>

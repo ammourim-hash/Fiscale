@@ -1,0 +1,20 @@
+-- Triagem por setor (Triagem v1).
+--
+-- Um valor novo no enum do historico, e so isso. O estado "aguardando
+-- setor" NAO ganha coluna: ele e derivado de `status = NEW` com
+-- `assigned_department_id` nulo, porque um estado que ja e legivel nos
+-- dados existentes nao precisa de uma segunda fonte de verdade para
+-- divergir dela depois.
+--
+-- `TRIAGED` e separado de `TRANSFERRED` de proposito: transferir e decisao
+-- do escritorio; triar e escolha do CLIENTE, e o evento nasce com
+-- `actor_membership_id` nulo. Reaproveitar TRANSFERRED apagaria essa
+-- diferenca — que e exatamente a que alguem vai querer auditar.
+--
+-- Aditivo e sem backfill: conversa antiga nao vira TRIAGED retroativamente,
+-- porque ninguem escolheu nada nela.
+--
+-- No PostgreSQL um valor novo de enum nao pode ser USADO na mesma
+-- transacao em que e criado. Por isso esta migration apenas o cria; a
+-- aplicacao passa a grava-lo depois, ja com a migration aplicada.
+ALTER TYPE "conversation_event_type" ADD VALUE IF NOT EXISTS 'TRIAGED';

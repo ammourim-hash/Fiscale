@@ -1,0 +1,133 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  FISCALE — proxy reverso HTTPS de PRODUÇÃO (app.sistemafiscale.com.br)
+#
+#  MODELO. NÃO ESTÁ INSTALADO, NÃO ESTÁ ATIVO E NÃO FOI VALIDADO PELO CADDY.
+#  Antes de usar:  caddy validate --config Caddyfile
+#
+#  Diferença para o `Caddyfile.exemplo` ao lado: aquele é o desenho geral do
+#  arranjo; este é o arquivo do dia da virada, com os três detalhes que só
+#  apareceram quando o ELO passou a ser embutido no FISCALE (Comunicações):
+#  timeouts do SSE, cabeçalhos de segurança e o `frame-ancestors` — que NÃO
+#  mora aqui, e a seção "ENQUADRAMENTO" explica por quê.
+#
+#      navegador ──HTTPS──► Caddy (só no IP da rede privada)
+#                              └──HTTP──► FISCALE 127.0.0.1:8777
+#
+#  A 8777 nunca é publicada. Quem fala com ela é o Caddy, pelo loopback; o
+#  FISCALE reconhece o proxy pelo soquete (fiscale_proxy.py) e, por isso,
+#  marca o cookie como Secure, manda HSTS, registra o IP real e — o que mais
+#  importa — NÃO trata quem chega pelo proxy como "sentado na máquina":
+#  criar o primeiro admin, restaurar backup e encerrar o servidor continuam
+#  só para quem está no PC.
+#
+#  ───────────────────────────────────────────────────────────────────────
+#  VARIÁVEIS — definidas no serviço do Caddy, NUNCA neste arquivo
+#  ───────────────────────────────────────────────────────────────────────
+#      CADDY_BIND          IP desta máquina na rede privada (o 100.x do
+#                          Tailscale). Ainda NÃO existe: o Tailscale não está
+#                          instalado, e inventar um número aqui seria pior do
+#                          que deixar a variável falando por si.
+#      FISCALE_ACME_EMAIL  e-mail para os avisos do Let's Encrypt.
+#      CF_API_TOKEN        token de DNS da Cloudflare. NUNCA escrito aqui.
+#                          Escopo mínimo: Zone:DNS:Edit + Zone:Zone:Read,
+#                          restrito à zona sistemafiscale.com.br. Um token
+#                          com esse poder cria e apaga QUALQUER registro da
+#                          zona — inclusive o `app.` e o `www.`.
+#
+#  ───────────────────────────────────────────────────────────────────────
+#  DEPENDÊNCIA DE BUILD
+#  ───────────────────────────────────────────────────────────────────────
+#  O `dns cloudflare` abaixo NÃO existe no Caddy padrão. É preciso um build
+#  com o módulo `dns.providers.cloudflare` (xcaddy, ou o download com o
+#  módulo selecionado no site oficial). Sem ele, o Caddy sobe e falha na
+#  emissão com "unknown module" — e o serviço fica sem certificado.
+#
+#  Por que DNS-01 e não o desafio comum: a máquina não fica alcançável pela
+#  internet. HTTP-01 e TLS-ALPN exigem a porta 80/443 abertas ao mundo, que é
+#  exatamente o que este arranjo evita. O preço é depender de DNS com API —
+#  e é por isso que a zona precisa sair do Registro.br (FISCALE_HTTPS.md,
+#  D-HTTPS-2).
+#
+#  ───────────────────────────────────────────────────────────────────────
+#  ENQUADRAMENTO (iframe) — a parte que é fácil errar
+#  ───────────────────────────────────────────────────────────────────────
+#  Quem é DESENHADO DENTRO de outra página é o ELO, não o FISCALE. A Central
+#  do FISCALE tem a área "Comunicações", e dentro dela um iframe com o ELO em
+#  `?embutido=1`.
+#
+#  Logo, `frame-ancestors` é uma regra do **ELO**, e vai no Caddyfile DELE:
+#
+#      Content-Security-Policy "frame-ancestors https://app.sistemafiscale.com.br"
+#
+#  Aqui, no FISCALE, NÃO se escreve `frame-ancestors https://elo...`: isso
+#  diria "o ELO pode me enquadrar", que é o sentido contrário do que existe.
+#  E nada de `X-Frame-Options` em nenhum dos dois: ele não entende origem,
+#  e no ELO mataria a área Comunicações.
+#
+#  Enquanto o ELO não tiver nome próprio em HTTPS, o iframe só funciona no
+#  próprio PC — o `elo_config.json` aponta para 127.0.0.1:3000, que, de outra
+#  máquina, é o 127.0.0.1 de quem está olhando.
+# ═══════════════════════════════════════════════════════════════════════════
+
+{
+	# A API de administração fica só no loopback.
+	admin localhost:2019
+	email {$FISCALE_ACME_EMAIL}
+}
+
+app.sistemafiscale.com.br {
+	# Escuta SÓ na rede privada. Sem esta linha o Caddy abre 443 em todas as
+	# interfaces — inclusive numa rede pública em que o notebook entrar.
+	bind {$CADDY_BIND}
+
+	tls {
+		dns cloudflare {env.CF_API_TOKEN}
+		resolvers 1.1.1.1 8.8.8.8
+	}
+
+	encode zstd gzip
+
+	log {
+		output file C:/ProgramData/Caddy/logs/fiscale.log {
+			roll_size 10MiB
+			roll_keep 10
+		}
+		format json
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+
+	reverse_proxy 127.0.0.1:8777 {
+		# SOBRESCREVE (não acrescenta) com o IP de quem conectou: valor
+		# mandado pelo visitante nunca chega ao FISCALE. É o que impede
+		# alguém dizer "sou 127.0.0.1" e virar administrador local.
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto https
+		header_up X-Forwarded-Host {host}
+		header_up -Forwarded
+		header_up -X-Real-IP
+
+		# O ELO embutido mantém um SSE aberto (/api/realtime) e o NFS-e tem
+		# respostas longas. Com os padrões do Caddy, os dois morreriam por
+		# tempo — o realtime viraria reconexão eterna, sem erro visível.
+		flush_interval -1
+		transport http {
+			read_timeout 0
+			write_timeout 0
+			dial_timeout 5s
+			response_header_timeout 60s
+		}
+	}
+}
+
+# HTTP → HTTPS, também só na rede privada. O Caddy já faria sozinho; fica
+# explícito para ninguém "simplificar" e acabar servindo em HTTP.
+http://app.sistemafiscale.com.br {
+	bind {$CADDY_BIND}
+	redir https://app.sistemafiscale.com.br{uri} permanent
+}

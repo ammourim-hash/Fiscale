@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CT-e · Conhecimentos de Transporte · Fiscale</title>
+<style>
+  :root{--tinta:#0F2A38;--tinta-suave:#5B7383;--borda:#DCE6EA;--fundo:#F4F8F9}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+    color:var(--tinta);background:var(--fundo)}
+  main{max-width:1280px;margin:0 auto;padding:22px 18px 60px}
+  .cabecalho{background:linear-gradient(135deg,#123C52,#0B2432);color:#fff;
+    border-radius:16px;padding:22px 24px;margin-bottom:18px}
+  .cabecalho h1{margin:0;font-size:23px;letter-spacing:-.01em}
+  .cabecalho .sub{margin:5px 0 0;opacity:.82;font-size:14px}
+  .contexto{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+  .pilula{background:rgba(255,255,255,.14);border-radius:999px;
+    padding:5px 12px;font-size:12.5px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));
+    gap:12px;margin-bottom:16px}
+  .card{background:#fff;border:1px solid var(--borda);border-radius:14px;
+    padding:14px 15px;position:relative}
+  .card .rot{font-size:12.5px;color:var(--tinta-suave);font-weight:700}
+  .card .val{font-size:25px;font-weight:800;margin-top:3px;
+    font-variant-numeric:tabular-nums}
+  .card .sec{font-size:12.5px;color:var(--tinta-suave);margin-top:2px}
+  .card.destaque{border-color:#B9D8E4;background:#F6FBFD}
+  .aviso-info{position:absolute;top:9px;right:10px;width:17px;height:17px;
+    border-radius:50%;background:#E4EDF1;color:#4A6577;font-size:11px;
+    font-weight:800;display:grid;place-items:center;cursor:help}
+  .painel{background:#fff;border:1px solid var(--borda);border-radius:14px;
+    margin-bottom:16px}
+  .painel > summary{padding:13px 16px;font-weight:700;cursor:pointer}
+  .painel .corpo{padding:0 16px 16px}
+  .grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+    gap:11px}
+  .campo label{display:block;font-size:12.5px;font-weight:700;
+    color:var(--tinta-suave);margin-bottom:3px}
+  .campo input,.campo select{width:100%;padding:8px 10px;border-radius:9px;
+    border:1px solid var(--borda);font:inherit;background:#fff}
+  .acoes{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-top:13px}
+  .btn{border:1px solid var(--borda);background:#fff;border-radius:10px;
+    padding:8px 14px;font:inherit;cursor:pointer}
+  .btn.primario{background:#123C52;color:#fff;border-color:#123C52}
+  .btn:disabled{opacity:.55;cursor:not-allowed}
+  .quadro{background:#fff;border:1px solid var(--borda);border-radius:14px;
+    overflow:hidden}
+  .topo{display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+    justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--borda)}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:9px 12px;text-align:left;font-size:13.5px;
+    border-bottom:1px solid #EEF3F5}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.03em;
+    color:var(--tinta-suave)}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .selo{display:inline-block;padding:2px 8px;border-radius:999px;
+    font-size:11.5px;font-weight:700;border:1px solid transparent}
+  .selo.ok{background:#E6F5EC;color:#1D6B3E;border-color:#C6E7D4}
+  .selo.cancel{background:#FDECEA;color:#9B2C20;border-color:#F5C9C3}
+  .selo.aviso{background:#FFF6E5;color:#8A6100;border-color:#F3E0B5}
+  .selo.neutro{background:#EEF3F5;color:#4A6577;border-color:#DCE6EA}
+  .estado{padding:40px 22px;text-align:center;color:var(--tinta-suave)}
+  .estado .emoji{font-size:30px;display:block;margin-bottom:8px}
+  .vazio{color:#9AAEB8}
+  .lista-mobile{display:none}
+  @media (max-width:900px){
+    table{display:none}
+    .lista-mobile{display:block}
+    .cards{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  }
+</style>
+
+</head>
+<body>
+<script src="fiscale-nav.js"></script>
+<script src="fiscale.js"></script>
+
+<main>
+  <header class="cabecalho">
+    <h1>CT-e · Conhecimentos de Transporte</h1>
+    <p class="sub">Conhecimentos emitidos, tomados e recebidos — do acervo</p>
+    <div class="contexto">
+      <span class="pilula">🏢 <b id="ctxEmpresa">selecione uma empresa</b></span>
+      <span class="pilula" id="ctxCaptura">—</span>
+      <span class="pilula">📚 acervo indexado</span>
+    </div>
+  </header>
+
+  <section class="cards" id="cards" aria-live="polite"
+           aria-label="Resumo do período"></section>
+
+  <details class="painel" open>
+    <summary>Filtros</summary>
+    <div class="corpo">
+      <div class="grade">
+        <div class="campo">
+          <label for="fEmpresa">Empresa</label>
+          <select id="fEmpresa"></select>
+        </div>
+        <div class="campo">
+          <label for="fDe">Emissão — de</label>
+          <input type="date" id="fDe">
+        </div>
+        <div class="campo">
+          <label for="fAte">Emissão — até</label>
+          <input type="date" id="fAte">
+        </div>
+        <div class="campo">
+          <label for="fPapel">Participação da empresa</label>
+          <select id="fPapel">
+            <option value="">Todas</option>
+            <option value="EMITENTE">Emitidos (só por importação)</option>
+            <option value="TOMADOR">Tomados (paga o frete)</option>
+            <option value="REMETENTE">Remetente</option>
+            <option value="DESTINATARIO">Destinatário</option>
+            <option value="EXPEDIDOR">Expedidor</option>
+            <option value="RECEBEDOR">Recebedor</option>
+            <option value="AUTXML">Autorizado no XML</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="fSituacao">Situação atual</label>
+          <select id="fSituacao">
+            <option value="">Todas</option>
+            <option value="AUTORIZADO">Autorizado</option>
+            <option value="CANCELADO">Cancelado</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="fTexto">Buscar</label>
+          <input id="fTexto" placeholder="número, chave, nome ou CNPJ">
+        </div>
+      </div>
+      <div class="acoes">
+        <button class="btn primario" id="btnAplicar">Aplicar filtros</button>
+        <button class="btn" id="btnLimpar">Limpar</button>
+        <span style="font-size:12.5px;color:var(--tinta-suave)">
+          <b>Tomador</b> é quem paga o frete. Na maioria dos CT-e ele não tem
+          bloco próprio: o campo <code>toma</code> aponta para o remetente,
+          expedidor, recebedor ou destinatário.<br>
+          <b>Duas fontes, propósitos diferentes.</b> A captura oficial traz o
+          que é <b>de interesse</b> da empresa — tomado, recebido, ou em que
+          ela participa. Os CT-e que ela <b>emite não vêm por ela</b>: a
+          distribuição não devolve ao emitente os próprios documentos. Emissão
+          própria entra por <b>importação de XML</b> (ERP, pasta, e-mail, ZIP).
+        </span>
+      </div>
+    </div>
+  </details>
+
+  <section class="quadro">
+    <div class="topo">
+      <strong id="tituloLista">Conhecimentos</strong>
+      <span id="avisoCaptura" style="font-size:12.5px"></span>
+    </div>
+    <div id="area" aria-live="polite">
+      <div class="estado"><span class="emoji">⏳</span><h3>Carregando…</h3></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const NUM = n => (n ?? 0).toLocaleString('pt-BR');
+const BRL = v => (v ?? 0).toLocaleString('pt-BR',
+  {style:'currency', currency:'BRL'});
+const DATA = v => { if(!v) return '—';
+  const d = String(v).slice(0,10).split('-');
+  return d.length===3 ? `${d[2]}/${d[1]}/${d[0]}` : v; };
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>(
+  {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const OU = v => (v==null || v==='') ? '<span class="vazio">—</span>' : esc(v);
+function doc(v){
+  const d = String(v||'').replace(/\D/g,'');
+  if(d.length===14) return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12)}`;
+  if(d.length===11) return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
+  return d || '—';
+}
+
+const ROTULO_PAPEL = {EMITENTE:'Emitido', TOMADOR:'Tomado',
+  REMETENTE:'Remetente', DESTINATARIO:'Destinatário',
+  EXPEDIDOR:'Expedidor', RECEBEDOR:'Recebedor',
+  AUTXML:'Autorizado', OUTRO:'Indeterminado'};
+
+/* As três situações que NUNCA podem virar o mesmo `0`. Uma empresa sem
+   certificado precisa de um arquivo; uma que nunca foi consultada precisa de
+   um clique; e uma sincronizada com zero realmente não tem CT-e. */
+const SITUACAO = {
+  SINCRONIZADA: ['ok', 'sincronizada'],
+  AGUARDANDO_PRIMEIRA_CONSULTA: ['aviso', 'aguardando 1ª consulta'],
+  SEM_CERTIFICADO: ['cancel', 'sem certificado'],
+  SEM_CADASTRO: ['cancel', 'sem cadastro'],
+  ARQUIVO_AUSENTE: ['cancel', 'certificado ausente'],
+  DOCUMENTO_DIVERGENTE: ['cancel', 'certificado divergente'],
+  SEM_SENHA: ['cancel', 'senha pendente'],
+  VENCIDO: ['cancel', 'certificado vencido'],
+  AINDA_NAO_VALIDO: ['cancel', 'certificado ainda não válido'],
+};
+
+let empresas = [], porId = {};
+
+async function pedir(rota){
+  const r = await fetch(rota);
+  if(!r.ok){
+    let m = `Erro ${r.status}`;
+    try{ const j = await r.json(); m = j.detail || j.erro || m; }catch(e){}
+    throw new Error(m);
+  }
+  return r.json();
+}
+
+function query(extra){
+  const g = id => (document.getElementById(id).value||'').trim();
+  const p = new URLSearchParams({id:g('fEmpresa')});
+  const mapa = {data_ini:'fDe', data_fim:'fAte', papel:'fPapel',
+    situacao_atual:'fSituacao', texto:'fTexto'};
+  for(const [k,campo] of Object.entries(mapa)){ const v=g(campo); if(v) p.set(k,v); }
+  Object.entries(extra||{}).forEach(([k,v])=>p.set(k,v));
+  return p.toString();
+}
+
+function desenharCards(r){
+  const c = (rot, val, sec, cls, dica) =>
+    `<article class="card ${cls||''}">
+       ${dica?`<span class="aviso-info" title="${esc(dica)}" tabindex="0">i</span>`:''}
+       <div class="rot">${rot}</div><div class="val">${val}</div>
+       <div class="sec">${sec||'&nbsp;'}</div></article>`;
+  const a = r.advertencias || {};
+  document.getElementById('cards').innerHTML =
+    c('🚚 Emitidos', NUM(r.emitidos.quantidade), 'por importação de XML',
+      'destaque', a.emitidos) +
+    c('💰 Tomados', NUM(r.tomados.quantidade), BRL(r.tomados.valor), '', a.tomados) +
+    c('📦 Remetente', NUM(r.remetente.quantidade), BRL(r.remetente.valor)) +
+    c('📥 Destinatário', NUM(r.destinatario.quantidade), BRL(r.destinatario.valor)) +
+    c('🔁 Expedidor / Recebedor',
+      NUM(r.expedidor.quantidade + r.recebedor.quantidade), 'participação', '', a.papeis) +
+    c('⚖️ Eventos', NUM(r.eventos.quantidade), 'cancelamento, CC-e') +
+    c('🚫 Cancelados', NUM(r.canceladas.quantidade), 'pela situação atual');
+}
+
+function desenharLista(d){
+  const area = document.getElementById('area');
+  const docs = d.documentos || [];
+  if(!docs.length){ area.innerHTML = vazio(d); return; }
+  area.innerHTML = `
+    <table><thead><tr>
+      <th>Nº</th><th>Emissão</th><th>Emitente</th><th>Destinatário</th>
+      <th>Participação</th><th>Situação</th><th style="text-align:right">Valor</th>
+    </tr></thead><tbody>${docs.map(n=>`
+      <tr>
+        <td>${OU(n.numero)}</td><td>${DATA(n.data)}</td>
+        <td>${esc((n.emit_nome||'—').slice(0,34))}</td>
+        <td>${esc((n.dest_nome||'—').slice(0,34))}</td>
+        <td>${(n.papeis||[]).map(p=>
+          `<span class="selo neutro">${esc(ROTULO_PAPEL[p]||p)}</span>`).join(' ')}</td>
+        <td>${n.cancelada ? '<span class="selo cancel">Cancelado</span>'
+                          : '<span class="selo ok">Autorizado</span>'}</td>
+        <td class="num">${BRL(n.valor)}</td>
+      </tr>`).join('')}</tbody></table>
+    <div class="lista-mobile">${docs.map(n=>`
+      <div style="padding:12px 14px;border-bottom:1px solid #EEF3F5">
+        <div style="display:flex;justify-content:space-between;gap:10px">
+          <b>Nº ${OU(n.numero)}</b><b>${BRL(n.valor)}</b></div>
+        <div style="color:var(--tinta-suave);font-size:13.5px">
+          ${esc((n.emit_nome||'—').slice(0,40))}</div>
+        <div style="margin-top:6px">${(n.papeis||[]).map(p=>
+          `<span class="selo neutro">${esc(ROTULO_PAPEL[p]||p)}</span>`).join(' ')}
+          <span class="selo ${n.cancelada?'cancel':'ok'}">
+            ${n.cancelada?'Cancelado':'Autorizado'}</span>
+          <span style="font-size:12.5px;color:var(--tinta-suave)">
+            ${DATA(n.data)}</span></div>
+      </div>`).join('')}</div>`;
+}
+
+/* O vazio NUNCA é a mesma frase. Zero depois de sincronizar é um fato; zero
+   antes da primeira consulta é uma pergunta ainda não feita. */
+function vazio(d){
+  const emp = porId[document.getElementById('fEmpresa').value] || {};
+  const papel = document.getElementById('fPapel').value;
+  if(papel === 'EMITENTE')
+    return `<div class="estado"><span class="emoji">📤</span>
+      <h3>CT-e emitidos não vêm pela captura</h3>
+      <p>A distribuição oficial entrega à empresa o que é <b>de interesse</b>
+         dela — o que ela toma, recebe ou em que participa. Ela
+         <b>não devolve ao emitente os documentos que ele mesmo emitiu</b>.</p>
+      <p>O que aparece aqui é o que foi <b>importado</b>: ERP, pasta vigiada,
+         e-mail ou XML/ZIP. Sincronizar não traz mais nenhum.</p></div>`;
+  if(emp.situacao === 'AGUARDANDO_PRIMEIRA_CONSULTA')
+    return `<div class="estado"><span class="emoji">🕐</span>
+      <h3>Captura aguardando a primeira consulta</h3>
+      <p>Esta empresa está pronta, mas o que é <b>de interesse</b> dela ainda
+         não foi buscado. <b>Isto não quer dizer que ela não tenha
+         conhecimentos.</b></p>
+      <p style="font-size:13px">Lembrando: os CT-e <b>emitidos</b> por ela
+         nunca virão por aqui — esses entram por importação.</p></div>`;
+  if(emp.situacao && emp.situacao !== 'SINCRONIZADA')
+    return `<div class="estado"><span class="emoji">⚠️</span>
+      <h3>${esc((SITUACAO[emp.situacao]||['','captura indisponível'])[1])}</h3>
+      <p>${esc(emp.motivo||'')}</p>
+      <p>Enquanto isso não for resolvido, não há como buscar CT-e desta
+         empresa — e o que aparece aqui é o que já está no acervo.</p></div>`;
+  return `<div class="estado"><span class="emoji">📭</span>
+    <h3>Nenhum CT-e neste filtro</h3>
+    <p>A empresa já foi sincronizada: este zero é um resultado, não uma
+       ausência de consulta.</p></div>`;
+}
+
+async function carregar(){
+  const id = document.getElementById('fEmpresa').value;
+  if(!id) return;
+  const emp = porId[id] || {};
+  document.getElementById('ctxEmpresa').textContent = emp.nome || '—';
+  const [cls, rot] = SITUACAO[emp.situacao] || ['neutro', emp.situacao || '—'];
+  document.getElementById('ctxCaptura').innerHTML =
+    `<span class="selo ${cls}">${esc(rot)}</span>`;
+  document.getElementById('avisoCaptura').innerHTML =
+    emp.situacao === 'SINCRONIZADA' ? '' :
+    `<span class="selo ${cls}">${esc(rot)}</span>
+     <span style="color:var(--tinta-suave)"> ${esc(emp.motivo||'')}</span>`;
+
+  const area = document.getElementById('area');
+  area.innerHTML = `<div class="estado"><span class="emoji">⏳</span>
+    <h3>Carregando…</h3></div>`;
+  try{
+    const [lista, resumo] = await Promise.all([
+      pedir('/api/cte/notas?'+query({tamanho:100})),
+      pedir('/api/cte/resumo?'+query({})),
+    ]);
+    desenharCards(resumo);
+    desenharLista(lista);
+    const p = lista.pagina;
+    document.getElementById('tituloLista').textContent =
+      `${NUM(p.total)} conhecimento${p.total===1?'':'s'}`;
+  }catch(e){
+    document.getElementById('cards').innerHTML = '';
+    area.innerHTML = `<div class="estado"><span class="emoji">⚠️</span>
+      <h3>Não consegui carregar os conhecimentos</h3>
+      <p>${esc(e.message)}</p></div>`;
+  }
+}
+
+function limpar(){
+  ['fDe','fAte','fPapel','fSituacao','fTexto'].forEach(id=>
+    document.getElementById(id).value = '');
+  carregar();
+}
+
+async function iniciar(){
+  let r;
+  try{
+    r = await pedir('/api/cte/empresas');
+  }catch(e){
+    document.getElementById('area').innerHTML =
+      `<div class="estado"><span class="emoji">⚠️</span>
+       <h3>Não consegui listar as empresas</h3><p>${esc(e.message)}</p></div>`;
+    return;
+  }
+  // A ordenação já vem do servidor, alfabética — a mesma do resto do FISCALE.
+  empresas = r.empresas || [];
+  porId = Object.fromEntries(empresas.map(e=>[e.id, e]));
+  const sel = document.getElementById('fEmpresa');
+  sel.innerHTML = empresas.map(e=>{
+    const [, rot] = SITUACAO[e.situacao] || ['', ''];
+    const marca = e.situacao === 'SINCRONIZADA' ? '' : ` — ${rot}`;
+    return `<option value="${esc(e.id)}">${esc(e.nome)}${esc(marca)}</option>`;
+  }).join('');
+  if(!sel.value && empresas.length) sel.value = empresas[0].id;
+
+  sel.onchange = carregar;
+  document.getElementById('btnAplicar').onclick = carregar;
+  document.getElementById('btnLimpar').onclick = limpar;
+  document.getElementById('fTexto').addEventListener('keydown', ev=>{
+    if(ev.key==='Enter') carregar();
+  });
+  carregar();
+}
+iniciar();
+</script>
+</body>
+</html>

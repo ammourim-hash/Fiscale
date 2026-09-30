@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Situação Fiscal · Fiscale</title>
+<style>
+  :root{
+    --tinta:#16232B; --tinta-suave:#5B7078; --borda:#DDE4E7; --superficie:#fff;
+    --ok:#0F8A5F; --ok-fraco:#E7F5EF;
+    --aviso:#B07D10; --aviso-fraco:#FBF3E0;
+    --ruim:#B3382C; --ruim-fraco:#FBEAE8;
+    --mudo:#8A9BA2; --mudo-fraco:#F1F4F5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--tinta);
+       background:#fff;color-scheme:light}
+  main{padding:0 22px 60px}
+  .painel{background:var(--superficie);border:1px solid var(--borda);
+          padding:18px 20px;margin:0 0 16px}
+  .painel > h2{margin:0 0 4px;font-size:16px;font-weight:800}
+  .painel > h2 + .dica{margin:0 0 14px}
+  .dica{color:var(--tinta-suave);font-size:12.5px;margin:0 0 10px}
+
+  /* ── Resumo em cartões ─────────────────────────────────────────────── */
+  .resumo{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 16px}
+  .stat{background:var(--superficie);border:1px solid var(--borda);
+        padding:13px 16px;min-width:132px;flex:0 0 auto}
+  .stat b{display:block;font-size:25px;font-weight:800;line-height:1.1}
+  .stat span{font-size:11.5px;color:var(--tinta-suave);text-transform:uppercase;
+             letter-spacing:.04em}
+  .stat.ok b{color:var(--ok)} .stat.amarelo b{color:var(--aviso)}
+  .stat.ruim b{color:var(--ruim)} .stat.mudo b{color:var(--mudo)}
+
+  /* ── O painel cruzado ──────────────────────────────────────────────── */
+  .rolagem{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:820px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #EDF1F2;
+        vertical-align:middle}
+  thead th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;
+           color:var(--tinta-suave);font-weight:700;white-space:nowrap;
+           border-bottom:2px solid var(--borda)}
+  thead th.esf{text-align:center}
+  tbody tr:hover{background:#FAFCFC}
+  td.empresa{min-width:230px}
+  td.empresa b{display:block;font-weight:700}
+  td.empresa small{color:var(--tinta-suave);font-family:ui-monospace,Menlo,Consolas,monospace;
+                   font-size:11px}
+  td.cel{text-align:center;white-space:nowrap}
+
+  /* O semáforo. A COR NUNCA VIAJA SOZINHA: cada pastilha leva rótulo, porque
+     cor sem texto exclui quem não a distingue — e some numa impressão P&B. */
+  .farol{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 8px;
+         border-radius:999px;font-size:11.5px;font-weight:700;border:1px solid transparent;
+         cursor:default}
+  .farol .bolinha{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+  .f-ok{background:var(--ok-fraco);color:#0A6A49;border-color:#BFE5D6}
+  .f-ok .bolinha{background:var(--ok)}
+  .f-aviso{background:var(--aviso-fraco);color:#8A620C;border-color:#EFDCAE}
+  .f-aviso .bolinha{background:var(--aviso)}
+  .f-ruim{background:var(--ruim-fraco);color:#8E2C22;border-color:#F0C7C2}
+  .f-ruim .bolinha{background:var(--ruim)}
+  .f-mudo{background:var(--mudo-fraco);color:#6B7C83;border-color:#E1E7E9}
+  .f-mudo .bolinha{background:var(--mudo)}
+  .farol a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+
+  .sub{display:block;font-size:10.5px;font-weight:600;color:var(--tinta-suave);
+       margin-top:3px}
+
+  .btn{border:1px solid var(--borda);background:#fff;padding:8px 15px;
+       font-weight:700;font-size:13px;cursor:pointer}
+  .btn:hover{background:#F5F8F9}
+  .btn-primario{background:#10444E;border-color:#10444E;color:#fff}
+  .btn-primario:hover{background:#0C3038}
+  .campo{display:flex;flex-direction:column;gap:4px;min-width:170px}
+  .campo label{font-size:11.5px;font-weight:700;color:var(--tinta-suave)}
+  select,input[type=file]{border:1px solid var(--borda);padding:8px 10px;font:inherit;
+                          background:#fff}
+  .linha{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+  .aviso{padding:10px 13px;font-size:13px;margin:12px 0 0;border:1px solid}
+  .aviso.bom{background:var(--ok-fraco);border-color:#BFE5D6;color:#0A6A49}
+  .aviso.ruim{background:var(--ruim-fraco);border-color:#F0C7C2;color:#8E2C22}
+  .vazio{color:var(--tinta-suave);font-size:13px;padding:16px 0}
+  .legenda{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;font-size:11.5px;
+           color:var(--tinta-suave)}
+
+  /* ── A barra de relatórios ─────────────────────────────────────────── */
+  .barra{display:flex;flex-wrap:wrap;gap:12px;align-items:center;
+         justify-content:space-between;margin:0 0 14px}
+  .barra .dica{margin:0;max-width:560px}
+  .btn-mini{border:1px solid var(--borda);background:#fff;padding:5px 11px;
+            font:inherit;font-size:11.5px;font-weight:700;color:var(--tinta);
+            cursor:pointer;white-space:nowrap}
+  .btn-mini:hover{background:#F5F8F9}
+  .btn:disabled,.btn-mini:disabled{opacity:.55;cursor:progress}
+  .aviso.morno{background:var(--aviso-fraco);border-color:#EFDCAE;color:#8A620C}
+  .aviso.mudo{background:var(--mudo-fraco);border-color:#E1E7E9;
+              color:#5B7078}
+  td.acao{text-align:right;white-space:nowrap}
+  thead th.acao{text-align:right}
+
+  /* ── Carteira de regularidade ──────────────────────────────────────── */
+  .topo{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;
+        gap:10px;margin:18px 0 12px}
+  .topo h1{margin:0;font-size:20px;font-weight:800;letter-spacing:.02em}
+  .topo .dica{margin:0}
+  .filtros{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+  .chip{border:1px solid var(--borda);background:#fff;padding:6px 12px;font:inherit;
+        font-size:12.5px;font-weight:700;cursor:pointer;border-radius:999px;color:var(--tinta)}
+  .chip[aria-pressed="true"]{background:#10444E;border-color:#10444E;color:#fff}
+  .chip .n{opacity:.7;font-weight:600;margin-left:4px}
+  .busca{display:flex;gap:10px;align-items:center;margin:0 0 12px;flex-wrap:wrap}
+  .busca input{flex:1 1 320px;border:1px solid var(--borda);padding:9px 12px;font:inherit}
+  .f-azul{background:#E8F1FB;color:#1D5A96;border-color:#C6DBF2}
+  .f-azul .bolinha{background:#2F74C0}
+  td.data{white-space:nowrap;font-size:12px;color:var(--tinta-suave)}
+  .stat.azul b{color:#2F74C0}
+  .vista[hidden]{display:none!important}
+  .voltar{margin:16px 0 8px}
+  .cab-emp h2{margin:0;font-size:19px;font-weight:800}
+  .cab-emp .ids{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;
+                color:var(--tinta-suave);margin:2px 0 10px}
+  .esferas{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+  .esfera h3{margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;
+             color:var(--tinta-suave)}
+  .esfera .grande{font-size:15px}
+  .esfera dl{display:grid;grid-template-columns:max-content 1fr;gap:3px 12px;margin:10px 0;
+             font-size:12.5px}
+  .esfera dt{color:var(--tinta-suave)} .esfera dd{margin:0}
+  .acoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .nota{font-size:12px;color:var(--tinta-suave);margin:8px 0 0}
+  .hist{list-style:none;margin:0;padding:0;font-size:12.5px}
+  .hist li{padding:7px 0;border-bottom:1px solid #EDF1F2}
+  .hist .q{font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--tinta-suave);
+           font-size:11.5px;margin-right:8px}
+  .hist .h{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;
+           color:var(--mudo)}
+  .classif{border:1px solid var(--borda);background:#F7FAFB;padding:12px 14px;margin-top:12px}
+  .classif input,.classif textarea,.classif select{border:1px solid var(--borda);padding:6px 8px;
+           font:inherit;font-size:12.5px;background:#fff}
+  .classif table{min-width:0;font-size:12px}
+  .classif td{padding:3px 4px}
+  .classif td input{width:100%;min-width:70px}
+  .lote{border:1px solid var(--borda);padding:12px 14px;margin:0 0 14px;background:#F7FAFB}
+  .lote ol{margin:8px 0 0;padding-left:20px;font-size:12.5px;max-height:220px;overflow:auto}
+  .visor-barra{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+  .visor-barra .sep{flex:1 1 auto}
+  .visor-barra span.pg{font-size:12.5px;font-weight:700;min-width:70px;text-align:center}
+  #visorQuadro{width:100%;height:78vh;border:1px solid var(--borda);background:#525659}
+  .hash{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;
+        color:var(--tinta-suave);word-break:break-all}
+</style>
+</head>
+<body>
+<main>
+
+  <!-- ════ VISTA 1 · A CARTEIRA ═════════════════════════════════════════
+       A pergunta de quem abre esta tela é uma só: "quem está regular e quem
+       não está?". Tudo aqui responde a isso, e nada responde "regular" sem
+       um documento do órgão por trás. -->
+  <section class="vista" id="vistaCarteira">
+    <div class="topo">
+      <h1>SITUAÇÃO FISCAL</h1>
+      <p class="dica">Receita Federal / PGFN, pelo SITFIS (Integra Contador).
+        Erro de consulta <b>nunca</b> vira regular.</p>
+    </div>
+
+    <div class="resumo" id="resumo"></div>
+
+    <div class="painel">
+      <div class="filtros" id="filtros" role="group" aria-label="Filtrar empresas"></div>
+      <div class="busca">
+        <input type="search" id="busca" placeholder="Buscar por razão social ou CNPJ"
+               oninput="desenharCarteira()">
+        <span class="dica" id="quantasVisiveis" style="margin:0"></span>
+      </div>
+
+      <div class="barra">
+        <p class="dica" id="canalFederal"></p>
+        <div class="acoes" style="margin:0">
+          <button class="btn" data-admin id="btnLoteFederal" onclick="iniciarLote()">Consultar situação fiscal</button>
+          <button class="btn" id="btnLote" onclick="baixarLote()">Relatório do Escritório</button>
+        </div>
+      </div>
+      <div class="lote" id="painelLote" hidden></div>
+      <div id="retornoDossie"></div>
+
+      <div class="rolagem"><table>
+        <thead><tr>
+          <th>Empresa</th><th class="esf">Receita Federal</th>
+          <th class="esf">Geral</th><th>Última consulta</th><th class="acao">Ações</th>
+        </tr></thead>
+        <tbody id="corpo"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ════ VISTA 2 · UMA EMPRESA ═══════════════════════════════════════ -->
+  <section class="vista" id="vistaEmpresa" hidden>
+    <div class="voltar"><button class="btn" onclick="mostrarCarteira()">← Voltar</button></div>
+    <div class="painel" id="detalheCabecalho"></div>
+    <div class="esferas" id="detalheEsferas"></div>
+    <div class="painel" style="margin-top:16px">
+      <h2>Documentos oficiais guardados</h2>
+      <p class="dica">Os originais, como o órgão entregou. Visualizar não altera
+        nada; baixar entrega os mesmos bytes, conferidos pelo hash.</p>
+      <div id="detalheDocumentos"></div>
+    </div>
+    <div class="painel">
+      <h2>Histórico</h2>
+      <p class="dica">Toda consulta e toda classificação, com quem, quando, por
+        qual método e com qual documento. Nada é apagado.</p>
+      <ul class="hist" id="detalheHistorico"></ul>
+    </div>
+  </section>
+
+  <!-- ════ VISTA 3 · O VISUALIZADOR ════════════════════════════════════
+       O PDF abre DENTRO do Fiscale. O motor de desenho é o do próprio
+       navegador (não há biblioteca nova, e nada vem da internet); os
+       controles são daqui. O original não é tocado: a tela recebe os bytes
+       e só os mostra. -->
+  <section class="vista" id="vistaVisor" hidden>
+    <div class="voltar"><button class="btn" onclick="fecharVisor()">← Voltar</button></div>
+    <div class="painel">
+      <h2 id="visorTitulo">Situação Fiscal</h2>
+      <p class="hash" id="visorProcedencia"></p>
+      <div class="visor-barra">
+        <button class="btn-mini" onclick="visorPagina(-1)">◀ Página anterior</button>
+        <span class="pg" id="visorPg">1 / 1</span>
+        <button class="btn-mini" onclick="visorPagina(1)">Próxima página ▶</button>
+        <span class="sep"></span>
+        <button class="btn-mini" onclick="visorZoom(-25)">− Zoom</button>
+        <span class="pg" id="visorZm">100%</span>
+        <button class="btn-mini" onclick="visorZoom(25)">+ Zoom</button>
+        <span class="sep"></span>
+        <button class="btn btn-primario" onclick="visorBaixar()">Baixar original</button>
+      </div>
+      <iframe id="visorQuadro" title="Documento oficial"></iframe>
+    </div>
+  </section>
+
+  <div id="vistaAntigas">
+  <div class="painel" data-admin>
+    <h2>Guardar um documento</h2>
+    <p class="dica">Relatório ou certidão da Receita Federal obtido fora da
+      consulta automática. Passa pelo mesmo portão do SITFIS — hash, índice e
+      registro.</p>
+    <div class="linha">
+      <div class="campo"><label for="fEmpresa">Empresa</label>
+        <select id="fEmpresa"></select></div>
+      <div class="campo"><label for="fEsfera">Esfera</label>
+        <select id="fEsfera">
+          <option value="FEDERAL">Federal (RFB/PGFN)</option>
+        </select></div>
+      <div class="campo"><label for="fTipo">Tipo</label>
+        <select id="fTipo">
+          <option value="CERTIDAO">Certidão</option>
+          <option value="EXTRATO">Extrato / relatório</option>
+        </select></div>
+      <div class="campo"><label for="fOrigem">De onde veio</label>
+        <select id="fOrigem">
+          <option value="ASSISTIDA_ECAC">e-CAC / Receita Federal</option>
+          <option value="MANUAL">Outro / entregue pelo cliente</option>
+        </select></div>
+      <div class="campo"><label for="fArquivo">Arquivo (PDF)</label>
+        <input type="file" id="fArquivo" accept="application/pdf,.pdf"></div>
+      <button class="btn btn-primario" id="btnGuardar" onclick="guardar()">Guardar</button>
+    </div>
+    <div id="retornoUpload"></div>
+  </div>
+
+  </div>
+</main>
+
+<script src="fiscale-nav.js"></script>
+<script>
+async function api(url, opt) {
+  const r = await fetch(url, Object.assign({credentials:'same-origin'}, opt||{}));
+  if (!r.ok) {
+    let msg = 'Erro ' + r.status;
+    try { const j = await r.json(); if (j && j.erro) msg = j.erro; } catch (e) {}
+    throw new Error(msg);
+  }
+  return r.json();
+}
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function dataBR(iso){
+  if (!iso) return '';
+  const p = String(iso).slice(0,10).split('-');
+  return p.length === 3 ? p[2]+'/'+p[1]+'/'+p[0] : iso;
+}
+
+function diasAte(iso, hoje){
+  if (!iso) return null;
+  const a = new Date(iso + 'T00:00:00'), b = new Date(hoje + 'T00:00:00');
+  return Math.round((a - b) / 86400000);
+}
+
+/* ════ A CARTEIRA ═════════════════════════════════════════════════════════
+   O servidor devolve status JÁ DECIDIDO por situacao/regularidade.py. A tela
+   não recalcula nada: se ela decidisse, haveria duas regras — e a do
+   relatório poderia discordar da da tela. Aqui só se escolhe cor e rótulo. */
+const COR_ESFERA = {
+  REGULAR:'f-ok', CERTIDAO_POSITIVA_COM_EFEITOS_DE_NEGATIVA:'f-ok',
+  PENDENCIA:'f-aviso', CERTIDAO_POSITIVA:'f-ruim',
+  NAO_CONSULTADO:'f-mudo',
+  CONSULTA_EXPIRADA:'f-azul', ERRO_DE_ACESSO:'f-ruim',
+  ACESSO_REQUER_REPRESENTACAO:'f-azul', ACESSO_REQUER_INTERACAO_DO_USUARIO:'f-azul'
+};
+const ICONE_ESFERA = {
+  REGULAR:'✅', CERTIDAO_POSITIVA_COM_EFEITOS_DE_NEGATIVA:'✅', PENDENCIA:'⚠',
+  CERTIDAO_POSITIVA:'🔴', NAO_CONSULTADO:'⚪',
+  CONSULTA_EXPIRADA:'🔵', ERRO_DE_ACESSO:'❌', ACESSO_REQUER_REPRESENTACAO:'🔵',
+  ACESSO_REQUER_INTERACAO_DO_USUARIO:'🔵'
+};
+const GERAL = {
+  REGULAR:{c:'f-ok', i:'✅'}, COM_PENDENCIA:{c:'f-aviso', i:'⚠'},
+  NAO_CONSULTADO:{c:'f-mudo', i:'⚪'}, CONSULTA_NECESSARIA:{c:'f-azul', i:'🔵'}
+};
+/* Usado pelo formulário para dizer o estado do documento. */
+const FAROL = {
+  VALIDA:{t:'Válida'}, APURADO:{t:'Em dia'}, VENCE_EM_BREVE:{t:'A vencer'},
+  DESATUALIZADO:{t:'Desatualizado'}, VENCIDA:{t:'Vencida'},
+  SEM_VALIDADE:{t:'Sem data lida'}, SEM_DOCUMENTO:{t:'Sem documento'}
+};
+const ESFERA_NOME = {FEDERAL:'Federal', ESTADUAL:'Estadual', MUNICIPAL:'Municipal'};
+const TIPO_NOME   = {CERTIDAO:'Certidão', EXTRATO:'Extrato'};
+const METODO_NOME = {INTEGRACAO:'integração oficial', UPLOAD:'arquivo enviado',
+                     BANDEJA:'pasta vigiada (histórico)'};
+
+/* Portais OFICIAIS, conferidos em 12/09/2026. Nenhum endereço inventado:
+   estes são os que as páginas dos próprios órgãos publicam. */
+const PORTAL = {
+  ecac:           'https://cav.receita.fazenda.gov.br/autenticacao/login',
+  rfbCertidao:    'https://servicos.receitafederal.gov.br/servico/certidoes/'
+};
+
+let DADOS = null;          // a carteira
+let FILTRO = 'todas';
+let EMPRESA = null;        // o detalhe aberto
+
+function soDig(s){ return String(s||'').replace(/\D/g,''); }
+function docFmt(d){
+  d = soDig(d);
+  if (d.length === 14) return d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+  if (d.length === 11) return d.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+  return d;
+}
+function semAcento(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
+function quandoBR(iso){
+  if (!iso) return '';
+  const d = new Date(String(iso).length > 10 ? iso : iso + 'T00:00:00');
+  if (isNaN(d)) return dataBR(iso);
+  const p = n => String(n).padStart(2,'0');
+  return p(d.getDate()) + '/' + p(d.getMonth()+1) + '/' + d.getFullYear() +
+         (String(iso).length > 10 ? ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) : '');
+}
+function moeda(v){
+  return (v == null || v === '') ? '' :
+    Number(v).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+}
+
+function pilulaEsfera(e){
+  const st = e.status;
+  const rot = (DADOS && DADOS.rotulos && DADOS.rotulos[st]) || e.rotulo || st;
+  return '<span class="farol ' + (COR_ESFERA[st] || 'f-mudo') + '" title="' +
+         esc(e.motivo || '') + '">' + (ICONE_ESFERA[st] || '') + ' ' + esc(rot) + '</span>';
+}
+function pilulaGeral(g){
+  const f = GERAL[g.status] || GERAL.NAO_CONSULTADO;
+  return '<span class="farol ' + f.c + '" title="' + esc(g.motivo || '') + '">' +
+         f.i + ' ' + esc(g.rotulo || g.status) + '</span>';
+}
+
+/* O documento federal mais recente da empresa. */
+function ultimoDocumento(l){
+  const docs = [];
+  ['relatorio','certidao'].forEach(t => { const d = l.federal[t]; if (d && d.id) docs.push(d); });
+  docs.sort((a,b) => String(b.capturado_utc).localeCompare(String(a.capturado_utc)));
+  return docs[0] || null;
+}
+
+const FILTROS = [
+  ['todas', 'Todas', l => true],
+  ['regulares', 'Regulares', l => l.geral.status === 'REGULAR'],
+  ['pendencia', 'Com pendência', l => l.geral.status === 'COM_PENDENCIA'],
+  ['vencida', 'Consulta vencida', l => l.federal.status === 'CONSULTA_EXPIRADA'],
+  ['necessaria', 'Consulta necessária', l => l.geral.status === 'CONSULTA_NECESSARIA'],
+  ['nao', 'Não consultadas', l => l.geral.status === 'NAO_CONSULTADO'],
+  ['erro', 'Erro', l => l.federal.status === 'ERRO_DE_ACESSO']
+];
+
+function passaBusca(l, q){
+  if (!q) return true;
+  const dq = soDig(q);
+  /* soDig('monte') é '' — sem este cuidado, includes('') casaria tudo e a
+     busca por nome nunca filtraria (defeito real, visto no Clientes). */
+  if (dq && soDig(l.identidade).includes(dq)) return true;
+  return semAcento(l.nome).includes(semAcento(q));
+}
+
+function desenharCarteira(){
+  const d = DADOS;
+  if (!d) return;
+  const c = d.contadores;
+  document.getElementById('resumo').innerHTML = [
+    ['', c.empresas, 'Empresas'], ['ok', c.regulares, '✅ Regulares'],
+    ['amarelo', c.com_pendencia, '⚠ Com pendência'], ['mudo', c.nao_consultadas, '⚪ Não consultadas'],
+    ['azul', c.consulta_necessaria, '🔵 Consulta necessária']
+  ].map(x => '<div class="stat ' + x[0] + '"><b>' + x[1] + '</b><span>' + esc(x[2]) +
+             '</span></div>').join('');
+
+  document.getElementById('filtros').innerHTML = FILTROS.map(f =>
+    '<button class="chip" aria-pressed="' + (FILTRO === f[0]) + '" onclick="filtrar(\'' + f[0] + '\')">' +
+    esc(f[1]) + '<span class="n">' + d.empresas.filter(f[2]).length + '</span></button>').join('');
+
+  const cf = d.canal_federal || {};
+  document.getElementById('canalFederal').innerHTML = cf.automatico
+    ? 'Federal: consulta automática pelo Integra Contador (SITFIS) disponível.'
+    : '<b>Federal sem consulta automática:</b> ' + esc(cf.motivo || '') +
+      '. Enquanto isso, o relatório do e-CAC pode ser guardado à mão.';
+
+  const q = document.getElementById('busca').value.trim();
+  const regra = (FILTROS.find(f => f[0] === FILTRO) || FILTROS[0])[2];
+  const linhas = d.empresas.filter(l => regra(l) && passaBusca(l, q));
+  document.getElementById('quantasVisiveis').textContent =
+    linhas.length + ' de ' + d.empresas.length;
+
+  let corpo = '';
+  if (!d.empresas.length){
+    corpo = '<tr><td colspan="5" class="vazio">Nenhuma empresa no cadastro.</td></tr>';
+  } else if (!linhas.length){
+    corpo = '<tr><td colspan="5" class="vazio">Nenhuma empresa neste filtro.</td></tr>';
+  }
+  linhas.forEach(l => {
+    const id = soDig(l.identidade);
+    const doc = ultimoDocumento(l);
+    corpo += '<tr><td class="empresa"><b>' + esc(l.nome) + '</b><small>' + esc(docFmt(id)) +
+      '</small></td>' +
+      '<td class="cel">' + pilulaEsfera(l.federal) + '</td>' +
+      '<td class="cel">' + pilulaGeral(l.geral) + '</td>' +
+      '<td class="data">' + (l.ultima_consulta ? esc(quandoBR(l.ultima_consulta)) : '—') + '</td>' +
+      '<td class="acao">' +
+        '<button class="btn-mini" onclick="abrirEmpresa(&quot;' + id + '&quot;)">Ver detalhes</button> ' +
+        (doc ? '<button class="btn-mini" onclick="abrirVisor(&quot;' + id + '&quot;,&quot;' +
+               esc(doc.esfera) + '&quot;,&quot;' + esc(doc.tipo) + '&quot;,&quot;' + esc(doc.id) +
+               '&quot;)">Abrir PDF</button> ' : '') +
+        '<button class="btn-mini" onclick="baixarDossie(this,&quot;' + id + '&quot;)">Baixar dossiê</button>' +
+      '</td></tr>';
+  });
+  document.getElementById('corpo').innerHTML = corpo;
+
+  /* O seletor do formulário usa o mesmo universo. */
+  const sel = document.getElementById('fEmpresa');
+  if (sel) sel.innerHTML = d.empresas.map(e =>
+    '<option value="' + esc(e.identidade) + '">' + esc(e.nome) + '</option>').join('');
+}
+
+function filtrar(f){ FILTRO = f; desenharCarteira(); }
+
+function mostrar(vista){
+  ['vistaCarteira','vistaEmpresa','vistaVisor'].forEach(v =>
+    document.getElementById(v).hidden = (v !== vista));
+  /* O formulário pertence à carteira; no detalhe e no visor ele só
+     distrairia de quem está sendo olhado. */
+  document.getElementById('vistaAntigas').hidden = (vista !== 'vistaCarteira');
+  window.scrollTo(0, 0);
+}
+function mostrarCarteira(){ EMPRESA = null; mostrar('vistaCarteira'); carregar(); }
+
+/* ════ O DETALHE ══════════════════════════════════════════════════════════ */
+async function abrirEmpresa(ident){
+  mostrar('vistaEmpresa');
+  document.getElementById('detalheCabecalho').innerHTML = '<div class="vazio">Carregando…</div>';
+  document.getElementById('detalheEsferas').innerHTML = '';
+  try {
+    EMPRESA = await api('/api/situacao/empresa?identidade=' + encodeURIComponent(ident));
+    desenharEmpresa();
+  } catch (e) {
+    document.getElementById('detalheCabecalho').innerHTML =
+      '<div class="aviso ruim">' + esc(e.message) + '</div>';
+  }
+}
+
+function botaoDoc(ident, d, rotulo){
+  if (!d || !d.id) return '';
+  return '<button class="btn-mini" onclick="abrirVisor(&quot;' + soDig(ident) + '&quot;,&quot;' +
+         esc(d.esfera) + '&quot;,&quot;' + esc(d.tipo) + '&quot;,&quot;' + esc(d.id) +
+         '&quot;)">' + esc(rotulo) + '</button>';
+}
+
+function cartaoEsfera(emp, e, titulo){
+  const docs = (emp.documentos || []).filter(d => d.esfera === (e.esfera));
+  const interp = e.interpretacao || {};
+  let fonte = '';
+  if (e.fonte_status === 'HUMANA') fonte = 'classificado por ' + (interp.usuario || '?') + ' em ' + quandoBR(interp.quando_utc);
+  else if (e.fonte_status === 'LEITOR') fonte = 'lido automaticamente do PDF do órgão';
+
+  let h = '<div class="painel esfera"><h3>' + esc(titulo) + '</h3>' +
+    '<div class="grande">' + pilulaEsfera(e) + '</div>';
+  if (e.motivo) h += '<p class="nota">' + esc(e.motivo) + '</p>';
+  if (e.aviso) h += '<div class="aviso morno">' + esc(e.aviso) + '</div>';
+  h += '<dl>' +
+    '<dt>Última consulta</dt><dd>' + (e.ultima_consulta ? esc(quandoBR(e.ultima_consulta)) : '—') + '</dd>' +
+    (fonte ? '<dt>Conclusão</dt><dd>' + esc(fonte) + '</dd>' : '') +
+    (e.quantidade_pendencias != null ? '<dt>Pendências</dt><dd>' + esc(e.quantidade_pendencias) + ' ocorrência(s)</dd>' : '') +
+    (e.valor_total != null ? '<dt>Valor total</dt><dd>' + esc(moeda(e.valor_total)) + '</dd>' : '') +
+    (e.validade ? '<dt>Validade</dt><dd>' + esc(dataBR(e.validade)) + '</dd>' : '') +
+    '<dt>Relatório/extrato</dt><dd>' + (e.relatorio && e.relatorio.id ? 'disponível' : 'não guardado') + '</dd>' +
+    '<dt>Certidão</dt><dd>' + (e.certidao && e.certidao.id ? 'disponível' : 'não guardada') + '</dd>' +
+    '</dl>';
+
+  const pend = interp.pendencias || [];
+  if (pend.length){
+    h += '<div class="rolagem"><table style="min-width:0"><thead><tr><th>Tributo</th><th>Competência</th>' +
+         '<th>Vencimento</th><th>Total</th><th>Situação</th></tr></thead><tbody>' +
+         pend.map(p => '<tr><td>' + esc(p.tributo||'') + '</td><td>' + esc(p.competencia||'') +
+           '</td><td>' + esc(p.vencimento||'') + '</td><td>' + esc(moeda(p.total)) +
+           '</td><td>' + esc(p.situacao||p.descricao||'') + (p.cda ? ' · CDA ' + esc(p.cda) : '') +
+           (p.parcelamento ? ' · parc. ' + esc(p.parcelamento) : '') + '</td></tr>').join('') +
+         '</tbody></table></div>';
+  }
+
+  h += '<div class="acoes">' +
+       botaoDoc(emp.identidade, e.relatorio, 'Visualizar relatório') +
+       botaoDoc(emp.identidade, e.certidao, 'Visualizar certidão') + '</div>';
+
+  const id = soDig(emp.identidade);
+  const cf = e.canal || {};
+  h += '<div class="acoes" data-admin>' +
+    (cf.automatico
+      ? '<button class="btn btn-primario" onclick="consultarFederal(this,&quot;' + id + '&quot;,false)">Consultar agora</button>'
+      : '') +
+    '<button class="btn" onclick="abrirPortal(&quot;ecac&quot;)">Abrir e-CAC (Situação Fiscal)</button>' +
+    '<button class="btn" onclick="abrirPortal(&quot;rfbCertidao&quot;)">Emitir certidão RFB/PGFN</button>' +
+    '</div>';
+  if (!cf.automatico) h += '<p class="nota">Consulta automática indisponível: ' + esc(cf.motivo || '') + '.</p>';
+
+  /* Guardar e classificar, sem sair do detalhe. */
+  const origem = 'ASSISTIDA_ECAC';
+  /* Guardar é de admin; CLASSIFICAR é também do operador — por isso são dois
+     blocos, e só o primeiro some para quem opera. */
+  h += '<div class="classif" data-admin>' +
+    '<b>Guardar o PDF baixado</b>' +
+    '<div class="linha" style="margin-top:6px">' +
+      '<select data-g="tipo"><option value="EXTRATO">Relatório de situação fiscal</option>' +
+      '<option value="CERTIDAO">Certidão</option></select>' +
+      '<input type="file" accept="application/pdf,.pdf" data-g="arq">' +
+      '<button class="btn-mini" onclick="guardarNoDetalhe(this,&quot;' + e.esfera + '&quot;,&quot;' + origem + '&quot;)">Guardar</button>' +
+    '</div>' +
+    (docs.length ? '' :
+      '<p class="nota">Depois de guardar, classifique o documento lendo o PDF.</p>') +
+    '</div>' +
+    (docs.length ? '<div class="classif">' + formularioClassificar(e, docs) + '</div>' : '') +
+    '</div>';
+  return h;
+}
+
+/* ── MUNICIPAL (Recife) — canal assistido ─────────────────────────────────
+   Cartão próprio, e não mais uma chamada de `cartaoEsfera`, porque esta esfera
+   diz coisas diferentes: não existe "Consultar agora" (o portal exige CAPTCHA),
+   não existe leitura automática (o PDF do portal é imagem, sem camada de
+   texto), e o resultado dela NÃO entra no consolidado federal.
+
+   O que dá para reaproveitar é reaproveitado: a pílula, o botão de documento,
+   o formulário de classificação e o `guardarNoDetalhe` são os mesmos da
+   esfera federal. */
+function cartaoMunicipal(emp, m){
+  if (!m) return '';
+  const docs = m.documentos || [];
+  let h = '<div class="painel esfera"><h3>Municipal — Recife</h3>' +
+    '<div class="grande">' + pilulaEsfera(m) + '</div>';
+  if (m.motivo) h += '<p class="nota">' + esc(m.motivo) + '</p>';
+
+  h += '<dl>' +
+    '<dt>Fonte</dt><dd>canal assistido' +
+      (m.fonte_status === 'HUMANA' ? ' · conclusão humana' : ' · sem conclusão automática') + '</dd>' +
+    '<dt>Última entrada</dt><dd>' +
+      (m.ultima_tentativa ? esc(quandoBR(m.ultima_tentativa)) : '—') + '</dd>' +
+    '<dt>Documentos guardados</dt><dd>' + esc(m.quantidade_documentos || 0) + '</dd>' +
+    '<dt>Entra no consolidado</dt><dd>' +
+      (m.entra_no_consolidado ? 'sim' : 'não — o consolidado é a esfera federal') + '</dd>' +
+    '</dl>';
+
+  /* POR QUE NÃO FOI LIDO. Medido na entrada e guardado com a tentativa. Sem
+     esta linha, "validade em branco" e "este PDF é imagem" chegavam iguais. */
+  if (m.sem_leitura)
+    h += '<div class="aviso morno">Validade não lida: ' + esc(m.sem_leitura) + '</div>';
+
+  /* Os documentos NÃO são listados aqui de novo: eles aparecem na tabela
+     "Documentos oficiais guardados", que já tem a coluna de esfera e o botão
+     de baixar o original. Duas tabelas do mesmo dado divergem no dia em que
+     alguém muda uma só. */
+
+  /* Não há botão de consulta: dizer POR QUE é mais útil que um botão que
+     falharia sempre. */
+  h += '<p class="nota">' + esc(m.motivo_sem_automatico || '') + '</p>';
+
+  h += '<div class="classif" data-admin>' +
+    '<b>Guardar o PDF baixado do portal do Recife</b>' +
+    '<div class="linha" style="margin-top:6px">' +
+      '<select data-g="tipo"><option value="EXTRATO">Extrato / relatório</option>' +
+      '<option value="CERTIDAO">Certidão</option></select>' +
+      '<input type="file" accept="application/pdf,.pdf" data-g="arq">' +
+      '<button class="btn-mini" onclick="guardarNoDetalhe(this,&quot;MUNICIPAL&quot;,' +
+        '&quot;ASSISTIDA_RECIFE&quot;)">Guardar</button>' +
+    '</div>' +
+    '<p class="nota">O original é guardado e conferido por hash. Como não há ' +
+    'leitor para esta esfera, a conclusão vem da sua classificação.</p></div>' +
+    (docs.length ? '<div class="classif">' + formularioClassificar(m, docs) + '</div>' : '') +
+    '</div>';
+  return h;
+}
+
+function formularioClassificar(e, docs){
+  const opc = docs.map(d => '<option value="' + esc(d.tipo) + '|' + esc(d.id) + '">' +
+    esc(TIPO_NOME[d.tipo] || d.tipo) + ' de ' + esc(quandoBR(d.capturado_utc)) + '</option>').join('');
+  return '<div style="margin-top:12px"><b>Classificar documento</b>' +
+    '<p class="nota" style="margin:2px 0 6px">A conclusão é gravada à parte, com seu nome; o PDF não muda.</p>' +
+    '<div class="linha">' +
+      '<select data-c="doc">' + opc + '</select>' +
+      '<select data-c="status">' +
+        '<option value="REGULAR">Regular — sem pendências</option>' +
+        '<option value="PENDENCIA">Pendência</option>' +
+        '<option value="CERTIDAO_POSITIVA_COM_EFEITOS_DE_NEGATIVA">Positiva com efeitos de negativa</option>' +
+        '<option value="CERTIDAO_POSITIVA">Certidão positiva</option></select>' +
+      '<input data-c="qtd" type="number" min="0" placeholder="nº pendências" style="width:120px">' +
+      '<input data-c="valor" placeholder="valor total (R$)" style="width:130px">' +
+      '<label class="dica" style="margin:0">validade <input data-c="validade" type="date"></label>' +
+    '</div>' +
+    '<table><thead><tr><th>Tributo</th><th>Competência</th><th>Vencimento</th><th>Principal</th>' +
+      '<th>Encargos</th><th>Total</th><th>Situação</th><th>CDA / parcel.</th></tr></thead>' +
+      '<tbody data-c="pend"></tbody></table>' +
+    '<div class="acoes">' +
+      '<button class="btn-mini" onclick="linhaPendencia(this)">+ pendência</button>' +
+      '<input data-c="obs" placeholder="observação" style="flex:1 1 200px">' +
+      '<button class="btn btn-primario" onclick="classificar(this,&quot;' + e.esfera + '&quot;)">Registrar classificação</button>' +
+    '</div></div>';
+}
+
+function linhaPendencia(btn){
+  const tb = btn.closest('.classif').querySelector('[data-c="pend"]');
+  const tr = document.createElement('tr');
+  tr.innerHTML = ['tributo','competencia','vencimento','principal','encargos','total','situacao','cda']
+    .map(k => '<td><input data-p="' + k + '"></td>').join('');
+  tb.appendChild(tr);
+}
+
+function desenharEmpresa(){
+  const emp = EMPRESA;
+  document.getElementById('detalheCabecalho').innerHTML =
+    '<div class="cab-emp"><div class="dica" style="margin:0">SITUAÇÃO FISCAL</div>' +
+    '<h2>' + esc(emp.nome) + '</h2>' +
+    '<div class="ids">CNPJ ' + esc(docFmt(emp.identidade)) + '</div>' +
+    '<div><span class="dica">Situação perante a Receita Federal</span><br>' + pilulaGeral(emp.geral) +
+      (emp.geral.motivo ? ' <span class="nota">' + esc(emp.geral.motivo) + '</span>' : '') + '</div>' +
+    '<div class="acoes"><button class="btn-mini" onclick="baixarDossie(this,&quot;' +
+      soDig(emp.identidade) + '&quot;)">Baixar dossiê</button></div>' +
+    '<div id="retornoDetalhe"></div></div>';
+
+  document.getElementById('detalheEsferas').innerHTML =
+    cartaoEsfera(emp, emp.federal, 'Federal — RFB/PGFN') +
+    cartaoMunicipal(emp, emp.municipal);
+
+  /* Todos os documentos guardados da empresa, de todas as esferas. A coluna
+     de esfera já existia — o que faltava era o municipal chegar aqui. */
+  const docs = (emp.documentos || [])
+    .concat((emp.municipal && emp.municipal.documentos) || []);
+  document.getElementById('detalheDocumentos').innerHTML = docs.length
+    ? '<div class="rolagem"><table style="min-width:0"><thead><tr><th>Documento</th><th>Origem</th>' +
+      '<th>Guardado em</th><th>SHA-256</th><th class="acao"></th></tr></thead><tbody>' +
+      docs.map(d => '<tr><td>' + esc((ESFERA_NOME[d.esfera]||d.esfera) + ' · ' + (TIPO_NOME[d.tipo]||d.tipo)) +
+        '</td><td>' + esc(d.origem||'') + '</td><td class="data">' + esc(quandoBR(d.capturado_utc)) +
+        '</td><td class="hash">' + esc(String(d.sha256||'').slice(0,16)) + '…</td><td class="acao">' +
+        botaoDoc(emp.identidade, d, 'Visualizar') + ' <button class="btn-mini" onclick="baixarOriginal(&quot;' +
+        soDig(emp.identidade) + '&quot;,&quot;' + esc(d.esfera) + '&quot;,&quot;' + esc(d.tipo) +
+        '&quot;,&quot;' + esc(d.id) + '&quot;)">Baixar original</button></td></tr>').join('') +
+      '</tbody></table></div>'
+    : '<div class="vazio">Nenhum documento guardado para esta empresa.</div>';
+
+  /* O histórico é UM só na tela, com a esfera em cada linha — quem pergunta
+     "o que já se fez por esta empresa?" não quer duas listas para comparar à
+     mão. A ordem é a do tempo, não a da esfera. */
+  const hist = (emp.historico || [])
+    .concat((emp.municipal && emp.municipal.historico) || [])
+    .sort((a, b) => String(b.quando_utc || '').localeCompare(String(a.quando_utc || '')));
+  document.getElementById('detalheHistorico').innerHTML = hist.length
+    ? hist.map(h => {
+        const res = h.evento === 'CLASSIFICACAO'
+          ? 'classificado como <b>' + esc(h.rotulo || h.resultado) + '</b>'
+          : 'consulta: <b>' + esc(h.resultado) + '</b>';
+        return '<li><span class="q">' + esc(quandoBR(h.quando_utc)) + '</span>' +
+          esc(ESFERA_NOME[h.esfera] || h.esfera) + ' — ' + res +
+          (h.usuario ? ' · ' + esc(h.usuario) : '') +
+          (h.metodo ? ' · ' + esc(METODO_NOME[h.metodo] || h.metodo) : '') +
+          (h.origem_legivel && h.origem ? ' · ' + esc(h.origem_legivel) : '') +
+          (h.detalhe ? '<br><span class="nota">' + esc(h.detalhe) + '</span>' : '') +
+          (h.sha256 ? '<br><span class="h">hash ' + esc(h.sha256) + '</span>' : '') + '</li>';
+      }).join('')
+    : '<li class="vazio">Nenhuma consulta registrada.</li>';
+}
+
+function retornoDetalhe(classe, html){
+  const el = document.getElementById('retornoDetalhe');
+  if (el) el.innerHTML = '<div class="aviso ' + classe + '">' + html + '</div>';
+}
+
+/* Abrir o portal oficial da Receita em outra aba. Não há cópia de
+   inscrição nem aviso à bandeja: o escopo assistido municipal saiu. */
+function abrirPortal(qual){
+  const url = PORTAL[qual];
+  if (!url) return;
+  window.open(url, '_blank', 'noopener');
+  retornoDetalhe('mudo', 'Portal oficial da Receita aberto em outra aba.');
+}
+
+async function guardarNoDetalhe(btn, esfera, origem){
+  const cx = btn.closest('.classif');
+  const arq = cx.querySelector('[data-g="arq"]').files[0];
+  if (!arq){ retornoDetalhe('ruim', 'Escolha o PDF baixado do portal.'); return; }
+  const fd = new FormData();
+  fd.append('arquivo', arq, arq.name);
+  fd.append('identidade', EMPRESA.identidade);
+  fd.append('esfera', esfera);
+  fd.append('tipo', cx.querySelector('[data-g="tipo"]').value);
+  fd.append('origem', origem);
+  btn.disabled = true;
+  try {
+    const r = await api('/api/situacao/importar', {method:'POST', body:fd});
+    retornoDetalhe('bom', (r.documento.desfecho === 'NOVO' ? 'Guardado' : 'Este documento já estava guardado') +
+      '. Hash ' + esc(String(r.documento.sha256).slice(0,16)) + '…');
+    await abrirEmpresa(EMPRESA.identidade);
+  } catch (e) { retornoDetalhe('ruim', esc(e.message)); btn.disabled = false; }
+}
+
+async function classificar(btn, esfera){
+  const cx = btn.closest('.classif');
+  const v = k => (cx.querySelector('[data-c="' + k + '"]') || {}).value || '';
+  const [tipo, id] = v('doc').split('|');
+  const pendencias = [...cx.querySelectorAll('[data-c="pend"] tr')].map(tr => {
+    const o = {};
+    tr.querySelectorAll('[data-p]').forEach(i => { if (i.value.trim()) o[i.dataset.p] = i.value.trim(); });
+    return o;
+  }).filter(o => Object.keys(o).length);
+  btn.disabled = true;
+  try {
+    await api('/api/situacao/classificar', {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({identidade: EMPRESA.identidade, esfera: esfera, tipo: tipo,
+        documento_id: id, status: v('status'), quantidade_pendencias: v('qtd'),
+        valor_total: v('valor'), validade: v('validade'), pendencias: pendencias,
+        observacao: v('obs')})});
+    retornoDetalhe('bom', 'Classificação registrada com o seu nome. O documento original não foi alterado.');
+    await abrirEmpresa(EMPRESA.identidade);
+  } catch (e) { retornoDetalhe('ruim', esc(e.message)); btn.disabled = false; }
+}
+
+async function consultarFederal(btn, ident, forcar){
+  if (btn) btn.disabled = true;
+  try {
+    const r = await api('/api/situacao/consultar', {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({identidade: ident, esfera:'FEDERAL', forcar: !!forcar})});
+    const x = r.resultado || {};
+    retornoDetalhe(x.guardado ? 'bom' : 'morno', esc(x.frase || x.titulo || x.desfecho));
+    if (EMPRESA) await abrirEmpresa(ident);
+    return x;
+  } catch (e) {
+    retornoDetalhe('ruim', esc(e.message));
+    throw e;
+  } finally { if (btn) btn.disabled = false; }
+}
+
+/* ════ CONSULTA EM LOTE ═══════════════════════════════════════════════════
+   Sequencial, uma empresa por vez, com pausa entre elas. PARA sozinha quando
+   o erro é de credencial — ele se repetiria igual nas seguintes, e insistir
+   seria martelar o serviço do governo para colecionar a mesma recusa. O
+   servidor ainda recusa (429) uma segunda consulta simultânea. */
+const PAUSA_LOTE_MS = 8000;
+let LOTE = null;
+
+async function iniciarLote(){
+  const cf = (DADOS && DADOS.canal_federal) || {};
+  const painel = document.getElementById('painelLote');
+  painel.hidden = false;
+  if (!cf.automatico){
+    painel.innerHTML = '<b>O lote não foi iniciado.</b> ' + esc(cf.motivo || '') +
+      '. Consultar agora só registraria a mesma recusa para cada empresa.';
+    return;
+  }
+  if (LOTE){ LOTE.parar = true; return; }
+  const alvo = DADOS.empresas.slice();
+  LOTE = {parar:false};
+  const btn = document.getElementById('btnLoteFederal');
+  btn.textContent = 'Parar consulta';
+  let feitas = 0;
+  const itens = [];
+  const pintar = (extra) => {
+    painel.innerHTML = '<b>' + feitas + '/' + alvo.length + ' empresas consultadas</b> ' +
+      (extra || '') + '<ol>' + itens.join('') + '</ol>';
+  };
+  pintar('');
+  for (const l of alvo){
+    if (LOTE.parar){ pintar('— interrompido por você.'); break; }
+    let marca = '…';
+    try {
+      const r = await api('/api/situacao/consultar', {method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({identidade: l.identidade, esfera:'FEDERAL'})});
+      const x = r.resultado || {};
+      marca = x.desfecho === 'PULADO' ? '⏭ já em dia' : x.guardado ? '✅ documento obtido' : '⚠ ' + (x.titulo || x.desfecho);
+      itens.push('<li>' + esc(l.nome) + ' — ' + esc(marca) + '</li>');
+      feitas++;
+      if (x.desfecho === 'RECUSADA' && !x.guardado){
+        pintar('— <b>parado:</b> o acesso foi recusado (' + esc(x.orientacao || x.frase || '') +
+               '). Corrija a credencial antes de continuar.');
+        break;
+      }
+    } catch (e) {
+      itens.push('<li>' + esc(l.nome) + ' — ❌ ' + esc(e.message) + '</li>');
+      pintar('— <b>parado</b> por erro.');
+      break;
+    }
+    pintar('');
+    if (feitas < alvo.length) await new Promise(ok => setTimeout(ok, PAUSA_LOTE_MS));
+  }
+  LOTE = null;
+  btn.textContent = 'Consultar situação fiscal';
+  carregar();
+}
+
+/* ════ O VISUALIZADOR ═════════════════════════════════════════════════════ */
+const VISOR = {url:'', pagina:1, paginas:1, zoom:100, doc:null, voltarPara:'vistaCarteira'};
+
+async function abrirVisor(ident, esfera, tipo, id){
+  VISOR.voltarPara = document.getElementById('vistaEmpresa').hidden ? 'vistaCarteira' : 'vistaEmpresa';
+  const u = '/api/situacao/documento?identidade=' + encodeURIComponent(ident) +
+            '&esfera=' + encodeURIComponent(esfera) + '&tipo=' + encodeURIComponent(tipo) +
+            '&id=' + encodeURIComponent(id);
+  try {
+    const r = await fetch(u, {credentials:'same-origin'});
+    if (!r.ok){
+      let msg = 'Erro ' + r.status;
+      try { const j = await r.json(); if (j && j.erro) msg = j.erro; } catch (e) {}
+      throw new Error(msg);
+    }
+    const blob = await r.blob();
+    if (VISOR.url) URL.revokeObjectURL(VISOR.url);
+    VISOR.url = URL.createObjectURL(new Blob([blob], {type:'application/pdf'}));
+    VISOR.paginas = parseInt(r.headers.get('X-Paginas') || '0', 10) || 1;
+    VISOR.pagina = 1; VISOR.zoom = 100;
+    VISOR.doc = {ident: ident, esfera: esfera, tipo: tipo, id: id,
+                 sha: r.headers.get('X-Sha256') || ''};
+    const nome = (EMPRESA && soDig(EMPRESA.identidade) === soDig(ident)) ? EMPRESA.nome :
+      (((DADOS && DADOS.empresas) || []).find(e => soDig(e.identidade) === soDig(ident)) || {}).nome || docFmt(ident);
+    document.getElementById('visorTitulo').textContent = 'Situação Fiscal — ' + nome;
+    document.getElementById('visorProcedencia').textContent =
+      (ESFERA_NOME[esfera] || esfera) + ' · ' + (TIPO_NOME[tipo] || tipo) +
+      ' · original preservado · SHA-256 ' + VISOR.doc.sha;
+    mostrar('vistaVisor');
+    visorDesenhar();
+  } catch (e) {
+    alert('Não consegui abrir o documento: ' + e.message);
+  }
+}
+
+function visorDesenhar(){
+  document.getElementById('visorPg').textContent = VISOR.pagina + ' / ' + VISOR.paginas;
+  document.getElementById('visorZm').textContent = VISOR.zoom + '%';
+  const q = document.getElementById('visorQuadro');
+  /* Trocar só o fragmento não faz o visor embutido do navegador reposicionar;
+     passar por about:blank força a nova página e o novo zoom. */
+  q.src = 'about:blank';
+  setTimeout(() => {
+    q.src = VISOR.url + '#page=' + VISOR.pagina + '&zoom=' + VISOR.zoom + '&toolbar=0&navpanes=0';
+  }, 30);
+}
+function visorPagina(d){
+  const n = Math.min(VISOR.paginas, Math.max(1, VISOR.pagina + d));
+  if (n !== VISOR.pagina){ VISOR.pagina = n; visorDesenhar(); }
+}
+function visorZoom(d){
+  VISOR.zoom = Math.min(300, Math.max(50, VISOR.zoom + d));
+  visorDesenhar();
+}
+function fecharVisor(){
+  document.getElementById('visorQuadro').src = 'about:blank';
+  mostrar(VISOR.voltarPara);
+}
+
+async function baixarOriginal(ident, esfera, tipo, id){
+  const u = '/api/situacao/documento?identidade=' + encodeURIComponent(ident) +
+            '&esfera=' + encodeURIComponent(esfera) + '&tipo=' + encodeURIComponent(tipo) +
+            '&id=' + encodeURIComponent(id) + '&baixar=1';
+  try {
+    const r = await fetch(u, {credentials:'same-origin'});
+    if (!r.ok) throw new Error('Erro ' + r.status);
+    salvar(await r.blob(), nomeDoCabecalho(r.headers.get('Content-Disposition')));
+  } catch (e) { alert('Não consegui baixar: ' + e.message); }
+}
+function visorBaixar(){
+  const d = VISOR.doc;
+  if (d) baixarOriginal(d.ident, d.esfera, d.tipo, d.id);
+}
+
+/* ── Baixar um PDF montado pelo servidor ──────────────────────────────────
+   PRECISA SER `fetch`, E NÃO UM LINK. Um link baixaria o arquivo e pronto —
+   e o único jeito de a tela saber que o dossiê saiu SEM ANEXO é ler o
+   cabeçalho `X-Anexados`, porque o navegador não conta páginas de PDF. Com
+   link, um dossiê de capa sozinha desceria calado e a pessoa só descobriria
+   ao abrir, possivelmente na frente do cliente.
+
+   O MERGE DEMORA. Juntar dezenove empresas é trabalho de disco, e uma tela
+   que fica muda por oito segundos é uma tela que a pessoa clica de novo. Por
+   isso há dois estágios de aviso: o imediato, e o de paciência aos 2,5 s. */
+function nomeDoCabecalho(cd){
+  const m = /filename="([^"]+)"/.exec(cd || '');
+  return m ? m[1] : '';
+}
+
+function salvar(blob, nome){
+  const u = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = u; a.download = nome || 'situacao-fiscal.pdf';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 4000);
+}
+
+function retornoDossie(classe, html){
+  document.getElementById('retornoDossie').innerHTML =
+    '<div class="aviso ' + classe + '">' + html + '</div>';
+}
+
+async function baixarPdf(url, botao, oque, paciencia){
+  const rotulo = botao ? botao.textContent : '';
+  if (botao){ botao.disabled = true; botao.textContent = 'Montando…'; }
+  retornoDossie('mudo', 'Montando ' + esc(oque) + '…');
+  const lento = setTimeout(() => retornoDossie('mudo',
+    'Montando ' + esc(oque) + '… ' + esc(paciencia)), 2500);
+  try {
+    const r = await fetch(url, {credentials:'same-origin'});
+    if (!r.ok){
+      let msg = 'Erro ' + r.status;
+      try { const j = await r.json(); if (j && j.erro) msg = j.erro; } catch (e) {}
+      throw new Error(msg);
+    }
+    const anexados = parseInt(r.headers.get('X-Anexados') || '0', 10) || 0;
+    const omitidos = parseInt(r.headers.get('X-Omitidos') || '0', 10) || 0;
+    const blob = await r.blob();
+    clearTimeout(lento);
+    salvar(blob, nomeDoCabecalho(r.headers.get('Content-Disposition')));
+
+    /* O AVISO QUE IMPORTA: capa sozinha. */
+    if (anexados === 0){
+      retornoDossie('morno',
+        '<b>O dossiê baixou sem nenhum anexo.</b> Ele traz a capa e o quadro ' +
+        'da situação, mas não há documento guardado para juntar — as esferas ' +
+        'estão em <i>Sem documento</i>. Guarde os PDFs pelo painel abaixo e ' +
+        'gere de novo.');
+    } else {
+      retornoDossie('bom', 'Pronto: <b>' + anexados + '</b> documento' +
+        (anexados === 1 ? '' : 's') + ' anexado' + (anexados === 1 ? '' : 's') +
+        '.' + (omitidos ? ' <b>' + omitidos + '</b> ficaram de fora — a capa ' +
+        'diz o motivo de cada um (arquivo que não confere com o hash, ou PDF ' +
+        'que não abre).' : ''));
+    }
+  } catch (e) {
+    clearTimeout(lento);
+    retornoDossie('ruim', esc(e.message));
+  } finally {
+    if (botao){ botao.disabled = false; botao.textContent = rotulo; }
+  }
+}
+
+function nomeDe(identidade){
+  const e = ((DADOS && DADOS.empresas) || []).find(
+    x => x.identidade === identidade);
+  return (e && e.nome) || identidade;
+}
+
+function baixarDossie(botao, identidade){
+  baixarPdf('/api/situacao/dossie?identidade=' + encodeURIComponent(identidade),
+            botao, 'o dossiê de ' + nomeDe(identidade),
+            'estamos juntando os PDFs originais, o que leva alguns segundos.');
+}
+
+function baixarLote(){
+  baixarPdf('/api/situacao/lote', document.getElementById('btnLote'),
+            'o relatório do escritório',
+            'são todas as empresas do cadastro de uma vez; pode levar de ' +
+            'dezenas de segundos a alguns minutos. Não clique de novo.');
+}
+
+async function carregar(){
+  try {
+    DADOS = await api('/api/situacao/carteira');
+    desenharCarteira();
+  } catch (e) {
+    document.getElementById('corpo').innerHTML =
+      '<tr><td colspan="6" class="vazio">Não consegui carregar: ' +
+      esc(e.message) + '</td></tr>';
+  }
+}
+
+async function guardar(){
+  const alvo = document.getElementById('retornoUpload');
+  const arq = document.getElementById('fArquivo').files[0];
+  if (!arq){ alvo.innerHTML = '<div class="aviso ruim">Escolha um PDF.</div>'; return; }
+  const fd = new FormData();
+  fd.append('arquivo', arq, arq.name);
+  fd.append('identidade', document.getElementById('fEmpresa').value);
+  fd.append('esfera', document.getElementById('fEsfera').value);
+  fd.append('tipo', document.getElementById('fTipo').value);
+  fd.append('origem', document.getElementById('fOrigem').value);
+  const btn = document.getElementById('btnGuardar');
+  btn.disabled = true;
+  try {
+    const r = await api('/api/situacao/importar', {method:'POST', body:fd});
+    const novo = r.documento.desfecho === 'NOVO';
+    alvo.innerHTML = '<div class="aviso bom">' +
+      (novo ? 'Guardado.' : 'Este documento já estava guardado (mesmo conteúdo).') +
+      ' Estado agora: <b>' + esc((FAROL[r.estado.estado]||{}).t || r.estado.estado) +
+      '</b>.</div>';
+    document.getElementById('fArquivo').value = '';
+    await carregar();
+  } catch (e) {
+    alvo.innerHTML = '<div class="aviso ruim">' + esc(e.message) + '</div>';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+carregar();
+</script>
+</body>
+</html>

@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10444E">
+<title>Backup e Migração — Fiscale</title>
+<style>
+  :root{
+    --fundo:#EFF2F3; --superficie:#FFFFFF; --tinta:#1B2328; --tinta-suave:#5C6B72;
+    --borda:#C7CDD1; --petroleo:#10444E; --verde:#0F8A5F; --verde-claro:#EAF6F0;
+    --alerta:#9A6412; --alerta-claro:#FDF3E3; --perigo:#B3382C; --perigo-claro:#FBEDEC;
+    --raio:16px; --sombra:0 1px 2px rgba(27,35,40,.06), 0 6px 18px rgba(27,35,40,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Roboto,-apple-system,Arial,sans-serif;background:var(--fundo);color:var(--tinta)}
+  header{background:var(--superficie);border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:20}
+  .barra{max-width:960px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:12px 20px}
+  .voltar{font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta);
+          background:var(--superficie);border:2px solid var(--borda);border-radius:11px;padding:9px 16px;cursor:pointer}
+  .voltar:hover{border-color:var(--petroleo);color:var(--petroleo)}
+  .modulo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+  .modulo .ponto{width:12px;height:12px;border-radius:4px;background:var(--petroleo)}
+  main{max-width:960px;margin:0 auto;padding:20px}
+  .painel{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio);
+          box-shadow:var(--sombra);margin-bottom:18px}
+  .painel h2{font-size:14px;padding:14px 16px;border-bottom:1px solid var(--borda);
+             display:flex;align-items:center;justify-content:space-between}
+  .painel .corpo{padding:16px}
+  label{display:block;font-size:12px;font-weight:600;color:var(--tinta-suave);margin:0 0 5px}
+  .campo{margin-bottom:12px}
+  input{width:100%;font-size:14px;padding:9px 11px;border:1px solid var(--borda);border-radius:9px;background:#fff;color:var(--tinta)}
+  input:focus{outline:none;border-color:var(--petroleo);box-shadow:0 0 0 3px rgba(16,68,78,.15)}
+  .btn{font-size:13.5px;font-weight:700;padding:10px 16px;border-radius:9px;border:none;cursor:pointer}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .btn-primario{background:var(--petroleo);color:#fff}
+  .btn-verde{background:var(--verde);color:#fff}
+  .btn-sec{background:#fff;border:1px solid var(--borda);color:var(--tinta)}
+  .btn-sec:hover{border-color:var(--petroleo);color:var(--petroleo)}
+  .btn-mini{padding:6px 10px;font-size:12px;margin-right:6px}
+  .dica{font-size:11.5px;color:var(--tinta-suave);line-height:1.5;margin-top:6px}
+  .dica b{color:var(--tinta)}
+  .btn-perigo{background:#fff;border:1px solid #E7C3C0;color:var(--perigo)}
+  .aviso{font-size:12.5px;color:var(--tinta-suave);line-height:1.5;margin-top:12px;
+         background:#F7F9FA;border:1px solid var(--borda);border-radius:10px;padding:11px 13px}
+  .aviso b{color:var(--tinta)}
+  .aviso.bom{background:var(--verde-claro);border-color:#BFE3D2}
+  .aviso.atencao{background:var(--alerta-claro);border-color:#EBD6A8;color:#6B4A11}
+  .aviso.ruim{background:var(--perigo-claro);border-color:#E7C3C0;color:#7A2A20}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  th{text-align:left;font-size:11px;letter-spacing:.03em;color:var(--tinta-suave);
+     text-transform:uppercase;padding:7px 9px;border-bottom:1px solid var(--borda)}
+  td{padding:8px 9px;border-bottom:1px solid #EDF1F2}
+  .direita{text-align:right}
+  .num{font-weight:800;color:var(--petroleo);font-size:19px}
+  .grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+  .cartao{border:1px solid var(--borda);border-radius:12px;padding:12px;text-align:center}
+  .cartao .rot{font-size:11px;color:var(--tinta-suave);text-transform:uppercase;letter-spacing:.03em}
+  .escolha{border:1px solid var(--borda);border-radius:12px;padding:13px;margin-bottom:10px;cursor:pointer}
+  .escolha:hover{border-color:var(--petroleo);background:#F7F9FA}
+  .escolha b{display:block;font-size:14px;margin-bottom:4px}
+  .escolha span{font-size:12.5px;color:var(--tinta-suave);line-height:1.45}
+  .escolha.perigo:hover{border-color:var(--perigo);background:var(--perigo-claro)}
+  progress{width:100%;height:8px}
+  code{background:#F1F4F5;padding:2px 6px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <div class="barra">
+    <button class="voltar" onclick="location.href='home_portal.html'">◄ Home</button>
+    <div class="modulo"><span class="ponto"></span> Configurações · Backup e Migração</div>
+  </div>
+</header>
+
+<main>
+
+<!-- ===== situação ===== -->
+<div class="painel">
+  <h2>Esta instalação</h2>
+  <div class="corpo">
+    <div class="grade" id="situacao">
+      <div class="cartao"><div class="rot">carregando…</div></div>
+    </div>
+    <div class="aviso" id="ondeFicam"></div>
+  </div>
+</div>
+
+<!-- ===== criar ===== -->
+<div class="painel">
+  <h2>Criar backup completo</h2>
+  <div class="corpo">
+    <div class="campo">
+      <label>Salvar em (pasta deste computador)</label>
+      <input id="pasta" placeholder="Ex.: C:\Users\voce\Desktop">
+      <div class="dica" id="dicaPasta">Esta é a pasta onde o Fiscale guarda os
+        backups. O envio ao Google Drive procura <b>só aqui</b> — salvar em
+        outro lugar funciona, mas aí o backup não sobe sozinho.<br>
+        <button type="button" id="btnMesa" class="btn btn-sec btn-mini"
+                style="margin-top:6px">Usar a Área de Trabalho</button>
+        <button type="button" id="btnPadrao" class="btn btn-sec btn-mini"
+                style="margin-top:6px;display:none">Voltar à pasta padrão</button>
+      </div>
+    </div>
+    <div id="blocoFrase">
+      <div class="campo">
+        <label>Frase-senha de exportação (protege os certificados)</label>
+        <input id="frase" type="password" placeholder="mínimo 8 caracteres">
+      </div>
+      <div class="campo">
+        <label>Repita a frase-senha</label>
+        <input id="frase2" type="password">
+      </div>
+      <div class="aviso atencao">
+        <b>O backup inteiro é cifrado com esta frase</b> (AES-256-GCM): manifesto,
+        cadastro, XMLs e certificados. Sem ela o arquivo não abre em programa
+        nenhum — nem aqui, nem no Google Drive, nem para quem o encontrar.<br><br>
+        <b>Guarde esta frase.</b> Ela não fica salva em lugar nenhum — nem aqui,
+        nem dentro do arquivo. Sem ela, os certificados do backup não abrem na
+        outra máquina. As empresas, essas, continuam cadastradas de qualquer jeito.
+      </div>
+    </div>
+    <button class="btn btn-primario" id="btnCriar" onclick="criar()">💾 Criar backup completo</button>
+    <div id="resultadoCriar"></div>
+  </div>
+</div>
+
+<!-- ===== restaurar ===== -->
+<div class="painel">
+  <h2>Restaurar instalação anterior</h2>
+  <div class="corpo">
+    <div class="campo">
+      <label>Arquivo .fbk (caminho completo neste computador)</label>
+      <input id="arquivo" placeholder="Ex.: C:\Users\voce\Desktop\FISCALE-backup-2026-08-11-2025.fbk">
+    </div>
+    <div class="campo" id="campoFrase">
+      <label>Frase-senha do backup</label>
+      <input id="fraseRest" type="password"
+             placeholder="a frase usada quando o backup foi criado">
+      <div class="dica">O backup é cifrado por inteiro: <b>sem a frase não
+        dá nem para conferir</b> o que tem dentro.</div>
+    </div>
+    <button class="btn btn-sec" onclick="inspecionar()">🔍 Conferir o arquivo</button>
+    <div id="resultadoInspecao"></div>
+    <div id="blocoRestaurar" style="display:none">
+      <div id="escolhas"></div>
+      <button class="btn btn-verde" id="btnRestaurar" onclick="restaurar()">↩ Restaurar</button>
+    </div>
+    <div id="resultadoRestaurar"></div>
+    <div class="aviso">
+      Feche os outros usuários antes de restaurar: a restauração troca o cadastro
+      de login, e todo mundo é desconectado ao final.
+    </div>
+  </div>
+</div>
+
+<!-- ===== diagnóstico ===== -->
+<div class="painel">
+  <h2>Diagnóstico da instalação <span id="diagGeral"></span></h2>
+  <div class="corpo">
+    <button class="btn btn-primario" id="btnDiag" onclick="diagnosticar()">🔎 Executar diagnóstico</button>
+    <div id="diagResumo"></div>
+    <div id="diagPortabilidade"></div>
+    <details id="diagDetalhe" style="display:none;margin-top:14px">
+      <summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--petroleo)">
+        Ver a lista completa das verificações</summary>
+      <div id="diagItens"></div>
+    </details>
+  </div>
+</div>
+
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = t => String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mb = n => (Number(n||0)/1048576).toFixed(1) + ' MB';
+let SIT = {}, MODO = null;
+
+const post = async (rota, corpo) => {
+  // O try/catch NÃO é decoração. Quando o servidor morre no meio de uma
+  // rota, a conexão fecha sem resposta e o `fetch` REJEITA — sem isto, a
+  // exceção sobe, a função que chamou nunca termina, e a tela fica presa
+  // no 'Conferindo…' para sempre. Foi exatamente o que aconteceu.
+  let r;
+  try {
+    r = await fetch(rota, {method:'POST',
+                          headers:{'Content-Type':'application/json'},
+                          body: JSON.stringify(corpo||{})});
+  } catch (e) {
+    return {status: 0, erro: 'O Fiscale não respondeu. Ele pode ter sido encerrado, ou a operação falhou no servidor.'};
+  }
+  let d = {}; try{ d = await r.json(); }catch(e){}
+  if (!r.ok && !d.erro) d.erro = 'O servidor respondeu ' + r.status + '.';
+  return {status:r.status, ...d};
+};
+
+async function carregar(){
+  const r = await fetch('/api/backup/situacao');
+  if(!r.ok){ $('situacao').innerHTML = '<div class="aviso ruim">Só o administrador pode usar esta tela.</div>'; return; }
+  SIT = await r.json();
+  $('situacao').innerHTML = `
+    <div class="cartao"><div class="num">${SIT.empresas}</div><div class="rot">empresas</div></div>
+    <div class="cartao"><div class="num">${SIT.certificados}</div><div class="rot">certificados</div></div>
+    <div class="cartao"><div class="num">${SIT.arquivos.toLocaleString('pt-BR')}</div><div class="rot">arquivos</div></div>`;
+  $('ondeFicam').innerHTML = `Os dados desta instalação ficam em <code>${esc(SIT.raiz)}</code>.
+    O backup vai gerar <code>${esc(SIT.nome_sugerido)}</code>.`;
+  // O padrão é a pasta canônica; a Área de Trabalho fica a um clique.
+  $('pasta').value = SIT.pasta_padrao || SIT.area_de_trabalho || '';
+  $('btnMesa').onclick = () => {
+    $('pasta').value = SIT.area_de_trabalho || '';
+    $('btnMesa').style.display = 'none';
+    $('btnPadrao').style.display = 'inline-block';
+  };
+  $('btnPadrao').onclick = () => {
+    $('pasta').value = SIT.pasta_padrao || '';
+    $('btnPadrao').style.display = 'none';
+    $('btnMesa').style.display = 'inline-block';
+  };
+  // Sempre visível: no formato 2 o backup inteiro é cifrado, e sem frase
+  // não existe backup nenhum.
+  $('blocoFrase').style.display = 'block';
+}
+
+// ── Acompanhamento do backup ────────────────────────────────────────────
+// De 1,5 em 1,5 segundo, e SÓ enquanto o POST de criar está aberto. Não é
+// polling contínuo: começa com o botão e morre com a resposta. Se a rota de
+// andamento não existir ou falhar, a tela volta ao aviso fixo de antes — o
+// progresso é um acréscimo, nunca um requisito.
+const ROTULO_FASE = {
+  descoberta:    'procurando os arquivos',
+  empacotamento: 'lendo e empacotando',
+  cifra:         'fechando a cifra',
+  escrita:       'gravando em disco',
+  conferencia:   'conferindo o pacote recém-criado',
+  conclusao:     'concluindo',
+  falha:         'interrompido'
+};
+let RELOGIO_BACKUP = null;
+
+function pintarAndamento(a){
+  const alvo = $('resultadoCriar');
+  if(!alvo) return;
+  const fase = ROTULO_FASE[a.fase] || a.fase || 'trabalhando';
+  const total = Number(a.total || 0), feitos = Number(a.feitos || 0);
+  const pct = total > 0 ? Math.min(100, Math.round(feitos * 100 / total)) : null;
+  const quanto = total > 0
+    ? `${feitos.toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')} arquivos`
+    : 'contando os arquivos';
+  const bytes = Number(a.bytes || 0) > 0 ? ` · ${mb(a.bytes)} lidos` : '';
+  const tempo = Number(a.duracao_s || 0) > 0 ? ` · ${Math.round(a.duracao_s)}s` : '';
+  alvo.innerHTML = `<div class="aviso"><b>Empacotando…</b> ${esc(fase)} —
+      ${esc(quanto)}${bytes}${tempo}.<br>Em instalações grandes isso leva alguns
+      minutos. Não feche esta janela.</div>` +
+    (pct === null ? '<progress></progress>'
+                  : `<progress max="100" value="${pct}"></progress> ${pct}%`);
+}
+
+function acompanhar(ligar){
+  if(RELOGIO_BACKUP){ clearInterval(RELOGIO_BACKUP); RELOGIO_BACKUP = null; }
+  if(!ligar) return;
+  RELOGIO_BACKUP = setInterval(async () => {
+    try{
+      const r = await fetch('/api/backup/progresso');
+      if(!r.ok) return;                       // sem andamento: aviso fixo fica
+      const a = await r.json();
+      if(a && a.ativo) pintarAndamento(a);
+    }catch(e){ /* a resposta do POST é que manda; aqui é só enfeite */ }
+  }, 1500);
+}
+
+async function criar(){
+  const pasta = $('pasta').value.trim();
+  {
+    const a = $('frase').value, b = $('frase2').value;
+    if(a.length < 8){ alert('A frase-senha precisa de ao menos 8 caracteres.'); return; }
+    if(a !== b){ alert('As duas frases não são iguais.'); return; }
+  }
+  $('btnCriar').disabled = true;
+  $('resultadoCriar').innerHTML = '<div class="aviso">Empacotando… em instalações grandes isso leva alguns minutos. Não feche esta janela.</div><progress></progress>';
+  acompanhar(true);
+  const r = await post('/api/backup/criar', {pasta, frase: $('frase').value});
+  acompanhar(false);
+  $('btnCriar').disabled = false;
+  if(r.erro){
+    const onde = r.fase ? `<br>Parou na fase <b>${esc(ROTULO_FASE[r.fase] || r.fase)}</b>`
+                        : '';
+    const qual = r.arquivo ? ` — arquivo <code>${esc(r.arquivo)}</code>` : '';
+    const quanto = (r.arquivos_processados || r.duracao_s)
+      ? `<br>${Number(r.arquivos_processados||0).toLocaleString('pt-BR')} arquivo(s) em ${Math.round(r.duracao_s||0)}s.`
+      : '';
+    $('resultadoCriar').innerHTML =
+      `<div class="aviso ruim"><b>Não deu certo:</b> ${esc(r.erro)}${onde}${qual}${quanto}</div>`;
+    return;
+  }
+  $('frase').value = $('frase2').value = '';
+  $('resultadoCriar').innerHTML = `
+    <div class="aviso bom"><b>✓ Backup criado.</b><br>
+      <code>${esc(r.arquivo)}</code> — ${mb(r.bytes)}</div>
+    <table>
+      <tr><th>Arquivos</th><td class="direita">${r.arquivos.toLocaleString('pt-BR')}</td>
+          <th>Empresas cadastradas</th><td class="direita">${r.empresas_cadastradas}</td></tr>
+      <tr><th>Certificados no cofre</th><td class="direita">${r.certificados_no_cofre}</td>
+          <th>Estado de sincronismo</th><td class="direita">${r.estado_sincronismo_qtd} arquivo(s)</td></tr>
+    </table>
+    <div class="aviso atencao">
+      <b>O que NÃO foi junto, de propósito:</b>
+      ${r.senhas_dpapi_removidas} senha(s) de certificado (são do Windows desta máquina) e
+      ${r.senhas_portal_removidas} senha(s) de portal de plano de saúde.<br>
+      Na outra máquina, as empresas aparecem como <b>Aguardando senha</b> — é só
+      informar a senha de cada certificado que você for usar. <b>Nada precisa ser recadastrado.</b>
+    </div>
+    <div class="aviso">Leve o arquivo <code>.fbk</code> para a outra máquina (pendrive, Drive, rede)
+      e use <b>Restaurar instalação anterior</b> lá.</div>`;
+}
+
+async function inspecionar(){
+  const arquivo = $('arquivo').value.trim();
+  if(!arquivo){ alert('Informe o caminho do arquivo .fbk.'); return; }
+  $('resultadoInspecao').innerHTML = '<div class="aviso">Conferindo…</div><progress></progress>';
+  const r = await post('/api/backup/inspecionar',
+                       {arquivo, frase: $('fraseRest').value});
+  if(r.erro){
+    $('resultadoInspecao').innerHTML = `<div class="aviso ruim"><b>Não dá para usar este arquivo:</b> ${esc(r.erro)}</div>`;
+    $('blocoRestaurar').style.display = 'none';
+    return;
+  }
+  if(r.precisa_frase){
+    $('resultadoInspecao').innerHTML =
+      `<div class="aviso"><b>Este backup é cifrado por inteiro.</b> ${esc(r.aviso||'')}</div>`;
+    $('blocoRestaurar').style.display = 'none';
+    $('fraseRest').focus();
+    return;
+  }
+  const m = r.manifesto, s = m.resumo || {}, c = r.conferencia, d = r.destino;
+  if(!c.ok){
+    $('resultadoInspecao').innerHTML = `<div class="aviso ruim">
+      <b>O arquivo não passou na conferência de integridade.</b> Não restaure.<br>
+      ${c.problemas.slice(0,5).map(esc).join('<br>')}</div>`;
+    $('blocoRestaurar').style.display = 'none';
+    return;
+  }
+  const est = s.estado_sincronismo || {};
+  const nfe = Object.values(est).map(v=>v.ultNSU).filter(Boolean).sort((a,b)=>a-b);
+  $('resultadoInspecao').innerHTML = `
+    <div class="aviso bom"><b>✓ Arquivo íntegro</b> — ${c.conferidos.toLocaleString('pt-BR')} arquivo(s) conferidos por hash.</div>
+    <table>
+      <tr><th>Criado em</th><td>${esc(m.criado_em)}</td>
+          <th>Origem</th><td>${esc((m.origem||{}).maquina || '—')}</td></tr>
+      <tr><th>Arquivos</th><td>${(s.arquivos||0).toLocaleString('pt-BR')}</td>
+          <th>Empresas</th><td>${s.empresas_cadastradas||0} cadastradas</td></tr>
+      <tr><th>Certificados</th><td>${s.certificados_no_cofre||0} ${m.formato>=2?'no pacote':'no cofre'}</td>
+          <th>Sincronismo</th><td>${s.estado_sincronismo_qtd||0} arquivo(s)${nfe.length?` · ultNSU ${nfe.join(', ')}`:''}</td></tr>
+    </table>`;
+  $('blocoRestaurar').style.display = 'block';
+  // O campo da frase fica ACIMA, junto do botão de conferir: no v2 ele é
+  // necessário já para olhar dentro, não só para restaurar.
+  MODO = null;
+  $('escolhas').innerHTML = d.vazio ? '' : `
+    <div class="aviso atencao" style="margin-top:14px">
+      <b>Já existem dados neste computador:</b> ${d.arquivos.toLocaleString('pt-BR')} arquivo(s),
+      ${d.empresas} empresa(s). Escolha o que fazer — nada acontece até você escolher.
+    </div>
+    <div class="escolha" onclick="escolher('mesclar',this)">
+      <b>Mesclar por CNPJ</b>
+      <span>Mantém o que já está aqui e acrescenta o que só existe no backup.
+      Empresa que existe dos dois lados fica como está nesta máquina, inclusive
+      a senha que você já informou.</span></div>
+    <div class="escolha perigo" onclick="escolher('substituir',this)">
+      <b>Substituir</b>
+      <span>Usa o backup como verdade. O que está aqui é <b>movido</b> para uma
+      pasta ao lado — nada é apagado, mas o Fiscale passa a enxergar só o backup.</span></div>`;
+}
+
+function escolher(modo, el){
+  MODO = modo;
+  document.querySelectorAll('.escolha').forEach(e=>e.style.borderColor='var(--borda)');
+  el.style.borderColor = modo === 'substituir' ? 'var(--perigo)' : 'var(--petroleo)';
+}
+
+async function restaurar(){
+  const arquivo = $('arquivo').value.trim();
+  const precisaEscolha = $('escolhas').innerHTML.trim() !== '';
+  if(precisaEscolha && !MODO){ alert('Escolha "Mesclar por CNPJ" ou "Substituir".'); return; }
+  if(MODO === 'substituir' &&
+     !confirm('SUBSTITUIR: os dados atuais desta máquina serão movidos para uma pasta ao lado e o Fiscale passará a usar o backup.\n\nConfirma?')) return;
+  $('btnRestaurar').disabled = true;
+  $('resultadoRestaurar').innerHTML = '<div class="aviso">Restaurando… não feche esta janela.</div><progress></progress>';
+  const r = await post('/api/backup/restaurar', {arquivo, frase: $('fraseRest').value, modo: MODO});
+  $('btnRestaurar').disabled = false;
+  if(r.frase_incorreta){
+    $('resultadoRestaurar').innerHTML = `<div class="aviso ruim"><b>Frase-senha não confere.</b> ${esc(r.erro)}</div>`;
+    return;
+  }
+  if(r.erro && !r.ok){
+    $('resultadoRestaurar').innerHTML = `<div class="aviso ruim"><b>Não deu certo:</b> ${esc(r.erro)}
+      ${(r.problemas||[]).slice(0,5).map(esc).join('<br>')}</div>`;
+    return;
+  }
+  $('resultadoRestaurar').innerHTML = `
+    <div class="aviso bom"><b>✓ Instalação restaurada.</b>
+      ${r.escritos.toLocaleString('pt-BR')} arquivo(s) gravados${r.mantidos?`, ${r.mantidos.toLocaleString('pt-BR')} mantidos`:''}.
+      ${r.certificados} certificado(s) do cofre.</div>
+    ${r.anterior_movido_para?`<div class="aviso">O que estava aqui foi movido para:<br><code>${esc(r.anterior_movido_para)}</code></div>`:''}
+    ${r.aguardando_senha?`<div class="aviso atencao">
+      <b>${r.aguardando_senha} empresa(s) aguardando senha.</b><br>
+      Vá em <b>Clientes</b> e informe a senha de cada certificado que for usar
+      nesta máquina. As empresas já estão cadastradas — não recadastre nada.</div>`:''}
+    <div class="aviso"><b>Entre de novo.</b> A restauração trocou o cadastro de login;
+      todos foram desconectados.</div>
+    <button class="btn btn-primario" style="margin-top:10px"
+      onclick="fetch('/api/logout',{method:'POST'}).then(()=>location.href='/login.html')">Ir para o login</button>`;
+}
+
+/* ===== DIAGNÓSTICO =====
+   A tela mostra primeiro a resposta ("está tudo bem?" e "dá para migrar?").
+   A lista das 30 e poucas verificações fica escondida atrás de um "ver mais" —
+   quem precisa dela sabe procurar; quem não precisa não deveria ter de encarar. */
+const SELO = {
+  'OK':      'background:#EAF6F0;color:#0F8A5F',
+  'ATENÇÃO': 'background:#FDF3E3;color:#9A6412',
+  'ERRO':    'background:#FBEDEC;color:#B3382C',
+};
+const selo = s => `<span class="tag" style="${SELO[s]||SELO['ATENÇÃO']}">${esc(s)}</span>`;
+
+async function diagnosticar(){
+  $('btnDiag').disabled = true;
+  $('diagResumo').innerHTML = '<div class="aviso">Verificando…</div><progress></progress>';
+  $('diagPortabilidade').innerHTML = '';
+  let r;
+  try{ r = await (await fetch('/api/diagnostico')).json(); }
+  catch(e){ r = {erro:'Não consegui falar com o Fiscale.'}; }
+  $('btnDiag').disabled = false;
+  if(r.erro && !r.itens){
+    $('diagResumo').innerHTML = `<div class="aviso ruim">${esc(r.erro)}</div>`;
+    return;
+  }
+  const c = r.contagem || {};
+  $('diagGeral').innerHTML = selo(r.geral);
+  const classe = r.geral==='OK' ? 'bom' : (r.geral==='ERRO' ? 'ruim' : 'atencao');
+  const problemas = (r.itens||[]).filter(i => i.situacao !== 'OK');
+
+  $('diagResumo').innerHTML = `
+    <div class="aviso ${classe}" style="margin-top:12px">
+      <b>Resultado geral: ${esc(r.geral)}</b> —
+      ${c['OK']||0} ok · ${c['ATENÇÃO']||0} atenção · ${c['ERRO']||0} erro.
+      <div style="font-size:11.5px;margin-top:4px">verificado em ${esc(r.em)}</div>
+    </div>
+    ${problemas.length ? `<table>
+      <tr><th>O que</th><th>Situação</th><th>O que fazer</th></tr>
+      ${problemas.map(i=>`<tr>
+        <td><b>${esc(i.titulo)}</b><div style="font-size:11.5px;color:var(--tinta-suave)">${esc(i.detalhe)}</div></td>
+        <td>${selo(i.situacao)}</td>
+        <td style="font-size:12px">${esc(i.acao||'—')}</td></tr>`).join('')}
+    </table>` : '<div class="aviso bom">Nenhum problema encontrado.</div>'}`;
+
+  const p = r.portabilidade || {};
+  $('diagPortabilidade').innerHTML = `
+    <h2 style="border:none;padding:18px 0 4px 0;font-size:14px">Pronto para outro computador?</h2>
+    <table>
+      ${(p.linhas||[]).map(l=>`<tr>
+        <td>${esc(l.item)}<div style="font-size:11.5px;color:var(--tinta-suave)">${esc(l.detalhe)}</div></td>
+        <td class="direita">${selo(l.situacao)}</td></tr>`).join('')}
+    </table>
+    <div class="aviso ${p.situacao==='OK'?'bom':(p.situacao==='ERRO'?'ruim':'atencao')}">
+      ${esc(p.veredito||'')}</div>`;
+
+  $('diagDetalhe').style.display = 'block';
+  let grupo = '';
+  $('diagItens').innerHTML = '<table>' + (r.itens||[]).map(i=>{
+    const cab = i.grupo !== grupo ? (grupo = i.grupo,
+      `<tr><th colspan="2" style="padding-top:12px">${esc(i.grupo)}</th></tr>`) : '';
+    return cab + `<tr>
+      <td>${esc(i.titulo)}<div style="font-size:11.5px;color:var(--tinta-suave)">${esc(i.detalhe)}</div></td>
+      <td class="direita">${selo(i.situacao)}</td></tr>`;
+  }).join('') + '</table>';
+}
+
+carregar();
+</script>
+<script src="fiscale-nav.js"></script>
+</body>
+</html>

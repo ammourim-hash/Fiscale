@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#B45309">
+<title>Auditor de XML · Fiscale</title>
+<style>
+  :root{
+    --fundo:#EFF2F3; --superficie:#FFFFFF; --tinta:#1B2328; --tinta-suave:#5C6B72;
+    --borda:#C7CDD1; --petroleo:#10444E; --nfe:#B45309; --nfe-claro:#FBEEDD;
+    --ok:#0F8A5F; --alerta:#B3382C;
+    --raio:16px; --sombra:0 1px 2px rgba(27,35,40,.06), 0 6px 18px rgba(27,35,40,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Roboto,-apple-system,Arial,sans-serif;background:var(--fundo);color:var(--tinta);-webkit-tap-highlight-color:transparent}
+  header{background:var(--superficie);border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:20}
+  .barra{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:12px 20px}
+  .voltar{font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta);
+          background:var(--superficie);border:2px solid var(--borda);border-radius:11px;padding:9px 16px;cursor:pointer}
+  .voltar:hover{border-color:var(--petroleo);color:var(--petroleo)}
+  .modulo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+  .modulo .ponto{width:12px;height:12px;border-radius:4px;background:var(--nfe)}
+  .abas{max-width:1200px;margin:0 auto;display:flex;gap:4px;padding:0 20px}
+  .aba{border:none;background:transparent;font-size:13.5px;font-weight:600;color:var(--tinta-suave);padding:12px 16px;cursor:pointer;border-bottom:3px solid transparent}
+  .aba:hover{color:var(--tinta)} .aba.on{color:var(--nfe);border-bottom-color:var(--nfe)}
+
+  main{max-width:1200px;margin:0 auto;padding:20px}
+  .tab{display:none}.tab.on{display:block}
+  /* .card é o mesmo bloco do .painel — as abas CT-e e Auditor usam esse nome. */
+  .painel,.card{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra);margin-bottom:16px}
+  .painel h2,.card h2{font-size:14px;padding:14px 16px;border-bottom:1px solid var(--borda);display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .painel .corpo,.card .corpo{padding:16px}
+  label{display:block;font-size:12px;font-weight:600;color:var(--tinta-suave);margin:0 0 5px}
+  .campo{margin-bottom:12px}
+  .linha{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}.linha>*{flex:1;min-width:120px}
+  input,select{width:100%;font-size:14px;padding:9px 11px;border:1px solid var(--borda);border-radius:9px;background:#fff;color:var(--tinta)}
+  input:focus,select:focus{outline:none;border-color:var(--nfe);box-shadow:0 0 0 3px rgba(180,83,9,.15)}
+  /* Sem isto o `width:100%` acima estica a caixinha de marcar. */
+  input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--nfe);margin:0}
+
+  /* Opção marcável em forma de pastilha — mesma leitura dos botões. */
+  .opcao{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;
+         padding:8px 12px;border-radius:10px;border:1px solid var(--borda);background:#fff;
+         color:var(--tinta);cursor:pointer;margin:0;line-height:1.3;transition:.15s}
+  .opcao:hover{border-color:var(--nfe)}
+  .opcao .sub{font-weight:400;color:var(--tinta-suave)}
+  .opcao:has(input:checked){border-color:var(--nfe);background:var(--nfe-claro)}
+  .opcao:has(input:checked) .sub{color:var(--nfe)}
+  /* Barra de atalhos + opções: uma faixa só, quebrando quando faltar espaço. */
+  .barra-acoes{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+  .barra-acoes .separa{flex:1 1 auto}
+  .btn{font-size:13.5px;font-weight:700;padding:10px 15px;border-radius:10px;border:none;cursor:pointer;white-space:nowrap}
+  .btn-primario{background:var(--nfe);color:#fff}.btn-primario:hover{background:#8f420a}
+  .btn-sec{background:#fff;border:1px solid var(--borda);color:var(--tinta)}.btn-sec:hover{border-color:var(--nfe);color:var(--nfe)}
+  .btn-mini{padding:7px 11px;font-size:12.5px} .btn:disabled{opacity:.5;cursor:default}
+  .aviso{font-size:11.5px;color:var(--tinta-suave);line-height:1.45;margin-top:10px;background:#F7F9FA;border:1px solid var(--borda);border-radius:10px;padding:10px 12px}
+  .aviso b{color:var(--tinta)}
+  .vazio{color:var(--tinta-suave);font-size:13px;padding:16px;text-align:center}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--nfe-claro);color:var(--nfe)}
+  .status{margin-top:12px;padding:11px 13px;border-radius:10px;font-size:13px;display:none}
+  .status.load{display:block;background:#FFF7ED;color:#9A3412;border:1px solid #FED7AA}
+  .status.ok{display:block;background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0}
+  .status.err{display:block;background:#FEF2F2;color:#991B1B;border:1px solid #FECACA}
+  .totais{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+  .stat{border-radius:11px;padding:11px 13px;border:1px solid var(--borda);background:#fff}
+  .stat .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:var(--tinta-suave)}
+  .stat .val{font-size:19px;font-weight:800;margin-top:2px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-size:10px;letter-spacing:.03em;color:var(--tinta-suave);text-transform:uppercase;padding:7px 8px;border-bottom:1px solid var(--borda)}
+  /* tabela com cabeçalho fixo: o container rola e o thead gruda no topo */
+  .tbl-fixa{max-height:62vh;overflow:auto}
+  .tbl-fixa thead th{position:sticky;top:0;z-index:2;background:#EEF2F3;
+    box-shadow:inset 0 -1px 0 var(--borda)}
+  td{padding:7px 8px;border-bottom:1px solid #EDF1F2;font-variant-numeric:tabular-nums}
+  td.num,th.num{text-align:right}
+  .chip{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:6px 11px;border-radius:999px;border:1px solid var(--borda);background:#fff;cursor:pointer;margin:0 6px 6px 0}
+  .chip:hover{border-color:var(--nfe);color:var(--nfe)} .chip .x{color:var(--tinta-suave)}
+  .drop{border:2px dashed var(--borda);border-radius:12px;padding:16px;text-align:center;color:var(--tinta-suave);background:#FAFBFB;cursor:pointer;font-size:12.5px}
+  .drop:hover,.drop.hover{border-color:var(--nfe);background:var(--nfe-claro);color:var(--nfe)}
+  .drop b{display:block;color:var(--tinta);font-size:13.5px}
+  iframe.visor{width:100%;height:520px;border:none;border-radius:0 0 16px 16px;background:#f5f5f5}
+  .copiado{font-size:12px;color:var(--ok);font-weight:700;opacity:0;transition:.2s} .copiado.on{opacity:1}
+</style>
+</head>
+<body>
+<script src="fiscale.js"></script>
+<header>
+  <div class="barra">
+    <button class="voltar" onclick="location.href='home_portal.html'">◄ Home</button>
+    <div class="modulo"><span class="ponto"></span> Auditor de XML</div>
+  </div>
+  <!-- A barra de abas saiu junto com as cinco outras telas: com uma aba só,
+       ela não escolhe nada. -->
+</header>
+
+<main>
+  <section id="tab-auditor" class="tab on">
+    <div class="card">
+      <h2>Auditor de XML — entradas × saídas <span class="tag">créditos + NCM</span></h2>
+      <div class="corpo">
+        <div class="linha">
+          <div style="flex:1 1 260px"><label>Empresa</label>
+            <select id="a_cert"><option value="">— selecione —</option></select></div>
+          <div style="flex:0 0 150px"><label>De</label><input type="date" id="a_ini"></div>
+          <div style="flex:0 0 150px"><label>Até</label><input type="date" id="a_fim"></div>
+          <div style="flex:0 0 190px"><label>Regime tributário</label>
+            <select id="a_regime">
+              <option value="simples">Simples Nacional</option>
+              <option value="presumido">Lucro Presumido</option>
+              <option value="real" selected>Lucro Real</option>
+            </select></div>
+          <div style="flex:0 0 auto"><button class="btn btn-primario" onclick="auditar()">🔎 Auditar</button></div>
+        </div>
+        <div class="barra-acoes">
+          <button class="btn btn-sec btn-mini" onclick="pMesAnterior('a_ini','a_fim',auditar)" title="Mês anterior ao período pesquisado">◀ Mês anterior</button>
+          <button class="btn btn-sec btn-mini" onclick="pAno('a_ini','a_fim',0,auditar)" title="1º de janeiro até 31 de dezembro deste ano">🗓 Ano vigente</button>
+          <button class="btn btn-sec btn-mini" onclick="pAno('a_ini','a_fim',-1,auditar)" title="Ano inteiro anterior">🗓 Ano anterior</button>
+          <span class="separa"></span>
+          <label class="opcao" title="Combustível consumido na atividade-fim: transporte, indústria, rural">
+            <input type="checkbox" id="a_combInsumo" onchange="auditar()">
+            ⛽ Combustível como insumo <span class="sub">soma o crédito no Lucro Real</span></label>
+          <label class="opcao" title="Confere cada NCM na tabela oficial pela internet">
+            <input type="checkbox" id="a_validarNcm"> Conferir NCM <span class="sub">online, mais lento</span></label>
+        </div>
+        <div id="a_status" class="status" style="display:none"></div>
+        <div class="aviso" style="margin-top:8px">Lê os XML já baixados/importados (entradas e saídas). Avalia
+          <b>créditos de ICMS, PIS e COFINS</b> das compras e a quem eles aproveitam por regime, e confere o
+          <b>NCM</b> (formato e consistência). É um <b>indicativo para conferência</b> — monofásico, ST, uso/consumo
+          e ativo têm regra própria.</div>
+      </div>
+    </div>
+
+    <div id="a_resultado" style="display:none">
+      <div class="card" style="margin-top:14px">
+        <h2>Créditos aproveitáveis <span id="a_regimeTag" class="tag"></span></h2>
+        <div class="corpo">
+          <div id="a_totais" class="totais"></div>
+          <div id="a_regimeNota" class="aviso" style="margin-top:4px"></div>
+          <div style="overflow-x:auto;margin-top:10px">
+            <table><thead><tr><th>Crédito</th><th class="num">Simples</th><th class="num">Presumido</th><th class="num">Lucro Real</th></tr></thead>
+              <tbody id="a_comp"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="card" id="a_confCard" style="margin-top:14px;display:none">
+        <h2>🧮 Conferidor EFD × XML <span id="a_confTag" class="tag"></span></h2>
+        <div class="corpo">
+          <div class="linha" style="align-items:flex-end;gap:10px;flex-wrap:wrap">
+            <div class="campo" style="margin:0;flex:0 0 280px">
+              <label>Base de crédito declarada na EFD-Contribuições (opcional)</label>
+              <input id="a_baseEfd" placeholder="Ex.: 221836,05"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();auditar();}"></div>
+            <div style="flex:0 0 auto"><button class="btn btn-sec" onclick="auditar()">⟳ Conferir</button></div>
+          </div>
+          <div id="a_confTotais" class="totais" style="margin-top:10px"></div>
+          <div id="a_confAviso"></div>
+          <div style="overflow-x:auto;margin-top:10px"><table>
+            <thead><tr><th>CST PIS do fornecedor</th><th class="num">Itens</th><th class="num">Valor</th>
+              <th>Respaldo</th><th>O que significa</th></tr></thead>
+            <tbody id="a_confCst"></tbody></table></div>
+          <div style="overflow-x:auto;margin-top:10px"><table>
+            <thead><tr><th>Categoria</th><th class="num">Com respaldo</th><th class="num">Sem respaldo</th>
+              <th class="num">A revisar</th></tr></thead>
+            <tbody id="a_confCat"></tbody></table></div>
+          <div class="aviso">Separa a base pelo <b>CST de PIS que o fornecedor destacou</b>: só há respaldo direto
+            quando ele pagou a contribuição na etapa anterior (CST 01/02). CST 04 (monofásico revendido a alíquota
+            zero), 06, 07/08/09 e 49/99 indicam que <b>não houve pagamento</b> — hipótese do art. 3º, §2º, II das
+            Leis 10.637/2002 e 10.833/2003, que a fiscalização costuma glosar.
+            <b>Isto não decide a tese</b> do combustível consumido como insumo (que tem discussão própria, no painel
+            abaixo) — aqui você vê o <b>tamanho de cada parte</b> para decidir com número na mão.</div>
+        </div>
+      </div>
+
+      <div class="card" id="a_combCard" style="margin-top:14px;display:none">
+        <h2>⛽ Combustível — base de crédito por nota <span id="a_combTag" class="tag"></span>
+          <button class="btn btn-sec btn-mini" style="float:right" onclick="exportarCombustivel()">⬇ Planilha</button></h2>
+        <div class="corpo">
+          <div id="a_combAviso" class="aviso" style="margin-top:0"></div>
+          <div id="a_combTotais" class="totais"></div>
+          <div class="tbl-fixa" style="margin-top:10px"><table>
+            <thead><tr><th>Nota</th><th>Data</th><th>Fornecedor</th><th>Produto</th>
+              <th>CST PIS</th><th class="num">Qtd.</th><th class="num">Base</th>
+              <th class="num">PIS 1,65%</th><th class="num">COFINS 7,6%</th>
+              <th class="num" title="ICMS monofásico já recolhido — conferir a regra do seu estado">ICMS mono.</th></tr></thead>
+            <tbody id="a_comb"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="card" id="a_prodCard" style="margin-top:14px;display:none">
+        <h2>Produtos — quais geram crédito <span id="a_prodTag" class="tag"></span>
+          <span style="float:right;font-size:12px;font-weight:400">
+            <label style="cursor:pointer"><input type="checkbox" id="a_soCredita" onchange="renderProdutos()"> só os que geram</label></span></h2>
+        <div class="corpo">
+          <div class="tbl-fixa"><table>
+            <thead><tr><th>NCM</th><th>Produto</th><th>CFOP</th><th class="num">Itens</th>
+              <th class="num">Valor</th><th class="num">ICMS créd.</th><th class="num">Base PIS/COF.</th>
+              <th>Situação</th></tr></thead>
+            <tbody id="a_prod"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="card" id="a_legalCard" style="margin-top:14px;display:none">
+        <h2>Legalidade — divergências CFOP × CST <span id="a_legalTag" class="tag"></span></h2>
+        <div class="corpo">
+          <div class="aviso" style="margin-top:0">Incoerências <b>objetivas</b> entre o CFOP, o CST e os valores
+            destacados no próprio XML (erro do emitente, na maioria). Não inclui julgamento de alíquota ou benefício —
+            só o que dá para conferir no documento.</div>
+          <div class="tbl-fixa"><table>
+            <thead><tr><th>Tipo</th><th>CFOP</th><th>Onde</th><th>Fornecedor</th><th>Detalhe</th></tr></thead>
+            <tbody id="a_legal"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="card" id="a_cfopCard" style="margin-top:14px;display:none">
+        <h2>CFOP usados nas entradas <span class="tag">credita ou não</span></h2>
+        <div class="corpo">
+          <div class="tbl-fixa"><table>
+            <thead><tr><th>CFOP</th><th class="num">Itens</th><th class="num">Valor</th>
+              <th class="num">ICMS créd.</th><th>Gera crédito?</th></tr></thead>
+            <tbody id="a_cfop"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="card" id="a_fornCard" style="margin-top:14px;display:none">
+        <h2>Custos por fornecedor <span class="tag">maiores primeiro</span></h2>
+        <div class="corpo">
+          <div class="tbl-fixa"><table>
+            <thead><tr><th>Fornecedor</th><th>CNPJ</th><th class="num">Notas</th><th class="num">Total comprado</th>
+              <th class="num">ICMS créd.</th><th class="num">Base PIS/COF.</th></tr></thead>
+            <tbody id="a_forn"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="card" id="a_revisarCard" style="margin-top:14px;display:none">
+        <h2>Fora do crédito — a revisar <span class="tag">CFOP</span></h2>
+        <div class="corpo">
+          <div class="aviso" style="margin-top:0">Itens cujo <b>CFOP</b> normalmente não gera crédito ordinário
+            (ST, remessa, devolução, bonificação, ativo/uso e consumo). Foram <b>excluídos</b> do crédito acima — revise caso a caso.</div>
+          <div style="overflow-x:auto"><table><thead><tr><th>Natureza (CFOP)</th><th class="num">Itens</th><th class="num">Valor</th></tr></thead>
+            <tbody id="a_revisar"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <h2>Conferência de NCM <span id="a_ncmTag" class="tag"></span></h2>
+        <div class="corpo"><div id="a_ncmOnline"></div><div id="a_ncm"></div></div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <h2>Notas com crédito <span class="tag">maiores primeiro</span>
+          <button class="btn btn-sec btn-mini" style="float:right" onclick="exportarAuditoria()">⬇ Exportar CSV</button></h2>
+        <div class="corpo">
+          <div class="tbl-fixa"><table>
+            <thead><tr><th>Data</th><th>Fornecedor</th><th>Nº</th><th>CFOP</th><th class="num">Valor</th>
+              <th class="num">ICMS créd.</th><th class="num">Base PIS/COF.</th><th class="num">PIS (Real)</th>
+              <th class="num">COFINS (Real)</th><th>Obs</th></tr></thead>
+            <tbody id="a_notas"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const BRL = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const fmtData = d => (d||'').slice(0,10).split('-').reverse().join('/');
+const soDig = s => (s||'').replace(/\D/g,'');
+const fmtCnpj = c => (c||'').replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5');
+const EFISCO = "https://efiscoi.sefaz.pe.gov.br/sfi_com_sca/PRGerenciarLoginUsuario";
+let certs=[], clientes=[], vendas=[], seqV=1, certSel=null, maeNome="Fulano Montenegro";
+
+async function api(url, opts){ const r=await fetch(url,opts);
+  if(!r.ok){ let d; try{d=await r.json()}catch{d={}} throw new Error(d.detail||('Erro '+r.status)); } return r.json(); }
+async function copiar(t){ try{ await navigator.clipboard.writeText(t); return true;}catch(e){return false;} }
+
+/* ===== As abas de captura manual sairam daqui (07/09/2026) ==========
+   Compras, Caixa de entrada, Seletor de pastas, Emitente, Importacao de
+   PASTA, Vendas e CT-e. O HTML delas ja tinha saido na Etapa B, que
+   reduziu esta tela ao Auditor; ficaram 515 linhas de JS chamando
+   elementos que nao existem mais.
+
+   A captura virou automatica (autXML e conectores), entao as rotas
+   `/api/nfe/importar-pasta` e `/api/nfe/entrada` foram aposentadas no
+   backend junto com este bloco.
+
+   `pAno` e `pMesAnterior` moravam aqui por acaso e o Auditor ainda as
+   usa, entao vieram junto -- apagar sem olhar teria levado o Auditor.
+   ================================================================== */
+
+function pAno(ini, fim, delta, cb){
+  const y=new Date().getFullYear()+delta;
+  $('#'+ini).value=`${y}-01-01`; $('#'+fim).value=`${y}-12-31`;
+  cb&&cb();
+}
+function pMesAnterior(ini, fim, cb){
+  let [y,m]=(($('#'+ini).value||'').slice(0,7)||_mesAtual()).split('-').map(Number);
+  m--; if(m===0){ m=12; y--; }
+  const mm=String(m).padStart(2,'0'), ult=new Date(y,m,0).getDate();
+  $('#'+ini).value=`${y}-${mm}-01`; $('#'+fim).value=`${y}-${mm}-${String(ult).padStart(2,'0')}`;
+  cb&&cb();
+}
+
+/* ===== AUDITOR DE XML ===== */
+let ultimaAuditoria=null;
+function aStatus(msg,tipo){ const el=$('#a_status'); if(!msg){ el.style.display='none'; return; }
+  el.style.display='block'; el.className='status '+(tipo||''); el.textContent=msg; }
+async function auditar(){
+  const id=a_cert.value;
+  if(!id){ aStatus('Selecione a empresa.','err'); return; }
+  const di=a_ini.value, df=a_fim.value, reg=a_regime.value, vn=a_validarNcm.checked?1:0;
+  aStatus(vn?'⏳ Lendo os XML e conferindo os NCM na tabela oficial (pode demorar)...':'⏳ Lendo os XML e cruzando entradas × saídas...','load');
+  $('#a_resultado').style.display='none';
+  try{
+    const ci=a_combInsumo.checked?1:0;
+    // base declarada na EFD: aceita "221.836,05" ou "221836.05"
+    const be=parseFloat((a_baseEfd.value||'').replace(/\./g,'').replace(',','.'))||0;
+    const r=await api(`/api/nfe/auditoria?id=${encodeURIComponent(id)}&data_ini=${di}&data_fim=${df}&regime=${reg}&validar_ncm=${vn}&combustivel_insumo=${ci}&base_efd=${be}`);
+    ultimaAuditoria=r; renderAuditoria(r); aStatus('',null);
+  }catch(e){ aStatus(e.message,'err'); }
+}
+const NOME_REGIME={simples:'Simples Nacional',presumido:'Lucro Presumido',real:'Lucro Real'};
+function renderAuditoria(r){
+  $('#a_resultado').style.display='block';
+  const c=r.creditos, ap=r.aproveitavel, reg=r.regime;
+  $('#a_regimeTag').textContent=NOME_REGIME[reg]||reg;
+  a_totais.innerHTML=
+    `<div class="stat"><div class="lbl">Notas no período</div><div class="val">${r.totais.notas}</div></div>
+     <div class="stat"><div class="lbl">Compras / Vendas</div><div class="val">${r.totais.compras} / ${r.totais.vendas}</div></div>
+     <div class="stat" style="background:#ECFDF5;border-color:#A7F3D0"><div class="lbl">ICMS a aproveitar</div><div class="val">${BRL(ap.icms)}</div></div>
+     <div class="stat" style="background:#ECFDF5;border-color:#A7F3D0"><div class="lbl">PIS a aproveitar</div><div class="val">${BRL(ap.pis)}</div></div>
+     <div class="stat" style="background:#ECFDF5;border-color:#A7F3D0"><div class="lbl">COFINS a aproveitar</div><div class="val">${BRL(ap.cofins)}</div></div>`;
+  $('#a_regimeNota').innerHTML='ℹ️ '+ap.nota;
+  // comparação entre os 3 regimes (a partir dos créditos brutos)
+  const linhas=[
+    ['ICMS (destacado)', 0, c.icms_credito, c.icms_credito],
+    ['PIS (não-cumulativo)', 0, 0, c.pis_real],
+    ['COFINS (não-cumulativo)', 0, 0, c.cofins_real],
+  ];
+  let tot=[0, c.icms_credito, c.icms_credito+c.pis_real+c.cofins_real];
+  // Combustível como insumo entra em linha própria — sem isto a tabela fecharia
+  // num total diferente do mostrado nos cartões acima.
+  const cbi=r.combustivel;
+  if(cbi&&cbi.considerado&&cbi.base>0){
+    linhas.push(['PIS — combustível insumo', 0, 0, cbi.pis_insumo]);
+    linhas.push(['COFINS — combustível insumo', 0, 0, cbi.cofins_insumo]);
+    tot[2]+=cbi.pis_insumo+cbi.cofins_insumo;
+  }
+  const col=(reg==='simples'?1:reg==='presumido'?2:3);
+  const cell=(v,i)=>`<td class="num"${i===col?' style="font-weight:800;background:#ECFDF5"':''}>${BRL(v)}</td>`;
+  a_comp.innerHTML=linhas.map(l=>`<tr><td>${l[0]}</td>${cell(l[1],1)}${cell(l[2],2)}${cell(l[3],3)}</tr>`).join('')
+    +`<tr style="border-top:2px solid #E5EAEC"><td><b>Total</b></td>${cell(0,1)}${cell(tot[1],2)}${cell(tot[2],3)}</tr>`;
+  // Combustível — base de crédito por nota
+  renderCombustivel(r);
+  // Conferidor EFD × XML
+  renderConferidor(r.conferidor);
+  // Produtos — quais geram crédito
+  renderProdutos();
+  // Legalidade (CFOP × CST)
+  const lg=(c.legalidade)||[];
+  const ROTL={cfop_ausente:'CFOP ausente',cfop_formato:'CFOP inválido',
+    cfop_st_sem_cst_st:'CFOP de ST × CST',cst_st_sem_cfop_st:'CST de ST × CFOP',
+    cst00_sem_icms:'Tributada sem ICMS',isenta_com_icms:'Isenta com ICMS',
+    pis_trib_sem_valor:'PIS tributado sem valor',pis_sem_trib_com_valor:'PIS não trib. com valor'};
+  if(lg.length){
+    $('#a_legalCard').style.display='block';
+    $('#a_legalTag').textContent=lg.length+' divergência(s)';
+    a_legal.innerHTML=lg.map(d=>`<tr><td>${ROTL[d.tipo]||d.tipo}</td><td>${d.cfop||''}</td>
+      <td>${d.ref||''}</td><td>${(d.fornecedor||'').slice(0,28)}</td><td>${d.detalhe||''}</td></tr>`).join('');
+  }else{
+    $('#a_legalCard').style.display='block';
+    $('#a_legalTag').textContent='nenhuma';
+    a_legal.innerHTML='<tr><td colspan="5" style="color:var(--ok);padding:12px">✓ Nenhuma incoerência de CFOP × CST encontrada nos itens do período.</td></tr>';
+  }
+  // CFOPs usados
+  const cf=(c.cfops)||[];
+  if(cf.length){
+    $('#a_cfopCard').style.display='block';
+    a_cfop.innerHTML=cf.map(x=>`<tr><td style="font-weight:700">${x.cfop}</td><td class="num">${x.qtd}</td>
+      <td class="num">${BRL(x.valor)}</td><td class="num">${BRL(x.icms_credito)}</td>
+      <td>${x.credita?'<span style="color:var(--ok);font-weight:700">sim</span>':'<span style="color:#9a3412">não — '+(x.motivo||'')+'</span>'}</td></tr>`).join('');
+  }else{ $('#a_cfopCard').style.display='none'; }
+  // Custos por fornecedor
+  const forn=(c.fornecedores)||[];
+  if(forn.length){
+    $('#a_fornCard').style.display='block';
+    a_forn.innerHTML=forn.map(f=>`<tr><td>${f.nome||'—'}</td><td>${fmtCnpj(f.cnpj)}</td>
+      <td class="num">${f.notas}</td><td class="num">${BRL(f.valor)}</td>
+      <td class="num">${BRL(f.icms_credito)}</td><td class="num">${BRL(f.base_piscofins)}</td></tr>`).join('');
+  }else{ $('#a_fornCard').style.display='none'; }
+  // A revisar (CFOP)
+  const rev=(c.revisar_cfop)||[];
+  if(rev.length){
+    $('#a_revisarCard').style.display='block';
+    a_revisar.innerHTML=rev.map(x=>`<tr><td>${x.motivo}</td><td class="num">${x.qtd}</td><td class="num">${BRL(x.valor)}</td></tr>`).join('');
+  }else{ $('#a_revisarCard').style.display='none'; }
+  // status da validação online de NCM
+  const on=r.ncm_online;
+  if(on){
+    const msg = on.offline
+      ? '⚠ Não foi possível conferir os NCM na tabela oficial agora (sem internet ou serviço indisponível).'
+      : `✓ Conferidos ${on.checados} NCM distinto(s) na tabela oficial`+(on.nao_checados?` (${on.nao_checados} não checado(s) por limite)`:'')+'.';
+    $('#a_ncmOnline').innerHTML=`<div class="aviso" style="margin-top:0;background:${on.offline?'#FFF7ED':'#F0F9FF'};border-color:${on.offline?'#FED7AA':'#BAE6FD'}">${msg}</div>`;
+  }else{ $('#a_ncmOnline').innerHTML=''; }
+  // NCM
+  const probs=r.ncm_problemas||[];
+  $('#a_ncmTag').textContent = probs.length? probs.length+' alerta(s)' : 'tudo certo';
+  const ROTU={ncm_ausente:'NCM em branco',ncm_formato:'Formato inválido',ncm_zerado:'NCM zerado',ncm_divergente:'NCM divergente (mesmo produto)'};
+  if(!probs.length){
+    $('#a_ncm').innerHTML='<div class="aviso" style="background:#ECFDF5;border-color:#A7F3D0;color:#065F46">✓ Nenhuma inconsistência de NCM encontrada nos itens do período.</div>';
+  }else{
+    $('#a_ncm').innerHTML='<div style="overflow-x:auto"><table><thead><tr><th>Tipo</th><th>Onde</th><th>Detalhe</th></tr></thead><tbody>'
+      +probs.map(p=>`<tr><td>${ROTU[p.tipo]||p.tipo}</td><td>${p.ref||''}</td><td>${p.detalhe||''}</td></tr>`).join('')
+      +'</tbody></table></div>';
+  }
+  // notas com crédito
+  const ns=c.notas||[];
+  a_notas.innerHTML = ns.length ? ns.map(n=>
+    `<tr><td>${fmtData(n.data)}</td><td>${n.fornecedor||''}</td><td>${n.numero||''}</td>
+     <td style="font-variant-numeric:tabular-nums">${(n.cfops||[]).join(', ')}</td>
+     <td class="num">${BRL(n.valor)}</td><td class="num">${BRL(n.icms_credito)}</td>
+     <td class="num">${BRL(n.base_piscofins)}</td><td class="num">${BRL(n.pis_real)}</td>
+     <td class="num">${BRL(n.cofins_real)}</td><td>${n.tem_monofasico?'⚠ tem item monofásico/ST':''}</td></tr>`).join('')
+    : '<tr><td colspan="10" style="color:var(--tinta-suave);padding:14px">Nenhuma compra com crédito destacado no período. Verifique se as NF-e completas (XML) foram baixadas/importadas.</td></tr>';
+}
+function renderConferidor(cf){
+  if(!cf){ $('#a_confCard').style.display='none'; return; }
+  $('#a_confCard').style.display='block';
+  const pct = cf.total_compras ? (cf.com_respaldo/cf.total_compras*100) : 0;
+  $('#a_confTag').textContent = `${pct.toFixed(0)}% da base tem respaldo no CST`;
+  const declarou = cf.base_declarada>0;
+  $('#a_confTotais').innerHTML=
+    `<div class="stat"><div class="lbl">Compras no período</div><div class="val">${BRL(cf.total_compras)}</div></div>
+     <div class="stat" style="background:#ECFDF5;border-color:#A7F3D0"><div class="lbl">Com respaldo (CST 01/02)</div><div class="val">${BRL(cf.com_respaldo)}</div></div>
+     <div class="stat" style="background:#FEF2F2;border-color:#FECACA"><div class="lbl">Sem respaldo</div><div class="val">${BRL(cf.sem_respaldo)}</div></div>`
+    + (declarou
+      ? `<div class="stat"><div class="lbl">Declarado na EFD</div><div class="val">${BRL(cf.base_declarada)}</div></div>
+         <div class="stat" style="background:#FEF2F2;border-color:#FECACA"><div class="lbl">Diferença</div><div class="val">${BRL(cf.diferenca)}</div></div>` : '');
+  const risco=cf.risco||{};
+  const cSeg=cf.credito_com_respaldo||{}, cDec=cf.credito_declarado;
+  let aviso = `<div class="aviso" style="margin-top:8px;background:#FEF2F2;border-color:#FECACA;color:#8a2b22">
+      <b>Crédito com respaldo direto:</b> PIS ${BRL(cSeg.pis)} · COFINS ${BRL(cSeg.cofins)}.`;
+  if(cDec) aviso += `<br><b>Crédito declarado na EFD:</b> PIS ${BRL(cDec.pis)} · COFINS ${BRL(cDec.cofins)}.`;
+  aviso += `<br><b>Diferença exposta a glosa:</b> PIS ${BRL(risco.pis)} + COFINS ${BRL(risco.cofins)} =
+      <b>${BRL(risco.total)}</b> no período.</div>`;
+  $('#a_confAviso').innerHTML = (cf.sem_respaldo>0 || (cf.diferenca||0)>0) ? aviso : '';
+  const COR={'com respaldo':'var(--ok)','sem respaldo':'#9a3412','revisar':'#8a5a0f'};
+  a_confCst.innerHTML=(cf.por_cst||[]).map(d=>
+    `<tr><td style="font-weight:700">${d.cst}</td><td class="num">${d.itens}</td>
+     <td class="num">${BRL(d.valor)}</td>
+     <td style="color:${COR[d.situacao]||''};font-weight:700">${d.situacao}</td>
+     <td>${d.texto||''}</td></tr>`).join('');
+  a_confCat.innerHTML=(cf.por_categoria||[]).map(x=>
+    `<tr><td>${x.categoria}</td><td class="num" style="color:var(--ok)">${BRL(x.com)}</td>
+     <td class="num" style="color:#9a3412">${BRL(x.sem)}</td><td class="num">${BRL(x.revisar)}</td></tr>`).join('');
+}
+
+function renderProdutos(){
+  const r=ultimaAuditoria; if(!r) return;
+  const todos=(r.creditos&&r.creditos.produtos)||[];
+  if(!todos.length){ $('#a_prodCard').style.display='none'; return; }
+  $('#a_prodCard').style.display='block';
+  const so=$('#a_soCredita').checked;
+  const lista= so ? todos.filter(p=>p.situacao==='gera') : todos;
+  const geram=todos.filter(p=>p.situacao==='gera').length;
+  $('#a_prodTag').textContent=`${geram} de ${r.creditos.produtos_total} geram crédito`;
+  a_prod.innerHTML = lista.length ? lista.map(p=>{
+    const ok = p.situacao==='gera';
+    const sit = ok ? '<span style="color:var(--ok);font-weight:700">✓ gera crédito</span>'
+                   : `<span style="color:#9a3412">não — ${p.motivo||''}</span>`;
+    return `<tr><td style="font-variant-numeric:tabular-nums">${p.ncm||'—'}</td>
+      <td>${p.descricao||''}</td><td style="font-variant-numeric:tabular-nums">${(p.cfops||[]).slice(0,3).join(', ')}</td>
+      <td class="num">${p.qtd}</td><td class="num">${BRL(p.valor)}</td>
+      <td class="num">${BRL(p.icms_credito)}</td><td class="num">${BRL(p.base_piscofins)}</td>
+      <td>${sit}</td></tr>`;
+  }).join('') : '<tr><td colspan="8" style="padding:12px;color:var(--tinta-suave)">Nenhum produto gerando crédito no período.</td></tr>';
+}
+
+function exportarAuditoria(){
+  const r=ultimaAuditoria; if(!r){ return; }
+  const sep=';'; const linhas=[['Data','Fornecedor','Numero','CFOP','Valor','ICMS_credito','Base_PIS_COFINS','PIS_Real','COFINS_Real','Obs'].join(sep)];
+  (r.creditos.notas||[]).forEach(n=>linhas.push([fmtData(n.data),(n.fornecedor||'').replace(/;/g,','),n.numero||'',
+    (n.cfops||[]).join(' '),
+    (n.valor||0).toFixed(2),(n.icms_credito||0).toFixed(2),(n.base_piscofins||0).toFixed(2),
+    (n.pis_real||0).toFixed(2),(n.cofins_real||0).toFixed(2),n.tem_monofasico?'tem monofasico/ST':''].join(sep)));
+  linhas.push(''); linhas.push(['NCM','Produto','CFOP','Itens','Valor','ICMS_credito','Base_PIS_COFINS','Gera_credito','Motivo'].join(sep));
+  ((r.creditos.produtos)||[]).forEach(p=>linhas.push([p.ncm||'',(p.descricao||'').replace(/;/g,','),(p.cfops||[]).join(' '),
+    p.qtd,(p.valor||0).toFixed(2),(p.icms_credito||0).toFixed(2),(p.base_piscofins||0).toFixed(2),
+    p.situacao==='gera'?'SIM':'NAO',(p.motivo||'').replace(/;/g,',')].join(sep)));
+  linhas.push(''); linhas.push(['CFOP','Itens','Valor','ICMS_credito','Gera_credito','Motivo'].join(sep));
+  ((r.creditos.cfops)||[]).forEach(x=>linhas.push([x.cfop,x.qtd,(x.valor||0).toFixed(2),
+    (x.icms_credito||0).toFixed(2),x.credita?'SIM':'NAO',(x.motivo||'').replace(/;/g,',')].join(sep)));
+  linhas.push(''); linhas.push(['Legalidade - tipo','CFOP','Onde','Fornecedor','Detalhe'].join(sep));
+  ((r.creditos.legalidade)||[]).forEach(d=>linhas.push([d.tipo,d.cfop||'',(d.ref||'').replace(/;/g,','),
+    (d.fornecedor||'').replace(/;/g,','),(d.detalhe||'').replace(/;/g,',')].join(sep)));
+  linhas.push(''); linhas.push(['Fornecedor','CNPJ','Notas','Total','ICMS_credito','Base_PIS_COFINS'].join(sep));
+  ((r.creditos&&r.creditos.fornecedores)||[]).forEach(f=>linhas.push([(f.nome||'').replace(/;/g,','),f.cnpj,f.notas,
+    (f.valor||0).toFixed(2),(f.icms_credito||0).toFixed(2),(f.base_piscofins||0).toFixed(2)].join(sep)));
+  linhas.push(''); linhas.push(['A revisar (CFOP)','Itens','Valor'].join(sep));
+  ((r.creditos&&r.creditos.revisar_cfop)||[]).forEach(x=>linhas.push([(x.motivo||'').replace(/;/g,','),x.qtd,(x.valor||0).toFixed(2)].join(sep)));
+  linhas.push(''); linhas.push(['NCM - alertas'].join(sep));
+  (r.ncm_problemas||[]).forEach(p=>linhas.push([p.tipo,(p.ref||'').replace(/;/g,','),(p.detalhe||'').replace(/;/g,',')].join(sep)));
+  const blob=new Blob(['﻿'+linhas.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='auditoria_nfe.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ===== Combustível como insumo ===== */
+function renderCombustivel(r){
+  const cb=r.combustivel||{};
+  const linhas=cb.notas||[];
+  if(!linhas.length){ $('#a_combCard').style.display='none'; return; }
+  $('#a_combCard').style.display='block';
+  $('#a_combTag').textContent=cb.quantidade_notas+' nota(s) com combustível';
+
+  const considerado=!!cb.considerado;
+  $('#a_combAviso').innerHTML = considerado
+    ? '✅ <b>Somado aos créditos aproveitáveis.</b> O fornecedor destaca o combustível como '
+      +'monofásico (CST 04/05/06), por isso ele fica fora da base comum — mas, consumido como '
+      +'<b>insumo</b> no Lucro Real, o crédito é calculado às alíquotas não-cumulativas sobre o '
+      +'valor da aquisição. Confirme que este consumo é da atividade-fim.'
+    : (cb.aviso_regime
+        ? '⚠️ '+cb.aviso_regime
+        : 'ℹ️ Estas compras <b>não</b> estão somadas. Marque <b>"Combustível é consumido como '
+          +'insumo"</b> acima se o consumo for da atividade (transporte, indústria, rural). '
+          +'Para revenda, não há crédito — o regime é monofásico.');
+  $('#a_combTotais').innerHTML=
+    `<div class="stat"><div class="lbl">Quantidade</div><div class="val">${(cb.litros||0).toLocaleString('pt-BR',{maximumFractionDigits:2})}</div></div>
+     <div class="stat"><div class="lbl">Base (aquisições)</div><div class="val">${BRL(cb.base)}</div></div>
+     <div class="stat"${considerado?' style="background:#ECFDF5;border-color:#A7F3D0"':''}><div class="lbl">PIS 1,65%</div><div class="val">${BRL(cb.pis_insumo)}</div></div>
+     <div class="stat"${considerado?' style="background:#ECFDF5;border-color:#A7F3D0"':''}><div class="lbl">COFINS 7,6%</div><div class="val">${BRL(cb.cofins_insumo)}</div></div>
+     <div class="stat"><div class="lbl">ICMS monofásico</div><div class="val">${BRL(cb.icms_monofasico)}</div></div>`;
+  a_comb.innerHTML=linhas.map(n=>`<tr>
+      <td style="font-weight:700">${n.numero||''}</td><td>${n.data||''}</td>
+      <td>${(n.fornecedor||'').slice(0,30)}</td><td>${(n.produtos||'').slice(0,34)}</td>
+      <td>${n.cst_pis||''}</td>
+      <td class="num">${(n.litros||0).toLocaleString('pt-BR',{maximumFractionDigits:2})}</td>
+      <td class="num">${BRL(n.base)}</td>
+      <td class="num">${BRL(n.pis_insumo)}</td><td class="num">${BRL(n.cofins_insumo)}</td>
+      <td class="num">${BRL(n.icms_mono)}</td></tr>`).join('');
+}
+
+function exportarCombustivel(){
+  const r=ultimaAuditoria; if(!r||!r.combustivel){ return; }
+  const cb=r.combustivel, sep=';';
+  const linhas=[];
+  linhas.push(['Combustivel - base de credito por nota'].join(sep));
+  linhas.push(['Periodo',(r.periodo&&r.periodo.ini)||'',(r.periodo&&r.periodo.fim)||''].join(sep));
+  linhas.push(['Regime',r.regime||'','Considerado como insumo',cb.considerado?'SIM':'NAO'].join(sep));
+  linhas.push('');
+  linhas.push(['Numero','Data','Chave','Fornecedor','CNPJ_fornecedor','Produto','CFOP','CST_PIS',
+    'Quantidade','Base','PIS_1,65%','COFINS_7,6%','ICMS_monofasico'].join(sep));
+  (cb.notas||[]).forEach(n=>linhas.push([
+    n.numero||'', n.data||'', n.chave||'',
+    (n.fornecedor||'').replace(/;/g,','), n.cnpj_fornecedor||'',
+    (n.produtos||'').replace(/;/g,','), (n.cfops||[]).join(' '), n.cst_pis||'',
+    (n.litros||0).toFixed(4).replace('.',','),
+    (n.base||0).toFixed(2).replace('.',','),
+    (n.pis_insumo||0).toFixed(2).replace('.',','),
+    (n.cofins_insumo||0).toFixed(2).replace('.',','),
+    (n.icms_mono||0).toFixed(2).replace('.',','),
+  ].join(sep)));
+  linhas.push('');
+  linhas.push(['TOTAL','','','','','','','',
+    (cb.litros||0).toFixed(4).replace('.',','),
+    (cb.base||0).toFixed(2).replace('.',','),
+    (cb.pis_insumo||0).toFixed(2).replace('.',','),
+    (cb.cofins_insumo||0).toFixed(2).replace('.',','),
+    (cb.icms_monofasico||0).toFixed(2).replace('.',',')].join(sep));
+  linhas.push('');
+  linhas.push(['Produto','Codigo_ANP','Itens','Quantidade','Valor'].join(sep));
+  (cb.produtos||[]).forEach(p=>linhas.push([(p.descricao||'').replace(/;/g,','),p.anp||'',p.qtd,
+    (p.litros||0).toFixed(4).replace('.',','),(p.valor||0).toFixed(2).replace('.',',')].join(sep)));
+  const blob=new Blob(['﻿'+linhas.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='combustivel_credito.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ===== init ===== */
+async function iniciar(){
+  try{ certs=await api('/api/certificados'); }catch(e){ certs=[]; }
+  /* Só o seletor do AUDITOR. Os outros quatro (`c_cert`, `imp_cert`,
+     `imp_cert2`, `t_cert`) moravam nas abas removidas: mencioná-los aqui
+     lançaria TypeError na primeira linha, e o auditor abriria com a lista de
+     empresas vazia — quebrado por causa de telas que nem existem mais. */
+  const opcoesCerts='<option value="">— selecione —</option>'+certs.map(c=>`<option value="${c.id}">${c.apelido?c.apelido+' — ':''}${c.nome}</option>`).join('');
+  a_cert.innerHTML=opcoesCerts;
+}
+iniciar();
+</script>
+<script src="fiscale-nav.js"></script>
+</body>
+</html>

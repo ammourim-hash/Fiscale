@@ -1,0 +1,2054 @@
+/* =====================================================================
+   Fiscale Elo — layout da aplicação
+   Os tokens de cor estão em globals.css.
+   ===================================================================== */
+
+/* --- casca ---------------------------------------------------------- */
+
+.casca {
+  display: grid;
+  grid-template-columns: var(--nav-largura) 1fr;
+  height: 100dvh;
+}
+
+/* Embutido: sem a navegação do Elo, a área ocupa a largura inteira. A
+   altura continua sendo a da janela — dentro de um iframe, a do próprio
+   iframe —, e a rolagem segue no `.conteudo`, como no modo normal. */
+.casca-embutida {
+  grid-template-columns: 1fr;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--superficie);
+  border-right: 1px solid var(--borda);
+}
+
+.nav-topo {
+  padding: 1rem 0.9rem 0.6rem;
+}
+
+.marca-link {
+  display: inline-flex;
+  text-decoration: none;
+  border-radius: var(--raio-p);
+}
+
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.marca-texto {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+.marca-texto strong {
+  font-size: 1.05rem;
+  color: var(--tinta);
+  letter-spacing: -0.01em;
+}
+.marca-texto small {
+  font-size: 0.7rem;
+  color: var(--tinta-suave);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nav-lista {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--raio-p);
+  color: var(--tinta-media);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.nav-item:hover {
+  background: var(--superficie-3);
+  color: var(--tinta);
+}
+.nav-item[aria-current="page"] {
+  background: var(--acao-fraca);
+  color: var(--acao);
+  font-weight: 600;
+}
+.nav-icone {
+  width: 1.15rem;
+  text-align: center;
+  font-size: 0.95rem;
+}
+.nav-rotulo {
+  flex: 1;
+}
+.nav-rodape {
+  padding: 0.6rem;
+  border-top: 1px solid var(--borda);
+}
+
+.perfil {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem;
+  border-radius: var(--raio-p);
+  text-decoration: none;
+  color: inherit;
+}
+.perfil:hover {
+  background: var(--superficie-3);
+}
+.perfil-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.perfil-status {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  color: var(--tinta-suave);
+}
+.ponto-online {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok);
+}
+
+/* --- área ----------------------------------------------------------- */
+
+.area {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 1rem;
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borda);
+}
+
+.barra-direita {
+  margin-left: auto;
+}
+
+.busca-global,
+.campo-busca {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 30rem;
+}
+.busca-global input,
+.campo-busca input {
+  width: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 2rem;
+  background: var(--superficie-2);
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  font-size: 0.88rem;
+}
+.busca-global input::placeholder,
+.campo-busca input::placeholder {
+  color: var(--tinta-suave);
+}
+.busca-icone {
+  position: absolute;
+  left: 0.7rem;
+  color: var(--tinta-suave);
+  pointer-events: none;
+}
+
+.conteudo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* --- seletor de tema ------------------------------------------------ */
+
+.tema {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--superficie-3);
+  border-radius: 999px;
+}
+
+.tema-opcao {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.6rem;
+  background: none;
+  border: none;
+  border-radius: 999px;
+  color: var(--tinta-media);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.tema-opcao:hover {
+  color: var(--tinta);
+}
+.tema-opcao[aria-pressed="true"] {
+  background: var(--superficie);
+  color: var(--acao);
+  font-weight: 600;
+  box-shadow: var(--sombra);
+}
+.tema-rotulo {
+  display: none;
+}
+@media (min-width: 62rem) {
+  .tema-rotulo {
+    display: inline;
+  }
+}
+
+/* --- página, cartões, seções ---------------------------------------- */
+
+.pagina {
+  padding: 1.5rem;
+  max-width: 68rem;
+  margin: 0 auto;
+}
+.pagina-estreita {
+  max-width: 46rem;
+}
+
+.pagina-topo h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  letter-spacing: -0.015em;
+}
+.pagina-sub {
+  margin: 0.25rem 0 0;
+  color: var(--tinta-suave);
+  font-size: 0.88rem;
+}
+
+.cartoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.8rem;
+  margin-top: 1.2rem;
+}
+
+.cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 1rem 1.1rem;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  text-decoration: none;
+  color: inherit;
+}
+.cartao-link:hover {
+  border-color: var(--acao);
+}
+.cartao-rotulo {
+  font-size: 0.8rem;
+  color: var(--tinta-suave);
+}
+.cartao-numero {
+  font-size: 1.9rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.cartao-nota {
+  font-size: 0.76rem;
+  color: var(--tinta-suave);
+}
+
+.rodape-sync {
+  margin: 0.9rem 0 0;
+  font-size: 0.8rem;
+  color: var(--tinta-suave);
+}
+
+.secao {
+  margin-top: 1.8rem;
+}
+.secao-titulo {
+  margin: 0 0 0.6rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--tinta-suave);
+}
+
+.painel {
+  padding: 1.1rem;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+}
+.painel-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.painel-texto {
+  margin: 0 0 0.8rem;
+  color: var(--tinta-media);
+  font-size: 0.88rem;
+}
+.painel-linha .painel-texto {
+  margin: 0;
+}
+
+/* --- estados -------------------------------------------------------- */
+
+.estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2.6rem 1.5rem;
+  text-align: center;
+  color: var(--tinta-suave);
+}
+.estado-titulo {
+  margin: 0;
+  color: var(--tinta);
+  font-weight: 600;
+}
+.estado-erro {
+  color: var(--erro);
+}
+.estado-desc {
+  margin: 0;
+  font-size: 0.87rem;
+  max-width: 30rem;
+}
+
+.girando {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--borda-forte);
+  border-top-color: var(--acao);
+  border-radius: 50%;
+  animation: gira 0.7s linear infinite;
+}
+@keyframes gira {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- botões, etiquetas, avatar -------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-p);
+  background: var(--superficie);
+  color: var(--tinta);
+  font-size: 0.87rem;
+  cursor: pointer;
+}
+.btn:hover {
+  border-color: var(--borda-forte);
+}
+.btn-acao {
+  background: var(--acao);
+  border-color: var(--acao);
+  color: var(--acao-tinta);
+  font-weight: 600;
+}
+.btn-acao:hover {
+  background: var(--acao-forte);
+  border-color: var(--acao-forte);
+}
+.btn-perigo {
+  color: var(--erro);
+  border-color: var(--erro);
+  background: transparent;
+}
+.btn-perigo:hover {
+  background: var(--erro-fraca);
+}
+.btn-icone {
+  padding: 0.4rem 0.55rem;
+  background: none;
+  border-color: transparent;
+  font-size: 1rem;
+}
+.btn-icone:hover {
+  background: var(--superficie-3);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--borda);
+  background: var(--superficie-3);
+  color: var(--tinta-media);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+.etiqueta-nota {
+  color: var(--tinta-suave);
+}
+.etiqueta-ok {
+  background: var(--ok-fraca);
+  border-color: transparent;
+  color: var(--ok);
+}
+.etiqueta-atencao {
+  background: var(--atencao-fraca);
+  border-color: transparent;
+  color: var(--atencao);
+}
+.etiqueta-erro {
+  background: var(--erro-fraca);
+  border-color: transparent;
+  color: var(--erro);
+}
+.etiqueta-acao {
+  background: var(--acao-fraca);
+  border-color: transparent;
+  color: var(--acao);
+}
+
+.assinatura {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.assinatura strong {
+  font-weight: 600;
+  color: var(--tinta);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.assinatura-ponto {
+  color: var(--tinta-suave);
+}
+.assinatura-area {
+  color: var(--acao);
+  white-space: nowrap;
+}
+.assinatura-sm {
+  font-size: 0.85rem;
+}
+
+/* --- clientes ------------------------------------------------------- */
+
+.clientes {
+  margin-top: 1.1rem;
+}
+
+.clientes-controles {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+.campo-busca {
+  max-width: 26rem;
+}
+
+.alternar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--tinta-media);
+  cursor: pointer;
+}
+
+.lista-clientes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  overflow: hidden;
+  background: var(--superficie);
+}
+.lista-clientes li + li {
+  border-top: 1px solid var(--borda);
+}
+
+.cliente-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+.cliente-item:hover {
+  background: var(--superficie-2);
+}
+.cliente-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.cliente-nome {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cliente-sub {
+  font-size: 0.8rem;
+  color: var(--tinta-suave);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- gaveta --------------------------------------------------------- */
+
+.gaveta-fundo {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  border: none;
+  background: rgb(6 18 26 / 45%);
+  cursor: pointer;
+}
+.gaveta-fundo-visivel {
+  display: block;
+}
+
+.gaveta {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 21;
+  width: min(24rem, 100vw);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.1rem;
+  overflow-y: auto;
+  background: var(--superficie);
+  border-left: 1px solid var(--borda);
+  box-shadow: var(--sombra-flutuante);
+}
+
+.gaveta-topo {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+.gaveta-titulo {
+  flex: 1;
+  min-width: 0;
+}
+.gaveta-titulo h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+.gaveta-titulo p {
+  margin: 0.35rem 0 0;
+}
+
+.gaveta-dados {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.15rem;
+  margin: 0;
+  font-size: 0.9rem;
+}
+.gaveta-dados dt {
+  margin-top: 0.75rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tinta-suave);
+}
+.gaveta-dados dd {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  overflow-wrap: anywhere;
+}
+
+.linha-dado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.linha-dado-fraca {
+  color: var(--tinta-suave);
+}
+
+.gaveta-nota {
+  margin: auto 0 0;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--borda);
+  font-size: 0.78rem;
+  color: var(--tinta-suave);
+}
+
+/* --- atendimentos --------------------------------------------------- */
+
+.duas-colunas {
+  display: grid;
+  grid-template-columns: var(--lista-largura) 1fr;
+  height: 100%;
+  min-height: 0;
+}
+
+.coluna-lista {
+  border-right: 1px solid var(--borda);
+  background: var(--superficie);
+  overflow-y: auto;
+}
+.coluna-topo {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--borda);
+}
+.coluna-topo h2 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.coluna-conversa {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  overflow-y: auto;
+}
+
+.conversa-vazia {
+  max-width: 34rem;
+  text-align: center;
+}
+.conversa-vazia h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.15rem;
+}
+.conversa-vazia > p {
+  margin: 0;
+  color: var(--tinta-suave);
+  font-size: 0.9rem;
+}
+
+.fluxo {
+  margin-top: 1.6rem;
+  padding: 1rem 1.1rem;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  text-align: left;
+}
+.fluxo-titulo {
+  margin: 0 0 0.7rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tinta-suave);
+}
+.fluxo ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.fluxo li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.86rem;
+  color: var(--tinta-media);
+}
+.fluxo-nota {
+  margin: 0.9rem 0 0;
+  font-size: 0.8rem;
+  color: var(--tinta-suave);
+}
+
+.previa {
+  padding: 1.1rem;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+}
+.previa-titulo {
+  margin: 0 0 0.7rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tinta-suave);
+}
+.balao {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-width: 26rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--raio) var(--raio) 4px var(--raio);
+  background: var(--acao-fraca);
+  border: 1px solid var(--borda);
+}
+.balao-autor {
+  font-size: 0.78rem;
+  color: var(--acao);
+}
+.balao-texto {
+  font-size: 0.92rem;
+}
+.balao-hora {
+  align-self: flex-end;
+  font-size: 0.72rem;
+  color: var(--tinta-suave);
+}
+.previa-nota {
+  margin: 0.7rem 0 0;
+  font-size: 0.8rem;
+  color: var(--tinta-suave);
+}
+
+/* --- perfil e listas ------------------------------------------------ */
+
+.perfil-cabecalho {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.perfil-nome {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.perfil-email {
+  margin: 0.1rem 0 0.5rem;
+  color: var(--tinta-suave);
+  font-size: 0.85rem;
+}
+.perfil-etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.destaque {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  background: var(--superficie-2);
+  border: 1px dashed var(--borda-forte);
+  border-radius: var(--raio-p);
+}
+.destaque-rotulo {
+  margin: 0 0 0.4rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tinta-suave);
+}
+.destaque-nota {
+  margin: 0.6rem 0 0;
+  font-size: 0.82rem;
+  color: var(--tinta-suave);
+}
+
+.lista-simples {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--superficie);
+  overflow: hidden;
+}
+.lista-simples li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.65rem 0.9rem;
+}
+.lista-simples li + li {
+  border-top: 1px solid var(--borda);
+}
+
+.fichas {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+}
+.ficha {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--superficie-3);
+  border: 1px solid var(--borda);
+  font-size: 0.76rem;
+  color: var(--tinta-media);
+  font-family: ui-monospace, "Cascadia Code", monospace;
+}
+
+/* --- entrada -------------------------------------------------------- */
+
+.entrada {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 1.5rem;
+}
+.entrada-cartao {
+  max-width: 26rem;
+  padding: 2rem;
+  text-align: center;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-g);
+  box-shadow: var(--sombra);
+}
+.entrada-cartao h1 {
+  margin: 0.8rem 0 0;
+  font-size: 1.3rem;
+}
+.entrada-sub {
+  margin: 0.2rem 0 1.2rem;
+  color: var(--tinta-suave);
+  font-size: 0.87rem;
+}
+.entrada-texto {
+  margin: 0;
+  color: var(--tinta-media);
+}
+.entrada-nota {
+  margin: 1rem 0 0;
+  font-size: 0.82rem;
+  color: var(--tinta-suave);
+}
+
+/* --- responsivo ----------------------------------------------------- */
+
+.somente-estreito {
+  display: none;
+}
+
+@media (max-width: 56.25rem) {
+  .casca {
+    grid-template-columns: 1fr;
+  }
+
+  .somente-estreito {
+    display: inline-flex;
+  }
+
+  .nav {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    width: min(17rem, 84vw);
+    transform: translateX(-100%);
+    transition: transform 0.18s ease;
+    box-shadow: var(--sombra-flutuante);
+  }
+  .casca-gaveta-aberta .nav {
+    transform: translateX(0);
+  }
+  .casca-gaveta-aberta > .gaveta-fundo {
+    display: block;
+    z-index: 29;
+  }
+
+  /* Três colunas espremidas num celular não é responsividade. */
+  .duas-colunas {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .coluna-lista {
+    border-right: none;
+    border-bottom: 1px solid var(--borda);
+  }
+
+  .pagina {
+    padding: 1.1rem;
+  }
+
+  .gaveta {
+    width: 100vw;
+    border-left: none;
+  }
+}
+
+@media (max-width: 30rem) {
+  .cartao-numero {
+    font-size: 1.6rem;
+  }
+  .perfil-cabecalho {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* --- ajustes da revisão visual -------------------------------------- */
+
+/* Texto só para leitor de tela: cor sozinha não é informação. */
+.so-leitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.ponto-status {
+  display: inline-block;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-right: 0.5rem;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+.ponto-ativo {
+  background: var(--ok);
+}
+.ponto-inativo {
+  background: transparent;
+  border: 1.5px solid var(--tinta-suave);
+}
+
+/* Vazio que convive com outro conteúdo respira menos. */
+.estado-compacto {
+  padding: 1.2rem 1rem;
+}
+
+/* Título e painel colados: a seção inteira lê como um bloco só. */
+.secao-junta {
+  margin-top: 1.2rem;
+}
+
+.rodape-inicio {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 1.2rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--borda);
+  font-size: 0.8rem;
+  color: var(--tinta-suave);
+}
+.rodape-sep {
+  color: var(--borda-forte);
+}
+
+/* --- filtros de atendimentos ---------------------------------------- */
+
+.filtros {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--borda);
+  overflow-x: auto;
+}
+
+.filtro {
+  padding: 0.28rem 0.7rem;
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--tinta-media);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.filtro:hover {
+  border-color: var(--borda-forte);
+  color: var(--tinta);
+}
+.filtro[aria-pressed="true"] {
+  background: var(--acao-fraca);
+  border-color: transparent;
+  color: var(--acao);
+  font-weight: 600;
+}
+
+/* --- lista de permissões recolhida ---------------------------------- */
+
+.recolhivel > summary {
+  cursor: pointer;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--tinta-suave);
+  padding: 0.3rem 0;
+}
+.recolhivel > summary:hover {
+  color: var(--tinta-media);
+}
+.lista-permissoes {
+  margin-top: 0.6rem;
+  font-size: 0.88rem;
+}
+
+/* --- atendimentos (MVP 1.4) ----------------------------------------- */
+
+.filtro-contador {
+  margin-left: 0.35rem;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--superficie-3);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+.filtro[aria-pressed="true"] .filtro-contador {
+  background: var(--acao);
+  color: var(--acao-tinta);
+}
+
+.lista-atendimentos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.lista-atendimentos li + li {
+  border-top: 1px solid var(--borda);
+}
+
+.atendimento-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  background: none;
+  border: none;
+  border-left: 3px solid transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.atendimento-item:hover {
+  background: var(--superficie-2);
+}
+.atendimento-item[aria-current="true"] {
+  background: var(--acao-fraca);
+  border-left-color: var(--acao);
+}
+
+.atendimento-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.atendimento-nome {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.atendimento-sub {
+  font-size: 0.78rem;
+  color: var(--tinta-suave);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Ponto de não lido: discreto, mas na frente do nome — é a primeira coisa
+   que o olho procura ao abrir a lista de manhã. */
+.ponto-nao-lido {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--acao);
+}
+
+/* --- detalhe do atendimento ----------------------------------------- */
+
+.coluna-conversa-cheia {
+  display: block;
+  align-items: stretch;
+  padding: 1rem 1.2rem;
+}
+
+.atendimento-topo {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--borda);
+}
+.atendimento-titulo {
+  min-width: 0;
+}
+.atendimento-titulo h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.atendimento-titulo p {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.3rem 0 0;
+}
+.atendimento-resp {
+  font-size: 0.82rem;
+  color: var(--acao);
+}
+.atendimento-sem-resp {
+  color: var(--tinta-suave);
+}
+
+.aviso {
+  margin: 0.8rem 0 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--raio-p);
+  background: var(--atencao-fraca);
+  color: var(--atencao);
+  font-size: 0.86rem;
+}
+
+.acoes {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.9rem;
+}
+
+.acao-campo select {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-p);
+  background: var(--superficie);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.etiquetas-linha {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  margin-top: 0.7rem;
+}
+
+.conversa-corpo {
+  margin: 1rem 0;
+  border: 1px dashed var(--borda-forte);
+  border-radius: var(--raio);
+}
+
+/* --- painéis recolhíveis do detalhe --------------------------------- */
+
+.painel-lateral {
+  margin-top: 0.7rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+}
+.painel-lateral > summary {
+  cursor: pointer;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tinta-suave);
+}
+.painel-lateral > summary:hover {
+  color: var(--tinta-media);
+}
+
+/* A nota nunca vai ao cliente, e a tela diz isso toda vez. */
+.nota-alerta {
+  margin: 0.6rem 0;
+  padding: 0.4rem 0.6rem;
+  border-left: 3px solid var(--atencao);
+  background: var(--atencao-fraca);
+  color: var(--atencao);
+  font-size: 0.78rem;
+}
+
+.lista-notas {
+  list-style: none;
+  margin: 0.6rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.lista-notas li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.6rem 0.7rem;
+  background: var(--superficie-2);
+  border-radius: var(--raio-p);
+}
+.nota-autor {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.78rem;
+  color: var(--acao);
+}
+.nota-autor time {
+  color: var(--tinta-suave);
+}
+.nota-texto {
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.nota-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+.nota-form textarea {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-p);
+  background: var(--superficie-2);
+  resize: vertical;
+}
+
+.visto-hora {
+  font-size: 0.8rem;
+  color: var(--tinta-suave);
+}
+
+.linha-tempo {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+.linha-tempo li {
+  display: flex;
+  gap: 0.7rem;
+}
+.linha-tempo time {
+  flex: none;
+  min-width: 9rem;
+  color: var(--tinta-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- conversa: mensagens (MVP 1.5) ---------------------------------- */
+
+/*
+ * O detalhe vira coluna com três faixas: cabeçalho fixo, histórico que
+ * rola e rodapé de escrita sempre visível. Com o documento inteiro
+ * rolando, o campo de escrita fugiria para baixo da conversa — e ninguém
+ * responde procurando onde digitar.
+ */
+.coluna-conversa-cheia {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.conversa-corpo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0.8rem 0 0;
+  padding: 0 0.2rem 0.5rem;
+  border: none;
+}
+
+.paineis-topo {
+  margin-bottom: 0.6rem;
+}
+.paineis-topo .painel-lateral {
+  margin-top: 0.4rem;
+}
+
+.carregar-antigas {
+  display: flex;
+  justify-content: center;
+  padding: 0.4rem 0 0.8rem;
+}
+
+.lista-mensagens {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 42rem;
+}
+.msg-entrada {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+.msg-saida {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+/*
+ * Balão de canto reto de um lado só: dá direção sem imitar aplicativo de
+ * mensagem. A mensagem do escritório usa o azul de ação da casa — nunca
+ * verde, que é identidade de outro produto.
+ */
+.balao-msg {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--superficie);
+}
+.msg-entrada .balao-msg {
+  border-bottom-left-radius: 3px;
+}
+.msg-saida .balao-msg {
+  border-bottom-right-radius: 3px;
+  background: var(--acao-fraca);
+  border-color: var(--acao-fraca);
+}
+
+.msg-autor {
+  margin: 0 0 0.2rem;
+  font-size: 0.75rem;
+  color: var(--tinta-suave);
+}
+.msg-autor strong {
+  color: var(--tinta);
+  font-weight: 600;
+}
+.msg-area {
+  color: var(--tinta-suave);
+}
+
+.msg-texto {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  /* Mensagem tem quebra de linha e palavra comprida (link, CNPJ). */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.msg-rodape {
+  margin: 0.25rem 0 0;
+  font-size: 0.72rem;
+  color: var(--tinta-suave);
+}
+.msg-falhou {
+  color: var(--erro);
+}
+
+.msg-vistos {
+  margin: 0.2rem 0.2rem 0;
+  font-size: 0.7rem;
+  color: var(--tinta-suave);
+}
+
+.msg-pendente .balao-msg {
+  opacity: 0.72;
+  border-style: dashed;
+}
+
+/*
+ * NOTA INTERNA — precisa ser impossível de confundir com mensagem.
+ * Largura inteira, sem forma de balão, faixa de atenção e dizendo por
+ * extenso que não sai do escritório.
+ */
+.msg-nota {
+  align-self: stretch;
+  max-width: none;
+}
+.bloco-nota {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--atencao);
+  border-left-width: 4px;
+  border-radius: var(--raio-p);
+  background: var(--atencao-fraca);
+}
+.nota-cabecalho {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin: 0 0 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--atencao);
+  text-transform: uppercase;
+}
+
+/* --- rodapé de escrita ---------------------------------------------- */
+
+.rodape-envio {
+  flex-shrink: 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borda);
+}
+/* O campo inteiro muda de cor no modo nota: o aviso não depende de ler. */
+.rodape-nota {
+  margin: 0 -1.2rem -1rem;
+  padding: 0.6rem 1.2rem 0.8rem;
+  background: var(--atencao-fraca);
+  border-top-color: var(--atencao);
+}
+
+.rodape-abas {
+  display: flex;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+}
+.filtro-nota[aria-pressed="true"] {
+  background: var(--atencao);
+  border-color: var(--atencao);
+  color: var(--superficie);
+}
+
+.nota-alerta-forte {
+  margin: 0 0 0.4rem;
+  font-weight: 600;
+  color: var(--atencao);
+}
+
+.campo-envio {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--borda-forte);
+  border-radius: var(--raio-p);
+  background: var(--superficie);
+  color: var(--tinta);
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+.rodape-acoes {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.link-botao {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--acao);
+  font: inherit;
+  font-size: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* --- lista: prévia, contador, conexão -------------------------------- */
+
+.atendimento-previa {
+  display: block;
+  font-size: 0.79rem;
+  color: var(--tinta-suave);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.atendimento-direita {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+.contador-nao-lidas {
+  min-width: 1.25rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: var(--acao);
+  color: var(--acao-tinta);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.coluna-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+/* Discreto de propósito: reconectar é rotina de rede, não incidente. */
+.conexao-aviso {
+  font-size: 0.72rem;
+  color: var(--tinta-suave);
+}
+
+.btn-voltar {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-p);
+  background: var(--superficie);
+  color: var(--tinta);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* O andaime de desenvolvimento não se disfarça de funcionalidade. */
+.btn-dev {
+  border-style: dashed;
+  color: var(--tinta-suave);
+  font-size: 0.78rem;
+}
+
+/* --- responsivo: no celular, uma tela de cada vez -------------------- */
+
+@media (max-width: 56.25rem) {
+  /*
+   * Lista E conversa lado a lado em 375px não é responsividade: é as
+   * duas ilegíveis. Com uma conversa aberta, a lista sai de cena e o
+   * botão de voltar traz de volta.
+   */
+  .duas-colunas.com-conversa {
+    grid-template-rows: 1fr;
+  }
+  .duas-colunas.com-conversa .coluna-lista {
+    display: none;
+  }
+  .rodape-nota {
+    margin-left: -1.2rem;
+    margin-right: -1.2rem;
+  }
+}
+
+
+/* --- mídia na conversa (MVP 1.6) ------------------------------------ */
+
+/*
+ * Miniatura com teto de altura: a imagem original pode ter 4000px de
+ * lado, e o balão não pode crescer junto. Sem pipeline de thumbnail
+ * nesta fase — o custo é de rede, não de layout, e está registrado.
+ */
+.miniatura {
+  display: block;
+  padding: 0;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-p);
+  background: var(--superficie-2);
+  cursor: zoom-in;
+  overflow: hidden;
+  line-height: 0;
+}
+.miniatura img {
+  display: block;
+  max-width: min(20rem, 100%);
+  max-height: 15rem;
+  width: auto;
+  height: auto;
+  object-fit: cover;
+}
+
+.anexo-falha {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--erro);
+}
+
+/* --- visor de imagem ------------------------------------------------ */
+
+.visor {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+.visor-fundo {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgb(0 0 0 / 0.72);
+  cursor: zoom-out;
+}
+.visor-caixa {
+  position: relative;
+  max-width: min(60rem, 100%);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.visor-topo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fff;
+}
+.visor-nome {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+.visor-imagem {
+  max-width: 100%;
+  max-height: 78vh;
+  object-fit: contain;
+  border-radius: var(--raio-p);
+  background: var(--superficie);
+}
+
+/* --- documento ------------------------------------------------------ */
+
+.cartao-arquivo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-p);
+  background: var(--superficie-2);
+  color: inherit;
+  text-decoration: none;
+  min-width: 14rem;
+}
+.cartao-icone {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.cartao-texto {
+  flex: 1;
+  min-width: 0;
+}
+.cartao-nome {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cartao-sub {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--tinta-suave);
+}
+.cartao-acao {
+  font-size: 0.78rem;
+  color: var(--acao);
+  white-space: nowrap;
+}
+
+/* --- player de áudio ------------------------------------------------ */
+
+.player {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 16rem;
+  max-width: 22rem;
+}
+.player-botao {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--borda-forte);
+  border-radius: 50%;
+  background: var(--superficie);
+  color: var(--acao);
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.player-barra {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+.player-barra input[type="range"] {
+  width: 100%;
+  accent-color: var(--acao);
+  cursor: pointer;
+}
+.player-tempo {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: var(--tinta-suave);
+  font-variant-numeric: tabular-nums;
+}
+/* Largura fixa: trocar 1x por 1.5x não pode empurrar a barra. */
+.player-velocidade {
+  flex-shrink: 0;
+  min-width: 2.6rem;
+  padding: 0.15rem 0.35rem;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-p);
+  background: var(--superficie);
+  color: var(--tinta);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+.player-nome {
+  display: block;
+  width: 100%;
+  font-size: 0.72rem;
+  color: var(--tinta-suave);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- gravador ------------------------------------------------------- */
+
+.gravador {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.gravador-ativo,
+.gravador-revisao {
+  flex: 1;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--atencao);
+  border-radius: var(--raio-p);
+  background: var(--atencao-fraca);
+}
+.gravador-rotulo {
+  font-size: 0.75rem;
+  color: var(--tinta-suave);
+}
+.gravador-tempo {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.gravador-ponto {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--erro);
+  animation: pulsar 1.2s ease-in-out infinite;
+}
+/* Quem pediu menos movimento não recebe um ponto piscando na tela. */
+@media (prefers-reduced-motion: reduce) {
+  .gravador-ponto {
+    animation: none;
+  }
+}
+@keyframes pulsar {
+  50% {
+    opacity: 0.25;
+  }
+}
+.gravador-aviso {
+  width: 100%;
+  margin: 0.3rem 0 0;
+  font-size: 0.8rem;
+  color: var(--erro);
+}
+.gravador-revisao audio {
+  max-width: 14rem;
+  height: 2rem;
+}
+
+.btn-anexar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+
+.rodape-acoes {
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.msg-tamanho {
+  color: var(--tinta-suave);
+}
+
+/* --- responsivo ----------------------------------------------------- */
+
+@media (max-width: 30rem) {
+  /*
+   * Em 375px o player não cabe com nome de arquivo ao lado; ele passa a
+   * ocupar a largura toda e o nome vai para baixo.
+   */
+  .player {
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+  .miniatura img {
+    max-width: 100%;
+    max-height: 12rem;
+  }
+  .cartao-arquivo {
+    min-width: 0;
+  }
+  .gravador-revisao audio {
+    max-width: 100%;
+  }
+}
+
+
+/* --- notificações e PWA (MVP 1.7) ----------------------------------- */
+
+/* O crachá de não lidos na navegação.
+   Fica DENTRO do item, encostado à direita, e não flutuando sobre o
+   ícone: número sobre pictograma some no modo escuro e não cabe em 99+. */
+.nav-cracha {
+  min-width: 1.2rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: var(--acao);
+  color: var(--acao-tinta);
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+/* No item ativo o fundo já é claro-de-ação; o crachá inverte para não
+   sumir dentro dele. */
+.nav-item[aria-current="page"] .nav-cracha {
+  background: var(--acao);
+  color: var(--acao-tinta);
+}
+
+/* Faixa de "nova versão disponível". Informativa, não modal: interromper
+   quem está escrevendo a resposta de um cliente para anunciar uma
+   atualização é o oposto do que a atualização deveria fazer. */
+.faixa-versao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.55rem 1.1rem;
+  background: var(--acao-fraca);
+  border-bottom: 1px solid var(--borda);
+  color: var(--acao);
+  font-size: 0.85rem;
+}
+.btn-mini {
+  padding: 0.28rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.painel + .painel {
+  margin-top: 0.7rem;
+}
+.painel-titulo {
+  margin: 0 0 0.3rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--tinta);
+}
+.painel-nota {
+  margin: 0.7rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--tinta-suave);
+}
+
+.dispositivo-linha {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.dispositivo-linha .painel-texto {
+  margin: 0;
+}
+
+.lista-opcoes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.lista-opcoes li + li {
+  margin-top: 0.15rem;
+}
+.opcao {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.4rem 0;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+.opcao input[type="checkbox"],
+.opcao input[type="radio"] {
+  margin-top: 0.15rem;
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--acao);
+  flex: none;
+}
+
+/* `.opcao` nasceu para caixa de marcar, e o `width: 1rem` acima E a
+   caixinha. Campo de texto e seletor na mesma classe herdavam esse
+   tamanho e viravam uma caixinha tambem: ilegiveis e impossiveis de
+   preencher. Agora a regra de cima vale so para o que e caixa, e o campo
+   que se escreve ocupa a linha, com o rotulo em cima. */
+.opcao:has(> input:not([type="checkbox"]):not([type="radio"])),
+.opcao:has(> select) {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.3rem;
+}
+
+.opcao input:not([type="checkbox"]):not([type="radio"]),
+.opcao select {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-p);
+  background: var(--fundo);
+  color: var(--tinta);
+  font: inherit;
+}
+
+.opcao input:disabled,
+.opcao select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.opcao-ajuda {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.76rem;
+  color: var(--tinta-suave);
+}
+
+/* A prévia do aviso. Existe para a decisão de privacidade ser tomada
+   VENDO o que vai aparecer na tela bloqueada, e não lendo sobre isso. */
+.previa-aviso {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: 0.8rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-p);
+  background: var(--superficie-2);
+}
+.previa-aviso-titulo {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--tinta-suave);
+}
+.previa-aviso-corpo {
+  font-size: 0.87rem;
+  color: var(--tinta);
+}
+
+.horarios {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+}
+.horarios label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--tinta-media);
+}
+.horarios input {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-p);
+  background: var(--superficie);
+  color: var(--tinta);
+  font: inherit;
+  font-size: 0.85rem;
+}

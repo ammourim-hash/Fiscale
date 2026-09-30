@@ -1,0 +1,73 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  FISCALE — o que NUNCA entra no repositório
+#
+#  Este arquivo é a primeira linha de defesa, não a única. A regra da casa:
+#  chave privada, senha e dado de cliente não são versionados — nem uma vez,
+#  porque no git "uma vez" é para sempre: apagar depois não tira do histórico.
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── Segredos ───────────────────────────────────────────────────────────────
+# Certificados A1 dos clientes. Um .pfx vazado é a assinatura digital de uma
+# empresa na mão de outra pessoa.
+*.pfx
+*.p12
+*.pem
+*.key
+*.crt
+certs/
+# Variáveis de ambiente do Elo: senhas de banco em texto claro.
+.env
+.env.*
+!.env.example
+# Chaves de sessão e de integração, geradas por máquina.
+elo_config.json
+elo_chave_ed25519.json
+elo_integracao_ed25519.json
+
+# ── Dados reais ────────────────────────────────────────────────────────────
+# O acervo mora fora do projeto (PORT 1), mas uma pasta `dados/` local pode
+# aparecer — no portátil ela é irmã do app, e em teste ela é temporária.
+dados/
+dados_teste/
+*.db
+*.db-shm
+*.db-wal
+# Cadastro de clientes: CNPJ, IE, e-mail de pessoas reais.
+state_*.json
+certificados.json
+# `usuarios.json*`, com estrela: o arquivo em si já estava barrado, mas uma
+# CÓPIA dele — `usuarios.json.referencia`, `usuarios.json.bak` — passava
+# direto e levava hash e sal de gente real para o histórico. No git, uma vez
+# é para sempre. Foi um quase-acidente real, em 27/08/2026.
+usuarios.json*
+# Backup do escritório inteiro, cifrado — mas grande e não é código.
+*.fbk
+
+# ── Gerado, não escrito ────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+.next/
+.turbo/
+coverage/
+build/
+dist/
+*.egg-info/
+
+# ── Instantâneos manuais (o git passa a fazer esse papel) ──────────────────
+backup_pre_*/
+checkpoint_*/
+*.pre-port1
+*.pre-port3
+
+# ── Sujeira de sistema e editor ────────────────────────────────────────────
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.tmp
+*.bak

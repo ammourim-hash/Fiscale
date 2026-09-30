@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0C333B">
+<title>FISCALE — Central de Aplicações</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="icone.webp">
+<link rel="apple-touch-icon" href="/icones/fiscale-180.png">
+<!--
+  CENTRAL DE APLICAÇÕES (portal, Fase 2 — 13/09/2026)
+
+  A porta depois do login. Não autentica nada e não guarda nada: quem decide o
+  que cada pessoa alcança continua sendo o servidor (`fiscale_papeis`). Esta
+  tela só deixa de OFERECER o que ela não alcança — esconder não protege, mas
+  oferecer um botão que sempre dá 403 é defeito de tela.
+
+  A integração contábil ficou FORA de propósito (decisão de 13/09/2026).
+  Nenhum cartão aponta para algo que ainda não existe.
+-->
+<style>
+  :root{
+    --fundo:#EEF2F4; --superficie:#fff; --tinta:#1B2328; --suave:#5C6B72; --borda:#DDE4E7;
+    --petroleo:#10444E; --lateral:#0B3038; --verde:#0F8A5F; --ruim:#B3382C;
+    --sombra:0 1px 2px rgba(18,33,42,.05),0 12px 30px -14px rgba(18,33,42,.22);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Roboto,-apple-system,Arial,sans-serif;background:var(--fundo);
+       color:var(--tinta);-webkit-font-smoothing:antialiased}
+  svg.i{width:19px;height:19px;flex:0 0 19px;stroke:currentColor;fill:none;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round}
+
+  .app{min-height:100vh;display:grid;grid-template-columns:250px 1fr}
+
+  /* ── Lateral ─────────────────────────────────────────────────────────── */
+  .lateral{background:linear-gradient(180deg,#0F3F48,#0A2A31);color:#D5E4E7;
+    display:flex;flex-direction:column;padding:24px 16px 18px;position:sticky;top:0;height:100vh}
+  .marca{display:flex;align-items:center;gap:12px;padding:0 8px 26px}
+  .marca svg{width:40px;height:40px;border-radius:11px}
+  .marca b{font-size:19px;font-weight:800;letter-spacing:.04em;color:#fff}
+  .nav{display:flex;flex-direction:column;gap:4px}
+  .nav a{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:11px;
+    color:#C4D8DC;text-decoration:none;font-size:14px;font-weight:600;transition:background .15s ease}
+  .nav a:hover{background:rgba(255,255,255,.07);color:#fff}
+  .nav a.on{background:linear-gradient(90deg,#17707A,#12606A);color:#fff;
+    box-shadow:0 8px 18px -10px rgba(0,0,0,.6)}
+  .selo{margin-top:auto;display:flex;align-items:center;gap:11px;border:1px solid rgba(255,255,255,.12);
+    border-radius:13px;padding:13px 14px;background:rgba(255,255,255,.04)}
+  .selo svg{width:24px;height:24px;stroke:#7FD1DE}
+  .selo b{display:block;font-size:12.5px;color:#fff}
+  .selo span{display:block;font-size:11.5px;color:#97B3B8;margin-top:1px}
+
+  /* ── Topo ────────────────────────────────────────────────────────────── */
+  .corpo{min-width:0;display:flex;flex-direction:column}
+  .topo{display:flex;align-items:center;justify-content:flex-end;gap:14px;padding:14px 30px;
+    background:var(--superficie);border-bottom:1px solid var(--borda)}
+  .instalar{display:inline-flex;align-items:center;gap:7px;font:inherit;font-size:12.5px;font-weight:700;
+    color:var(--petroleo);background:#F2F7F8;border:1px solid #CFDEE1;border-radius:10px;padding:7px 12px;cursor:pointer}
+  .instalar:hover{border-color:var(--petroleo)}
+  .instalar[hidden]{display:none}
+  .sino{position:relative;display:flex;padding:9px;border-radius:10px;color:var(--suave)}
+  .sino:hover{background:#F0F4F5;color:var(--petroleo)}
+  .conta{position:relative}
+  .conta>button{display:flex;align-items:center;gap:11px;border:0;background:transparent;cursor:pointer;
+    padding:5px 8px;border-radius:12px;font:inherit;color:var(--tinta);text-align:left}
+  .conta>button:hover{background:#F0F4F5}
+  .avatar{width:36px;height:36px;border-radius:50%;background:var(--petroleo);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+  .conta b{display:block;font-size:13.5px}
+  .conta small{display:block;font-size:11.5px;color:var(--suave)}
+  .menu{position:absolute;right:0;top:calc(100% + 6px);min-width:220px;background:#fff;border:1px solid var(--borda);
+    border-radius:13px;box-shadow:var(--sombra);padding:6px;z-index:10}
+  .menu button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;font:inherit;
+    font-size:13.5px;padding:10px 12px;border-radius:9px;cursor:pointer;color:var(--tinta);text-align:left}
+  .menu button:hover{background:#F0F4F5}
+  .menu button.perigo{color:var(--ruim)}
+  .menu hr{border:0;border-top:1px solid var(--borda);margin:5px 4px}
+
+  /* ── Conteúdo ────────────────────────────────────────────────────────── */
+  main{padding:26px 30px 30px;max-width:1320px;width:100%}
+  .ola{display:flex;align-items:center;gap:16px;background:var(--superficie);border:1px solid var(--borda);
+    border-radius:18px;padding:20px 24px;box-shadow:0 1px 2px rgba(18,33,42,.04)}
+  .ola .avatar{width:48px;height:48px;font-size:19px}
+  .ola h1{font-size:24px;font-weight:800;color:var(--petroleo);letter-spacing:-.01em}
+  .ola p{font-size:13.5px;color:var(--suave);margin-top:2px}
+
+  h2.secao{font-size:16px;font-weight:800;color:var(--petroleo);margin:28px 0 14px}
+
+  .apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+  .app-card{display:flex;flex-direction:column;background:var(--superficie);border:1px solid var(--borda);
+    border-radius:18px;padding:22px 22px 20px;box-shadow:0 1px 2px rgba(18,33,42,.04);
+    transition:transform .16s cubic-bezier(.22,.61,.36,1),box-shadow .16s ease}
+  .app-card:hover{transform:translateY(-3px);box-shadow:var(--sombra)}
+  .app-card .ic{width:50px;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+    background:var(--c);color:#fff;margin-bottom:18px;box-shadow:0 8px 18px -8px var(--c)}
+  .app-card .ic svg{width:26px;height:26px}
+  .app-card b{font-size:18px;font-weight:800;color:var(--petroleo)}
+  .app-card .tipo{font-size:13px;color:var(--suave);margin-top:2px}
+  .app-card p{font-size:13px;line-height:1.55;color:var(--suave);margin:12px 0 18px;flex:1}
+  .abrir{align-self:flex-start;display:inline-flex;align-items:center;gap:10px;font:inherit;font-size:13.5px;
+    font-weight:700;border-radius:10px;padding:9px 18px;cursor:pointer;text-decoration:none;
+    border:1px solid var(--borda);background:#fff;color:var(--petroleo)}
+  .abrir:hover{border-color:var(--petroleo)}
+  .abrir[disabled]{opacity:.7;cursor:progress}
+  .app-card .erro{display:none;font-size:12px;color:var(--ruim);margin-top:10px;line-height:1.45}
+
+  .app-card.destaque{background:linear-gradient(150deg,#12545E,#0B3038);border-color:transparent;color:#fff}
+  .app-card.destaque b,.app-card.destaque .tipo{color:#fff}
+  .app-card.destaque p{color:#B7D0D4}
+  .app-card.destaque .ic{background:rgba(255,255,255,.1);box-shadow:none}
+  .app-card.destaque .abrir{border-color:transparent}
+
+  .info{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:4px;margin-top:22px;
+    background:var(--superficie);border:1px solid var(--borda);border-radius:16px;padding:8px}
+  .info div{display:flex;align-items:center;gap:12px;padding:12px 14px}
+  .info svg.i{color:var(--suave)}
+  .info b{display:block;font-size:12px;color:var(--tinta)}
+  .info span{display:block;font-size:12.5px;color:var(--suave);margin-top:1px}
+
+  /* painéis de Suporte e Configurações */
+  .painel{background:var(--superficie);border:1px solid var(--borda);border-radius:18px;padding:22px 24px;
+    box-shadow:0 1px 2px rgba(18,33,42,.04);max-width:760px}
+  .painel p{font-size:13.5px;line-height:1.65;color:#3C4B52;margin:0 0 12px}
+  .painel code{background:#EEF3F4;border:1px solid var(--borda);padding:3px 9px;border-radius:8px;font-size:13px}
+  .opcoes{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+  .opcoes a,.opcoes button{display:flex;align-items:center;gap:12px;text-decoration:none;font:inherit;
+    font-size:14px;color:var(--petroleo);font-weight:700;background:#F7FAFB;border:1px solid var(--borda);
+    border-radius:12px;padding:13px 16px;cursor:pointer;text-align:left}
+  .opcoes a:hover,.opcoes button:hover{border-color:var(--petroleo)}
+  .opcoes small{display:block;font-weight:400;color:var(--suave);font-size:12px;margin-top:1px}
+  /* Item de administração ainda sem tela: não é link, e diz isso. */
+  .opcoes .dev{display:flex;align-items:center;gap:12px;font-size:14px;font-weight:700;color:var(--suave);
+    background:#FBFCFC;border:1px dashed var(--borda);border-radius:12px;padding:13px 16px}
+  .opcoes .dev em{margin-left:auto;font-style:normal;font-size:11px;font-weight:800;padding:2px 9px;
+    border-radius:999px;background:#EEF3F4;color:var(--suave);white-space:nowrap}
+
+  .hid{display:none!important}
+
+  /* ── Comunicações (o ELO embutido) ─────────────────────────────────── */
+  /* A área do módulo ocupa o corpo inteiro: sem o respiro de leitura das
+     outras telas, que aqui viraria moldura em volta de outra moldura. */
+  body.comunicacoes main{padding:0;max-width:none;flex:1;display:flex;min-height:0}
+  body.comunicacoes .corpo{height:100vh}
+  #vistaComunicacoes{flex:1;display:flex;flex-direction:column;min-height:0}
+  #eloFrame{flex:1;width:100%;border:0;min-height:0;background:var(--fundo)}
+  #eloAviso{padding:26px 30px;color:var(--suave);font-size:13.5px}
+  #eloAviso .erro{color:var(--ruim);margin-top:8px}
+
+  @media (max-width:860px){
+    .app{grid-template-columns:1fr}
+    .lateral{position:static;height:auto;flex-direction:row;align-items:center;padding:10px 12px;gap:8px;overflow-x:auto}
+    .marca{padding:0 8px 0 0}
+    .marca b{display:none}
+    .nav{flex-direction:row}
+    .nav a span{display:none}
+    .selo{display:none}
+    .topo{padding:10px 16px}
+    main{padding:18px 16px}
+    /* No celular a lateral já virou barra horizontal; o módulo fica com o
+       resto da altura, e a rolagem continua sendo a de dentro dele. */
+    body.comunicacoes main{padding:0}
+    body.comunicacoes .corpo{height:auto;min-height:calc(100vh - 56px)}
+  }
+  @media (prefers-reduced-motion:reduce){ .app-card{transition:none} .app-card:hover{transform:none} }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ Lateral ═══════════════════════════════════════════════════════ -->
+  <aside class="lateral">
+    <div class="marca">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="15" fill="#17616C"/>
+        <rect x="17" y="15" width="6.5" height="34" rx="3.25" fill="#fff"/>
+        <rect x="17" y="15" width="27" height="6.5" rx="3.25" fill="#fff"/>
+        <rect x="17" y="28" width="19" height="6.5" rx="3.25" fill="#7FD1DE"/>
+        <circle cx="45.5" cy="44.5" r="10" fill="#7FD1DE"/>
+        <path d="M40.8 44.6l3.4 3.4 6.4-7.4" fill="none" stroke="#0C333B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <b>FISCALE</b>
+    </div>
+    <nav class="nav" aria-label="Portal">
+      <a href="#inicio" data-vista="inicio">
+        <svg class="i" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Início</span></a>
+      <a href="#aplicacoes" data-vista="aplicacoes">
+        <svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg><span>Aplicações</span></a>
+      <a href="#comunicacoes" data-vista="comunicacoes">
+        <svg class="i" viewBox="0 0 64 64" fill="none" stroke="none"><rect x="12.5" y="19.5" width="27" height="25" rx="12.5" stroke="currentColor" stroke-width="5"/><rect x="24.5" y="19.5" width="27" height="25" rx="12.5" stroke="currentColor" stroke-width="5" opacity=".65"/><path d="M30 45.5 L30 52 L36.5 45.5 Z" fill="currentColor"/></svg><span>Comunicações</span></a>
+      <a href="#suporte" data-vista="suporte">
+        <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14"/><path d="M12 17h0"/></svg><span>Suporte</span></a>
+      <a href="#configuracoes" data-vista="configuracoes">
+        <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Configurações</span></a>
+    </nav>
+    <div class="selo">
+      <svg class="i" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+      <div><b>Ambiente seguro</b><span>Sua sessão está protegida.</span></div>
+    </div>
+  </aside>
+
+  <!-- ═══ Corpo ═════════════════════════════════════════════════════════ -->
+  <div class="corpo">
+    <header class="topo">
+      <!-- Só aparece quando o navegador diz que dá para instalar (fiscale-pwa.js). -->
+      <button class="instalar" data-instalar-fiscale hidden title="Instalação opcional como aplicativo. O FISCALE funciona normalmente pelo navegador.">
+        <svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+        Instalar FISCALE</button>
+      <a class="sino" href="central_fiscal.html" title="Central Fiscal — o que mudou">
+        <svg class="i" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>
+      </a>
+      <div class="conta">
+        <button id="btnConta" onclick="alternarMenu()" aria-haspopup="true" aria-expanded="false">
+          <span class="avatar" id="avatarTopo">·</span>
+          <span><b id="nomeTopo">—</b><small id="papelTopo">—</small></span>
+          <svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu hid" id="menuConta" role="menu">
+          <button onclick="trocarSenha()">🔑 Trocar minha senha</button>
+          <hr>
+          <button onclick="sair()">↪ Sair</button>
+          <button id="btnEncerrar" class="perigo hid" onclick="encerrar()">⏻ Encerrar o FISCALE</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- INÍCIO e APLICAÇÕES mostram o mesmo conteúdo: a Central É a lista de aplicações. -->
+      <section id="vistaApps">
+        <div class="ola">
+          <span class="avatar" id="avatarOla">·</span>
+          <div><h1 id="ola">Olá!</h1><p>Selecione a aplicação da plataforma que deseja abrir.</p></div>
+        </div>
+
+        <h2 class="secao">Aplicações disponíveis</h2>
+        <div class="apps">
+          <article class="app-card destaque">
+            <span class="ic" style="--c:#12545E">
+              <svg viewBox="0 0 64 64" style="width:50px;height:50px"><rect width="64" height="64" rx="15" fill="#17616C"/><rect x="17" y="15" width="6.5" height="34" rx="3.25" fill="#fff"/><rect x="17" y="15" width="27" height="6.5" rx="3.25" fill="#fff"/><rect x="17" y="28" width="19" height="6.5" rx="3.25" fill="#7FD1DE"/><circle cx="45.5" cy="44.5" r="10" fill="#7FD1DE"/><path d="M40.8 44.6l3.4 3.4 6.4-7.4" fill="none" stroke="#0C333B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <b>FISCALE</b><span class="tipo">Plataforma Fiscal</span>
+            <p>Gestão fiscal completa do escritório.</p>
+            <a class="abrir" href="home_portal.html">Abrir <span aria-hidden="true">→</span></a>
+          </article>
+
+          <article class="app-card">
+            <span class="ic" style="--c:#10444E">
+              <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect x="12.5" y="19.5" width="27" height="25" rx="12.5" stroke="#7FD1DE" stroke-width="5"/><rect x="24.5" y="19.5" width="27" height="25" rx="12.5" stroke="#E8EFF3" stroke-width="5"/><path d="M30 45.5 L30 52 L36.5 45.5 Z" fill="#E8EFF3"/></svg>
+            </span>
+            <b>ELO</b><span class="tipo">Comunicações</span>
+            <p>Gerencie seus atendimentos e comunique-se com seus clientes.</p>
+            <button class="abrir" id="btnElo" onclick="location.hash = '#comunicacoes'">Abrir <span aria-hidden="true">→</span></button>
+            <div class="erro" id="erroElo" role="alert"></div>
+          </article>
+
+          <!-- Contábil (Contábil 1B): aplicação própria, como o ELO — escolhe a
+               empresa na entrada e navega pelos módulos contábeis dentro dela.
+               É de qualquer usuário: não há função administrativa lá dentro. -->
+          <article class="app-card">
+            <span class="ic" style="--c:#6D28D9">
+              <svg class="i" viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/><path d="M9 8h6M9 11h4"/></svg>
+            </span>
+            <b>Contábil</b><span class="tipo">Escrituração e conciliação</span>
+            <p>Plano de contas, lançamentos e extratos bancários conciliados, empresa por empresa.</p>
+            <a class="abrir" href="contabil.html">Abrir <span aria-hidden="true">→</span></a>
+          </article>
+
+          <!-- Só para o administrador. O servidor já recusa as rotas; o cartão
+               apenas não é oferecido a quem levaria 403. -->
+          <article class="app-card hid" id="cartaoAdmin">
+            <span class="ic" style="--c:#1B2F36">
+              <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+            </span>
+            <b>Administração</b><span class="tipo">Gestão do Sistema</span>
+            <p>Usuários, permissões, segurança, backups e auditoria da plataforma.</p>
+            <a class="abrir" href="#administracao">Abrir <span aria-hidden="true">→</span></a>
+          </article>
+        </div>
+
+        <div class="info">
+          <div><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+            <span><b>Usuário logado</b><span id="infoUsuario">—</span></span></div>
+          <div><svg class="i" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/></svg>
+            <span><b>Perfil</b><span id="infoPapel">—</span></span></div>
+          <div><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+            <span><b>Ambiente</b><span id="infoAmbiente">—</span></span></div>
+          <div><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span><b>Último acesso</b><span id="infoUltimo">—</span></span></div>
+        </div>
+      </section>
+
+      <!-- COMUNICAÇÕES: o ELO desenhado aqui dentro.
+           Continua sendo aplicação, banco, API e sessão dele — o que muda é
+           a moldura. O iframe recebe o ELO em `?embutido=1`, que esconde a
+           casca DELE; a daqui é a única na tela. -->
+      <section id="vistaComunicacoes" class="hid">
+        <!-- O rótulo é um elemento PRÓPRIO porque ele é substituído no erro:
+             quando a abertura falha, "Abrindo o ELO…" tem de sair da tela, e
+             não ficar acima da mensagem dizendo o contrário dela. -->
+        <div id="eloAviso"><span id="eloRotulo">Abrindo o ELO…</span>
+          <div class="erro hid" id="eloErroEmbutido" role="alert"></div>
+          <button class="abrir hid" id="eloTentarDeNovo" type="button"
+                  onclick="tentarComunicacoesDeNovo()">Tentar de novo</button></div>
+        <!-- `allow="microphone"`: sem isto o navegador nega a gravação de voz
+             dentro do iframe, e a falha pareceria bug do ELO. -->
+        <iframe id="eloFrame" class="hid" title="ELO — Comunicações"
+                name="fiscale_elo_embutido" allow="microphone" referrerpolicy="no-referrer"></iframe>
+      </section>
+
+      <section id="vistaSuporte" class="hid">
+        <h2 class="secao" style="margin-top:0">Suporte</h2>
+        <div class="painel">
+          <p><b>O FISCALE é um Sistema Web</b>: ele é executado no servidor do escritório, e todos
+            acessam pelo navegador, sem instalar nada. Endereço de acesso:</p>
+          <p><code id="endereco">carregando…</code></p>
+          <p>Se o FISCALE não abrir no navegador de outra estação, rode o <b>rede_diagnostico.bat</b>
+            no servidor do escritório — ele diz o que falta.</p>
+          <p style="margin:0">Esqueceu a senha ou precisa de acesso a outra área? Fale com o
+            <b>administrador do escritório</b>: é ele quem cadastra usuários e redefine senhas.</p>
+        </div>
+      </section>
+
+      <!-- CONFIGURAÇÕES é só da própria conta. O que administra a plataforma
+           mora em Aplicações → Administração (Contábil 1B). -->
+      <section id="vistaConfig" class="hid">
+        <h2 class="secao" style="margin-top:0">Configurações</h2>
+        <div class="painel">
+          <div class="opcoes">
+            <button onclick="trocarSenha()">🔑<span>Trocar minha senha<small>Vale para o FISCALE e para o ELO, que usa o mesmo login.</small></span></button>
+          </div>
+          <p class="soAdmin hid" style="margin:12px 0 0">As funções de administração da plataforma ficam em
+            <a href="#administracao">Aplicações → Administração</a>.</p>
+        </div>
+      </section>
+
+      <!-- ADMINISTRAÇÃO. A lista é montada pelo script SÓ quando o servidor diz
+           que é admin: para o operador não existe nem o link no documento.
+           As páginas por trás continuam barradas no servidor (_ADMIN_PAGINAS). -->
+      <section id="vistaAdmin" class="hid">
+        <h2 class="secao" style="margin-top:0">Administração da plataforma</h2>
+        <div class="painel" id="adminCorpo">
+          <p style="margin:0">Esta área é do administrador da plataforma.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script src="fiscale-elo.js"></script>
+<script src="fiscale-pwa.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+
+// ── Vistas: Início / Aplicações / Suporte / Configurações ────────────────
+function mostrarVista(){
+  const v = (location.hash || '#inicio').slice(1);
+  const apps = v === 'inicio' || v === 'aplicacoes'
+    || !['suporte','configuracoes','administracao','comunicacoes'].includes(v);
+  $('#vistaApps').classList.toggle('hid', !apps);
+  $('#vistaComunicacoes').classList.toggle('hid', v !== 'comunicacoes');
+  $('#vistaSuporte').classList.toggle('hid', v !== 'suporte');
+  $('#vistaConfig').classList.toggle('hid', v !== 'configuracoes');
+  $('#vistaAdmin').classList.toggle('hid', v !== 'administracao');
+  // A área do módulo não usa o respiro das outras telas.
+  document.body.classList.toggle('comunicacoes', v === 'comunicacoes');
+  if(v === 'comunicacoes') abrirComunicacoes();
+  // Administração é uma APLICAÇÃO: acende "Aplicações" na lateral.
+  const aceso = v === 'administracao' ? 'aplicacoes'
+    : (apps ? (v === 'aplicacoes' ? 'aplicacoes' : 'inicio') : v);
+  document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('on', a.dataset.vista === aceso));
+  if(v === 'suporte') carregarEndereco();
+}
+
+// ── Comunicações (ELO embutido) ──────────────────────────────────────────
+// O bilhete é pedido UMA vez. Voltar para outra área e retornar não abre
+// sessão nova: o iframe continua vivo, só escondido — e o ELO guarda o
+// estado da conversa aberta.
+let eloAberto = false;
+function abrirComunicacoes(){
+  if(eloAberto) return;
+  eloAberto = true;
+  const frame = $('#eloFrame');
+  const aviso = $('#eloAviso');
+  const rotulo = $('#eloRotulo');
+  const erro = $('#eloErroEmbutido');
+  // Um novo começo apaga o erro da tentativa anterior: deixá-lo na tela faria
+  // a mensagem velha parecer resultado da tentativa nova.
+  erro.classList.add('hid');
+  erro.textContent = '';
+  $('#eloTentarDeNovo').classList.add('hid');
+  rotulo.textContent = 'Abrindo o ELO…';
+  aviso.classList.remove('hid');
+  frame.classList.add('hid');
+
+  abrirEloEmbutido(frame, function(msg){
+    // O estado é SUBSTITUÍDO, não acrescentado: "Abrindo o ELO…" e a mensagem
+    // de erro juntos na mesma caixa diziam duas coisas contrárias ao mesmo
+    // tempo — e a primeira era mentira.
+    eloAberto = false;
+    rotulo.textContent = 'Não foi possível abrir o ELO.';
+    erro.textContent = msg;
+    erro.classList.remove('hid');
+    // E dá o caminho de volta: sem botão, a única forma de tentar de novo era
+    // recarregar a Central, que ninguém adivinha.
+    $('#eloTentarDeNovo').classList.remove('hid');
+  }, function(){
+    // Só agora: a primeira carga é a porta do ELO, e mostrá-la seria
+    // piscar a tela de entrada dele dentro do FISCALE.
+    aviso.classList.add('hid');
+    frame.classList.remove('hid');
+  });
+}
+
+// Nova tentativa depois de uma falha. `eloAberto` já foi rearmado pelo caminho
+// de erro, então isto é uma abertura como a primeira — mesmo bilhete novo,
+// mesma sessão do ELO se ela ainda valer. Não há segunda sessão: o bilhete é
+// de troca, e quem cria sessão é o ELO.
+function tentarComunicacoesDeNovo(){
+  abrirComunicacoes();
+}
+
+// ── Administração da plataforma ──────────────────────────────────────────
+// Montada SÓ para o admin. As páginas por trás já são barradas no servidor
+// (fiscale_papeis._ADMIN_PAGINAS); aqui o operador nem recebe o link.
+const ADMIN_ITENS = [
+  ['usuarios.html', '👥', 'Usuários e permissões', 'Cadastrar pessoas, definir administrador ou operador, redefinir senha.'],
+  ['seguranca_acessos.html', '🛡', 'Segurança e auditoria', 'Registro de acessos: quem entrou, quando e de onde; tentativas recusadas.'],
+  ['backup.html', '☁', 'Backups administrativos', 'Cópia cifrada do escritório inteiro e migração para outra máquina.'],
+  [null, '▦', 'Gestão de aplicações', ''],
+  [null, '⚙', 'Configurações administrativas', '']
+];
+function montarAdministracao(){
+  $('#adminCorpo').innerHTML = '<p>Funções da <b>plataforma</b>. Nenhuma delas é contábil ou fiscal, '
+    + 'e nenhuma aparece dentro das aplicações.</p><div class="opcoes">'
+    + ADMIN_ITENS.map(([href, ic, nome, txt]) => href
+      ? '<a href="' + href + '">' + ic + '<span>' + nome + '<small>' + txt + '</small></span></a>'
+      : '<div class="dev">' + ic + '<span>' + nome + '</span><em>Em desenvolvimento</em></div>').join('')
+    + '</div>';
+}
+window.addEventListener('hashchange', mostrarVista);
+
+// ── Conta ────────────────────────────────────────────────────────────────
+function iniciais(t){
+  const p = String(t || '').trim().split(/\s+/).filter(Boolean);
+  return ((p[0] || '?')[0] + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase();
+}
+function primeiroNome(t){ return String(t || '').trim().split(/\s+/)[0] || ''; }
+
+function quando(iso){
+  if(!iso) return 'primeiro acesso registrado';
+  const d = new Date(iso);
+  if(isNaN(d)) return '—';
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+}
+
+async function identificar(){
+  let q;
+  try{
+    const r = await fetch('/api/quem?completo=1');
+    if(r.status === 401){ location.href = '/login.html'; return; }
+    q = await r.json();
+  }catch(e){ return; }
+  if(!q || !q.usuario){ location.href = '/login.html'; return; }
+
+  const exibido = q.nome || q.usuario;
+  const papel = q.papel === 'admin' || q.admin ? 'Administrador' : 'Operador fiscal';
+  // textContent em tudo que veio do cadastro: nome de pessoa não é HTML.
+  $('#ola').textContent = 'Olá, ' + (primeiroNome(q.nome) || q.usuario);
+  $('#avatarOla').textContent = $('#avatarTopo').textContent = iniciais(exibido);
+  $('#nomeTopo').textContent = exibido;
+  $('#papelTopo').textContent = papel;
+  $('#infoUsuario').textContent = exibido;
+  $('#infoPapel').textContent = papel;
+  $('#infoUltimo').textContent = quando(q.ultimo_acesso);
+  if(q.admin){
+    $('#cartaoAdmin').classList.remove('hid');
+    document.querySelectorAll('.soAdmin').forEach(e => e.classList.remove('hid'));
+    montarAdministracao();
+  }
+  if(q.local) $('#btnEncerrar').classList.remove('hid');
+}
+
+function ambiente(){
+  const seguro = location.protocol === 'https:';
+  const local = ['localhost','127.0.0.1','[::1]'].includes(location.hostname);
+  $('#infoAmbiente').textContent = (local ? 'Servidor do escritório (acesso local)' : location.hostname)
+    + (seguro ? ' · HTTPS' : ' · sem HTTPS');
+}
+
+function alternarMenu(forcar){
+  const m = $('#menuConta');
+  const abrir = typeof forcar === 'boolean' ? forcar : m.classList.contains('hid');
+  m.classList.toggle('hid', !abrir);
+  $('#btnConta').setAttribute('aria-expanded', String(abrir));
+}
+document.addEventListener('click', ev => { if(!ev.target.closest('.conta')) alternarMenu(false); });
+document.addEventListener('keydown', ev => { if(ev.key === 'Escape') alternarMenu(false); });
+
+async function sair(){
+  try{ await fetch('/api/logout', {method:'POST'}); }catch(e){}
+  location.href = '/login.html';
+}
+
+async function trocarSenha(){
+  alternarMenu(false);
+  let regra = 'Use pelo menos 8 caracteres.';
+  try{ const p = await fetch('/api/politica-senha').then(r => r.json()); if(p.mensagem) regra = p.mensagem; }catch(e){}
+  const atual = prompt('Senha ATUAL:'); if(atual === null) return;
+  const nova = prompt('NOVA senha.\n\n' + regra); if(nova === null) return;
+  const r = await fetch('/api/senha', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({atual, nova})});
+  const d = await r.json().catch(() => ({}));
+  alert(d.ok ? 'Senha alterada com sucesso.' : (d.erro || 'Não foi possível alterar a senha.'));
+}
+
+async function encerrar(){
+  if(!confirm('Encerrar o servidor do FISCALE?\n\nO Sistema Web sai do ar para TODAS as estações da rede. '
+    + 'Para voltar a usar, o servidor do FISCALE precisa ser iniciado novamente.')) return;
+  try{
+    const d = await fetch('/api/encerrar', {method:'POST'}).then(r => r.json());
+    if(d && d.ok === false){ alert(d.erro); return; }
+  }catch(e){}   // o servidor morre no meio da resposta — falhar aqui é o esperado
+  document.body.innerHTML = '<div style="font-family:Segoe UI,Arial,sans-serif;text-align:center;'
+    + 'padding:80px 20px;color:#5C6B72"><h2 style="color:#10444E">Servidor do FISCALE encerrado</h2>'
+    + '<p>Pode fechar esta janela. Para voltar a usar, inicie novamente o servidor do FISCALE e acesse pelo navegador.</p></div>';
+}
+
+function erroElo(msg){
+  const e = $('#erroElo');
+  e.textContent = msg; e.style.display = 'block';
+}
+
+let enderecoCarregado = false;
+async function carregarEndereco(){
+  if(enderecoCarregado) return;
+  try{
+    const e = await fetch('/api/escritorio').then(r => r.json());
+    $('#endereco').textContent = (e && e.url) || location.origin;
+    enderecoCarregado = true;
+  }catch(err){ $('#endereco').textContent = location.origin; }
+}
+
+ambiente();
+mostrarVista();
+identificar();
+</script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+====================================================================
+  ESTE ARQUIVO FICOU PARA TRAS
+====================================================================
+
+  Leia:  COMO_USAR_NAS_OUTRAS_MAQUINAS.txt
+
+
+O QUE MUDOU, E POR QUE
+----------------------
+Ate 21/08/2026 este arquivo ensinava a INSTALAR o Fiscale em cada
+maquina. Cada uma ficava com o seu, separado, e ele proprio avisava:
+
+    "As duas maquinas tem Fiscales SEPARADOS. Elas nao conversam.
+     O que voce baixar de notas numa, NAO aparece na outra."
+
+Isso obrigava a refazer tudo em cada maquina — login, cadastro das
+empresas, certificados, senhas — e ainda deixava um risco de pe:
+duas copias baixando notas por conta propria andam com o contador
+da Receita (o NSU) em separado, e nota que uma pula a outra nao
+busca. No CT-e nao existe consulta por chave para recuperar depois.
+
+Agora e' UM servidor so. Uma maquina roda o Fiscale e as outras
+abrem pelo navegador, sem instalar nada. O trabalho de configurar
+cada maquina desaparece junto com o risco.
+
+Nao siga mais os passos que estavam aqui: eles montam justamente a
+situacao que foi desfeita.
+
+====================================================================

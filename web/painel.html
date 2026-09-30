@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10444E">
+<title>Painel do mês — Fiscale</title>
+<style>
+  :root{
+    --fundo:#EFF2F3; --superficie:#FFFFFF; --tinta:#1B2328; --tinta-suave:#5C6B72;
+    --borda:#C7CDD1; --petroleo:#10444E; --cor:#10444E; --cor-claro:#E8F0F1;
+    --ok:#0F8A5F; --alerta:#B3382C; --aviso:#B07D10;
+    --raio:16px; --sombra:0 1px 2px rgba(27,35,40,.06), 0 6px 18px rgba(27,35,40,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Roboto,-apple-system,Arial,sans-serif;background:var(--fundo);color:var(--tinta)}
+  header{background:var(--superficie);border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:20}
+  .barra{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:12px 20px}
+  .voltar{font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta);
+          background:var(--superficie);border:2px solid var(--borda);border-radius:11px;padding:9px 16px;cursor:pointer}
+  .voltar:hover{border-color:var(--petroleo);color:var(--petroleo)}
+  .modulo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+  .modulo .ponto{width:12px;height:12px;border-radius:4px;background:var(--cor)}
+  main{max-width:1240px;margin:0 auto;padding:20px}
+  .painel{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra);margin-bottom:16px}
+  .painel h2{font-size:14px;padding:14px 16px;border-bottom:1px solid var(--borda);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .painel .corpo{padding:16px}
+  label{display:block;font-size:12px;font-weight:600;color:var(--tinta-suave);margin:0 0 5px}
+  input,select{font-size:14px;padding:9px 11px;border:1px solid var(--borda);border-radius:9px;background:#fff;color:var(--tinta)}
+  .btn{font-size:13.5px;font-weight:700;padding:10px 15px;border-radius:10px;border:none;cursor:pointer;white-space:nowrap}
+  .btn-primario{background:var(--cor);color:#fff}.btn-primario:hover{background:#0b3138}
+  .btn-sec{background:#fff;border:1px solid var(--borda);color:var(--tinta)}.btn-sec:hover{border-color:var(--cor);color:var(--cor)}
+  .btn-mini{padding:6px 10px;font-size:12px}
+  .btn:disabled{opacity:.55;cursor:default}
+  .totais{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+  .stat{border-radius:11px;padding:12px 14px;border:1px solid var(--borda);background:#fff}
+  .stat .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:var(--tinta-suave)}
+  .stat .val{font-size:21px;font-weight:800;margin-top:2px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-size:10px;letter-spacing:.03em;color:var(--tinta-suave);text-transform:uppercase;padding:8px;border-bottom:1px solid var(--borda)}
+  td{padding:9px 8px;border-bottom:1px solid #EDF1F2;font-variant-numeric:tabular-nums}
+  td.num,th.num{text-align:right}
+  tr.pend{background:#FFFBF3}
+  tr.zero{opacity:.55}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--cor-claro);color:var(--cor)}
+  .tag.p{background:#FDF3DF;color:var(--aviso)}
+  .tag.b{background:#E5F4EC;color:var(--ok)}
+  .aviso{font-size:11.5px;color:var(--tinta-suave);line-height:1.5;margin-top:10px;background:#F7F9FA;border:1px solid var(--borda);border-radius:10px;padding:10px 12px}
+  .aviso b{color:var(--tinta)}
+  .status{font-size:13px;padding:10px 12px;border-radius:10px;margin-top:10px;display:none}
+  .status.on{display:block}
+  .status.load{background:#EEF6F8;color:#0E5C6B}
+  .status.ok{background:#EAF6F0;color:#0b5c3f}
+  .status.err{background:#FBE9E7;color:#8a2b22}
+  .vazio{color:var(--tinta-suave);font-size:13px;padding:18px;text-align:center}
+  .linha{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+</style>
+</head>
+<body>
+<script src="fiscale.js"></script>
+<header>
+  <div class="barra">
+    <button class="voltar" onclick="location.href='home_portal.html'">◄ Home</button>
+    <div class="modulo"><span class="ponto"></span> Painel do mês — todas as empresas</div>
+  </div>
+</header>
+
+<main>
+  <!-- O que vai quebrar o acesso antes de quebrar. Carrega sozinho ao abrir a
+       tela: certificado vencido só aparece hoje quando a captura já falhou. -->
+  <div id="vencWrap" style="display:none"></div>
+
+  <div class="painel">
+    <h2>Apuração da carteira
+      <span style="font-weight:400;font-size:12px;color:var(--tinta-suave)">uma passada em todas as empresas</span></h2>
+    <div class="corpo">
+      <div class="linha">
+        <div><label>Competência</label><input type="month" id="pa"></div>
+        <div style="flex:0 0 auto"><button class="btn btn-primario" id="btnRodar" onclick="rodar()">▶ Apurar todas</button></div>
+        <div style="flex:0 0 auto"><button class="btn btn-sec btn-mini" onclick="mesAnterior()">◀ Mês anterior</button></div>
+        <div style="flex:0 0 auto"><button class="btn btn-sec btn-mini" onclick="mesAtual()">🗓 Mês atual</button></div>
+        <div style="flex:1"></div>
+        <div style="flex:0 0 auto"><button class="btn btn-sec" id="btnCsv" onclick="exportar()" disabled>⬇ CSV</button></div>
+      </div>
+      <div id="status" class="status"></div>
+      <div class="aviso">Roda a apuração de <b>todas as empresas cadastradas</b> de uma vez, em paralelo.
+        Cada linha mostra a prévia do mês e <b>o que falta</b> para o número fechar. Continua sendo
+        <b>prévia para conferência</b> — o valor oficial só se constitui na transmissão do PGDAS-D.</div>
+    </div>
+  </div>
+
+  <div class="painel" id="resWrap" style="display:none">
+    <h2>Resultado <span id="perTag" class="tag"></span>
+      <button class="btn btn-primario btn-mini" id="btnLote" onclick="baixarLote()" style="display:none"></button></h2>
+    <div class="corpo">
+      <div id="totais" class="totais"></div>
+      <div id="loteStatus" class="status"></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Empresa</th><th>Regime</th><th class="num">Notas</th><th class="num">Receita</th>
+            <th class="num">RBT12</th><th class="num">Prévia do DAS</th><th>Pendência</th><th></th></tr></thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="fiscale-nav.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const BRL=v=>(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const fmtC=c=>c?c.slice(5,7)+'/'+c.slice(0,4):'';
+let ultimo=null;
+
+async function api(u,o){ const r=await fetch(u,o);
+  if(!r.ok){let d;try{d=await r.json()}catch{d={}} throw new Error(d.detail||d.erro||('Erro '+r.status));}
+  return r.json(); }
+
+function setStatus(el,msg,tipo){ const e=$(el); if(!msg){ e.className='status'; e.textContent=''; return; }
+  e.className='status on '+(tipo||''); e.innerHTML=msg; }
+
+// mesmo padrão de período das outras telas
+function mesAtual(){ const d=new Date(); $('#pa').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; rodar(); }
+function mesAnterior(){
+  let [y,m]=($('#pa').value||'').split('-').map(Number);
+  if(!y){ const d=new Date(); y=d.getFullYear(); m=d.getMonth()+1; }
+  m--; if(m===0){ m=12; y--; }
+  $('#pa').value=`${y}-${String(m).padStart(2,'0')}`; rodar();
+}
+
+// ── O que está prestes a quebrar o acesso ────────────────────────────────────
+// Roda sozinho ao abrir a tela e não bloqueia nada: se falhar, o Painel segue
+// funcionando normalmente. Certificado vencido não pode continuar aparecendo só
+// quando a captura já falhou no meio da apuração.
+const _COR={vencido:['#FEE2E2','#FCA5A5','#991B1B'], sem_arquivo:['#FEE2E2','#FCA5A5','#991B1B'],
+            critico:['#FFEDD5','#FDBA74','#9A3412'], urgente:['#FFEDD5','#FDBA74','#9A3412'],
+            atencao:['#FEF9C3','#FDE68A','#854D0E']};
+function _prazoTxt(i){
+  if(i.nivel==='sem_arquivo') return 'arquivo não encontrado';
+  if(i.dias===null||i.dias===undefined) return 'validade não verificada';
+  if(i.dias<0) return `venceu há ${Math.abs(i.dias)} dia(s)`;
+  return `vence em ${i.dias} dia(s)`;
+}
+async function verVencimentos(){
+  let r;
+  try{ r=await (await fetch('/api/vencimentos')).json(); }catch(e){ return; }
+  const box=$('#vencWrap'); if(!box||!r||!r.itens) return;
+  const urg=r.itens.filter(i=>['vencido','sem_arquivo','critico','urgente','atencao'].includes(i.nivel));
+  const frageis=r.itens.filter(i=>i.pasta_fragil);
+  if(!urg.length && !frageis.length) return;
+
+  const linhas=urg.map(i=>{
+    const [bg,bd,fg]=_COR[i.nivel]||['#F1F5F9','#CBD5E1','#334155'];
+    return `<div style="background:${bg};border:1px solid ${bd};color:${fg};border-radius:8px;
+       padding:7px 10px;margin-top:6px;font-size:12.5px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+       <b style="flex:1 1 200px">${i.nome}</b>
+       <span>${i.validade||'—'}</span>
+       <b>${_prazoTxt(i)}</b></div>`;
+  }).join('');
+
+  const blocoFragil = frageis.length ? `
+    <details style="margin-top:8px;font-size:12px">
+      <summary style="cursor:pointer"><b>${frageis.length} certificado(s)</b> guardados em pasta que costuma ser limpa</summary>
+      <div style="margin-top:6px;line-height:1.6">
+        Estão em <b>Downloads</b> ou similar. Se o arquivo for apagado, a captura dessas
+        empresas para de funcionar e o erro só aparece durante a apuração.<br>
+        Mova os <code>.pfx</code> para a pasta de dados do Fiscale e recadastre.<br><br>
+        ${frageis.map(i=>`• ${i.nome}`).join('<br>')}
+      </div>
+    </details>` : '';
+
+  box.style.display='';
+  box.innerHTML=`<div class="painel"><h2>⚠ Acesso — o que precisa de atenção
+      <span class="tag">${r.alertas} alerta(s)</span></h2>
+    <div class="corpo">
+      ${linhas || '<div class="aviso">Nenhum certificado vencendo nos próximos 60 dias.</div>'}
+      ${blocoFragil}
+      <div class="aviso" style="margin-top:8px">Certificado ou procuração vencida derruba a captura
+        <b>sem aviso</b>. A procuração não fica dentro do certificado — informe a validade dela na
+        configuração da empresa para entrar nesta lista.</div>
+    </div></div>`;
+}
+
+async function rodar(){
+  const pa=$('#pa').value; if(!pa){ setStatus('#status','Informe a competência.','err'); return; }
+  const b=$('#btnRodar'); b.disabled=true; const t0=b.textContent; b.textContent='Apurando...';
+  setStatus('#status','⏳ Apurando todas as empresas... (leva alguns segundos)','load');
+  try{
+    const r=await api('/api/painel?pa='+encodeURIComponent(pa));
+    ultimo=r; render(r); setStatus('#status','',null);
+    $('#btnCsv').disabled=false;
+  }catch(e){ setStatus('#status',e.message,'err'); }
+  finally{ b.disabled=false; b.textContent=t0; }
+}
+
+function render(r){
+  $('#resWrap').style.display='block';
+  $('#perTag').textContent=fmtC(r.competencia);
+  const s=r.resumo;
+  $('#totais').innerHTML=
+    `<div class="stat"><div class="lbl">Prévia do DAS (soma)</div><div class="val">${BRL(s.das_total)}</div></div>
+     <div class="stat"><div class="lbl">Receita apurada</div><div class="val">${BRL(s.receita_total)}</div></div>
+     <div class="stat"><div class="lbl">Empresas</div><div class="val">${s.apuradas}/${s.total_empresas}</div></div>
+     <div class="stat" style="${s.com_pendencia?'background:#FFFBF3;border-color:#F0DCA8':''}">
+       <div class="lbl">Com pendência</div><div class="val">${s.com_pendencia}</div></div>`;
+  // ação em lote: quando há empresas cujo histórico dá para baixar sozinho
+  const bt=$('#btnLote');
+  if(s.baixaveis){
+    bt.style.display='inline-block';
+    bt.textContent=`⬇ Baixar histórico de ${s.baixaveis} empresa(s)`;
+  }else bt.style.display='none';
+
+  $('#tb').innerHTML=r.empresas.map(e=>{
+    if(!e.ok) return `<tr class="pend"><td>${e.nome}</td><td colspan="7" style="color:var(--alerta)">${e.erro||'falhou'}</td></tr>`;
+    const RG={simples:'Simples', mei:'MEI', presumido:'Presumido', real:'Lucro Real'};
+    const foraSimples = e.regime==='presumido' || e.regime==='real';
+    const cls = e.pendencia ? 'pend' : (e.das? '' : 'zero');
+    const acao = (e.meses_faltando||[]).length && e.download_disponivel
+      ? `<button class="btn btn-sec btn-mini" onclick="baixarUma('${e.cnpj}','${e.cidade_ibge}','${(e.meses_faltando||[])[0]}')">⬇ ${e.cidade}</button>`
+      : ((e.anexo_pendente||[]).length
+          ? `<a class="btn btn-sec btn-mini" style="text-decoration:none" href="classificador.html">⚙ configurar</a>` : '');
+    return `<tr class="${cls}">
+      <td><b>${e.nome}</b>${e.cidade?`<div style="font-size:10.5px;color:var(--tinta-suave)">${e.cidade}</div>`:''}</td>
+      <td><span class="tag${foraSimples?'':' b'}">${RG[e.regime||'simples']}</span></td>
+      <td class="num">${e.notas||''}</td>
+      <td class="num">${e.receita?BRL(e.receita):'—'}</td>
+      <td class="num">${foraSimples?'—':(e.rbt12?BRL(e.rbt12):'—')}</td>
+      <td class="num"><b>${foraSimples?'<span style="font-weight:400;color:var(--tinta-suave)">não se aplica</span>':(e.das?BRL(e.das):'—')}</b></td>
+      <td>${e.pendencia?`<span class="tag p">${e.pendencia}</span>`:'<span class="tag b">ok</span>'}</td>
+      <td style="text-align:right">${acao}</td></tr>`;
+  }).join('');
+}
+
+function baixarUma(cnpj, ibge, primeiroMes){
+  // manda para a tela do NFS-e, que já tem o formulário e a senha do certificado
+  location.href='nfse.html';
+}
+
+async function baixarLote(){
+  if(!ultimo) return;
+  const alvos=ultimo.empresas.filter(e=>e.ok && (e.meses_faltando||[]).length && e.download_disponivel);
+  if(!alvos.length) return;
+  const meses=[...new Set(alvos.flatMap(e=>e.meses_faltando))].sort();
+  const ini=meses[0]+'-01';
+  const [ay,am]=meses[meses.length-1].split('-').map(Number);
+  const fim=`${meses[meses.length-1]}-${new Date(ay,am,0).getDate()}`;
+  if(!confirm(`Baixar o histórico municipal de ${alvos.length} empresa(s)?\n\n`
+    +alvos.map(e=>`• ${e.nome} — ${e.cidade}`).join('\n')
+    +`\n\nPeríodo: ${fmtC(meses[0])} a ${fmtC(meses[meses.length-1])}\n\n`
+    +`Usa a senha salva de cada certificado. Quem não tiver senha salva vai falhar — e as demais continuam.`)) return;
+  const b=$('#btnLote'); b.disabled=true; const t0=b.textContent; b.textContent='Baixando...';
+  setStatus('#loteStatus','⏳ Consultando as prefeituras... (pode levar alguns minutos)','load');
+  try{
+    const r=await api('/api/painel/baixar-historico',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({data_ini:ini, data_fim:fim, empresas:alvos.map(e=>e.cnpj)})});
+    const linhas=r.resultados.map(x=>x.ok
+      ? `✓ <b>${x.nome}</b> — ${x.baixadas||0} nota(s), ${x.novas||0} nova(s)`
+      : `✖ <b>${x.nome}</b> — ${x.erro||(x.detalhes||[]).join(' ')}`);
+    setStatus('#loteStatus',`<b>${r.ok} concluída(s), ${r.falhas} com falha.</b><br>`+linhas.join('<br>'),
+      r.falhas? 'err':'ok');
+    if(r.ok) rodar();     // reapura com o histórico novo
+  }catch(e){ setStatus('#loteStatus',e.message,'err'); }
+  finally{ b.disabled=false; b.textContent=t0; }
+}
+
+function exportar(){
+  if(!ultimo) return;
+  const sep=';';
+  const l=[['Empresa','CNPJ','Regime','Cidade','Notas','Receita','RBT12','DAS','Pendencia'].join(sep)];
+  ultimo.empresas.forEach(e=>l.push([
+    (e.nome||'').replace(/;/g,','), e.cnpj, e.regime||'simples', e.cidade||'', e.notas||0,
+    (e.receita||0).toFixed(2), (e.rbt12||0).toFixed(2), (e.das||0).toFixed(2),
+    (e.pendencia||'').replace(/;/g,',')].join(sep)));
+  const blob=new Blob(['﻿'+l.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`painel_${ultimo.competencia}.csv`; a.click(); URL.revokeObjectURL(a.href);
+}
+
+(function inicio(){
+  const d=new Date();
+  $('#pa').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  rodar();
+  verVencimentos();   // em paralelo: não atrasa a apuração nem depende dela
+})();
+</script>
+</body>
+</html>

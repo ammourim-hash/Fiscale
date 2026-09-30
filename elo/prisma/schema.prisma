@@ -1,0 +1,1090 @@
+// Fiscale Elo — identidade, sessao, RBAC e departamentos (MVP 1.1).
+//
+// ---------------------------------------------------------------------
+//  A decisao desta fase: Identity + Membership, e nao User
+// ---------------------------------------------------------------------
+//  No MVP 1.0 existia `User` com `tenantId`. Isso torna impossivel a mesma
+//  pessoa participar de dois tenants sem virar duas linhas sem parentesco:
+//  duas senhas conceituais, dois cadastros, nenhuma forma de dizer "e a
+//  mesma Aline". Corrigir depois exigiria migrar dados vivos.
+//
+//  O banco esta vazio. Entao a separacao acontece agora:
+//
+//    Identity    a PESSOA. Global, sem tenant. Existe uma vez so.
+//    Membership  a pessoa DENTRO de um tenant. E aqui que mora o papel.
+//    Tenant      o escritorio.
+//
+//  `Membership` e o que o MVP 1.0 chamava de `User`, com o nome certo.
+//  Sessao, departamento e auditoria apontam para Membership, nunca para
+//  Identity — porque tudo isso acontece dentro de um tenant.
+//
+// ---------------------------------------------------------------------
+//  Tabelas globais e RLS
+// ---------------------------------------------------------------------
+//  Tres tabelas nao tem `tenant_id`: identities, identity_providers e
+//  consumed_exchange_tokens. Nenhuma fica desprotegida:
+//
+//    identities / identity_providers — RLS por associacao: so sao visiveis
+//      as identidades que possuem membership no tenant corrente. Quem nao
+//      tem vinculo com o tenant simplesmente nao existe para ele.
+//
+//    consumed_exchange_tokens — o elo_app NAO tem SELECT. So INSERT e
+//      DELETE. Tabela que ninguem le nao vaza, e a protecao contra replay
+//      nem precisa ler (ver exchange/replay.ts).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  runtime  = "nodejs"
+}
+
+// A URL nao mora aqui. No Prisma 7 quem informa a conexao e o
+// prisma.config.ts (comandos de CLI, papel elo_owner) e o driver adapter em
+// src/server/db/client.ts (runtime, papel elo_app). Ter os dois separados e
+// o que impede a aplicacao de rodar com poder de migration.
+datasource db {
+  provider = "postgresql"
+}
+
+/// Papel = NIVEL DE PERMISSAO. Nao confundir com departamento, que e area
+/// operacional (Fiscal, Contabil, DP...) e vive em Department.
+enum Role {
+  OWNER
+  ADMIN
+  MANAGER
+  AGENT
+  VIEWER
+
+  @@map("role")
+}
+
+/// O tenant. Nao tem tenant_id: ele E o tenant, e se isola pelo proprio id.
+model Tenant {
+  id        String   @id @default(uuid()) @db.Uuid
+  slug      String   @unique
+  name      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  memberships        Membership[]
+  departments        Department[]
+  contacts           Contact[]
+  conversations      Conversation[]
+  messages           Message[]
+  attachments        MessageAttachment[]
+  customerReferences ExternalCustomerReference[]
+  syncRuns           SyncRun[]
+  tags               Tag[]
+
+  @@map("tenants")
+}
+
+/// A PESSOA. Global, uma linha por ser humano, independente de quantos
+/// escritorios ela atenda. Nao guarda senha: quem autentica e o Fiscale.
+model Identity {
+  id        String   @id @default(uuid()) @db.Uuid
+  /// Sempre em minusculas — a normalizacao acontece na aplicacao.
+  email     String   @unique
+  name      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  providers   IdentityProvider[]
+  memberships Membership[]
+
+  @@map("identities")
+}
+
+/// De onde essa pessoa vem. Hoje so existe o provedor "fiscale"; a tabela
+/// e separada para que amanha a mesma Identity possa ter outra origem sem
+/// migration de dados.
+model IdentityProvider {
+  id          String   @id @default(uuid()) @db.Uuid
+  identityId  String   @map("identity_id") @db.Uuid
+  provider    String
+  /// Identificador da pessoa no sistema de origem (no Fiscale, o login).
+  providerUid String   @map("provider_uid")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  identity Identity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUid])
+  @@index([identityId])
+  @@map("identity_providers")
+}
+
+/// A pessoa DENTRO de um tenant. Substitui o `User` do MVP 1.0.
+model Membership {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  identityId String   @map("identity_id") @db.Uuid
+  role       Role     @default(AGENT)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  /// Departamento PRINCIPAL — o que aparece ao lado do nome ("Aline • Fiscal").
+  ///
+  /// Uma pessoa pode estar em varios departamentos; o principal e uma
+  /// escolha, nao um calculo. Deduzir "o primeiro da lista" daria uma
+  /// assinatura externa que muda sozinha quando alguem reordena um
+  /// cadastro. Enquanto ninguem escolher, fica nulo e a interface mostra
+  /// so o nome.
+  primaryDepartmentId String? @map("primary_department_id") @db.Uuid
+
+  /// Aparece na lista que o CLIENTE ve ao escolher com quem falar.
+  ///
+  /// Padrao `false` de proposito: ninguem e exposto ao cliente por ter
+  /// sido cadastrado. Com padrao `true`, o estagiario criado hoje estaria
+  /// na lista amanha, e ninguem perceberia ate um cliente escolher.
+  visibleToCustomers Boolean @default(false) @map("visible_to_customers")
+
+  /// Pode RECEBER atendimento novo.
+  ///
+  /// Separado do anterior porque sao coisas diferentes: um gerente pode
+  /// ser visivel para consulta sem entrar na distribuicao, e quem esta de
+  /// ferias continua existindo sem receber fila.
+  ///
+  /// Tambem NAO e "online". Presenca em tempo real e do MVP 1.5+; isto
+  /// aqui e configuracao, nao estado momentaneo.
+  availableForAssignment Boolean @default(true) @map("available_for_assignment")
+
+  tenant        Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  identity      Identity               @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  sessions      Session[]
+  departments   DepartmentMembership[]
+  conversations Conversation[]
+  views         ConversationView[]
+  notes         InternalNote[]
+  messages      Message[]
+  messageViews  MessageView[]
+
+  notificationPreference NotificationPreference?
+  pushSubscriptions      PushSubscription[]
+
+  @@unique([tenantId, identityId])
+  @@index([tenantId])
+  @@map("memberships")
+}
+
+/// Area operacional, configuravel por tenant. Nada de Fiscal/Contabil/DP
+/// escritos no codigo: sao dados, criados por quem administra o escritorio.
+model Department {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  slug      String
+  name      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant        Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  members       DepartmentMembership[]
+  conversations Conversation[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("departments")
+}
+
+/// Tabela de ligacao: uma pessoa pode estar em mais de um departamento.
+model DepartmentMembership {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  departmentId String   @map("department_id") @db.Uuid
+  membershipId String   @map("membership_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@unique([departmentId, membershipId])
+  @@index([tenantId])
+  @@index([membershipId])
+  @@map("department_memberships")
+}
+
+/// Sessao do Elo. Revogavel — e por isso mora no banco e nao num JWT.
+///
+/// `tokenHash` guarda SHA-256 do token, nunca o token. Vazamento de backup
+/// nao vira sessao ativa: o atacante teria o hash, e o cookie exige o valor.
+model Session {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  membershipId String    @map("membership_id") @db.Uuid
+  tokenHash    String    @unique @map("token_hash")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(6)
+  lastSeenAt   DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(6)
+  /// Hash do IP, nao o IP. Serve para detectar troca de origem sem manter
+  /// dado pessoal a mais do que o necessario.
+  ipHash       String?   @map("ip_hash")
+  userAgent    String?   @map("user_agent")
+
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, membershipId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+/// Anti-replay do token de troca. Global e de propósito somente-escrita:
+/// o elo_app tem INSERT e DELETE, nunca SELECT.
+///
+/// A protecao e a propria UNIQUE de `jti` — `INSERT ... ON CONFLICT DO
+/// NOTHING RETURNING` decide num unico comando atomico se este uso e o
+/// primeiro. Nao existe janela entre "consultar" e "gravar".
+model ConsumedExchangeToken {
+  jti        String   @id
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(6)
+  consumedAt DateTime @default(now()) @map("consumed_at") @db.Timestamptz(6)
+
+  @@index([expiresAt])
+  @@map("consumed_exchange_tokens")
+}
+
+/// Trilha de auditoria. Nunca guarda token, cookie ou conteudo sensivel.
+model AuditLog {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// SEM chave estrangeira para `tenants`, de proposito: auth/exchange.ts
+  /// registra AUTH_EXCHANGE_FAILED com o tenant que veio no claim mesmo
+  /// quando ele NAO existe (TENANT_NOT_FOUND) — e e justamente essa
+  /// tentativa que interessa guardar. Com FK, o INSERT seria recusado e a
+  /// trilha perderia o caso. Em troca, linha de tenant apagado nao some
+  /// sozinha: sai por expurgo com politica de retencao, nunca por cascata.
+  tenantId     String   @map("tenant_id") @db.Uuid
+  membershipId String?  @map("membership_id") @db.Uuid
+  action       String
+  targetType   String?  @map("target_type")
+  targetId     String?  @map("target_id")
+  metadata     Json?
+  ipHash       String?  @map("ip_hash")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
+}
+
+/// A pessoa do outro lado da conversa. Cresce no MVP 1.4; aqui continua
+/// servindo de alvo aos testes de isolamento.
+model Contact {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  phone     String
+  name      String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, phone])
+  @@index([tenantId])
+  @@map("contacts")
+}
+
+// =====================================================================
+//  MVP 1.2 — projecao de clientes
+//
+//  O Fiscale e a FONTE DA VERDADE do cadastro. O que mora aqui e uma
+//  PROJECAO DE LEITURA: a copia minima que o Elo precisa para reconhecer
+//  quem esta do outro lado e continuar funcionando as 23h com o
+//  escritorio fechado. Editar a projecao nao altera o Fiscale, e nada
+//  aqui volta para la.
+//
+//  O desenho abaixo saiu de olhar o `state_clientes.json` real, nao da
+//  lista de campos imaginada. As duas descobertas que mudaram decisao
+//  estao anotadas em cada lugar.
+// =====================================================================
+
+/// Confianca na normalizacao de um telefone. Numero que nao da para
+/// normalizar com seguranca fica guardado como veio, sem palpite.
+enum PhoneStatus {
+  /// Virou E.164 sem adivinhacao.
+  OK
+  /// Faltou DDD. Nao inventamos DDD.
+  NO_AREA_CODE
+  /// Nao parece telefone (digitos de menos, de mais, ou DDD inexistente).
+  INVALID
+
+  @@map("phone_status")
+}
+
+/// Cliente do Fiscale, projetado no Elo.
+model ExternalCustomerReference {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+
+  /// "FISCALE" hoje. Existe para que outra origem amanha nao colida.
+  source String @default("FISCALE")
+  /// O id do cliente NA ORIGEM. E a chave de correlacao, nao o CNPJ.
+  externalId String @map("external_id")
+
+  displayName String @map("display_name")
+
+  /// So digitos. O Fiscale guarda com mascara e a mascara muda; guardar
+  /// normalizado e o que permite procurar sem depender de formatacao.
+  /// Nao e chave: cliente pode nao ter documento, e documento pode mudar.
+  documentDigits String? @map("document_digits")
+  /// CNPJ | CPF | OUTRO — deduzido do tamanho, sem validar digito.
+  documentKind String? @map("document_kind")
+
+  email String?
+
+  active        Boolean   @default(true)
+  deactivatedAt DateTime? @map("deactivated_at") @db.Timestamptz(6)
+
+  /// Versao calculada PELO FISCALE. Serve para ele decidir o que enviar,
+  /// e para rastrear de qual estado da origem veio esta linha.
+  sourceVersion String @map("source_version")
+  /// Versao calculada PELO ELO sobre o que chegou. E esta que decide se
+  /// houve mudanca. Assim a idempotencia nao depende de o Fiscale acertar
+  /// o hash dele — nem de os dois calcularem igual em linguagens
+  /// diferentes.
+  contentHash String @map("content_hash")
+
+  sourceUpdatedAt DateTime? @map("source_updated_at") @db.Timestamptz(6)
+  syncedAt        DateTime  @map("synced_at") @db.Timestamptz(6)
+
+  /// Quando o registro deixou de aparecer num full sync. NAO e o mesmo
+  /// que inativado: ausente pode ser filtro novo na origem, erro de
+  /// exportacao ou exclusao de verdade. Marcar a data e deixar a decisao
+  /// para uma pessoa e melhor do que sumir com o historico sozinho.
+  missingSince DateTime? @map("missing_since") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant        Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  phones        ExternalCustomerPhone[]
+  conversations Conversation[]
+
+  @@unique([tenantId, source, externalId])
+  @@index([tenantId, documentDigits])
+  @@index([tenantId, displayName])
+  @@map("external_customer_references")
+}
+
+/// Telefones do cliente projetado.
+///
+/// O Fiscale tem UM campo `tel`, e livre — sem mascara obrigatoria e sem
+/// validacao. Na pratica isso significa que uma linha pode conter mais de
+/// um numero ("(81) 99999-1111 / 3333-4444"), que e como escritorio
+/// preenche cadastro. Guardar num campo unico obrigaria a escolher um dos
+/// numeros na hora de casar a mensagem do WhatsApp — exatamente a decisao
+/// silenciosa que nao pode existir. Dai a tabela separada.
+model ExternalCustomerPhone {
+  id         String @id @default(uuid()) @db.Uuid
+  tenantId   String @map("tenant_id") @db.Uuid
+  customerId String @map("customer_id") @db.Uuid
+
+  /// Como veio da origem, sem tocar. Se a normalizacao errar, o original
+  /// continua aqui para uma pessoa conferir.
+  raw String
+  /// +55DDDNNNNNNNNN, ou null quando nao deu para normalizar com certeza.
+  e164   String?
+  status PhoneStatus
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  customer ExternalCustomerReference @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, raw])
+  @@index([tenantId, e164])
+  @@map("external_customer_phones")
+}
+
+/// Uma execucao de sincronizacao. E daqui que sai o "sincronizado em" e a
+/// contagem do diagnostico.
+model SyncRun {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  source   String @default("FISCALE")
+  /// FULL | INCREMENTAL
+  mode String
+
+  received   Int @default(0)
+  created    Int @default(0)
+  updated    Int @default(0)
+  unchanged  Int @default(0)
+  reactivated Int @default(0)
+  deactivated Int @default(0)
+  markedMissing Int @default(0) @map("marked_missing")
+  rejected   Int @default(0)
+
+  startedAt  DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz(6)
+  /// OK | FAILED
+  status String @default("OK")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, startedAt])
+  @@map("sync_runs")
+}
+
+/// Anti-replay das requisicoes assinadas da integracao.
+///
+/// Mesmo desenho do `consumed_exchange_tokens`: global, somente-escrita, e
+/// a decisao de "primeiro uso" sai de um unico INSERT. Ver replay.ts.
+model ConsumedIntegrationNonce {
+  nonce      String   @id
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(6)
+  consumedAt DateTime @default(now()) @map("consumed_at") @db.Timestamptz(6)
+
+  @@index([expiresAt])
+  @@map("consumed_integration_nonces")
+}
+
+// =====================================================================
+//  MVP 1.4 — modelo de atendimento
+//
+//  O nome escolhido e `Conversation`, e nao `Ticket` ou `Atendimento`:
+//  e o nome que ELO_DECISOES.md secao D ja usava, e e para ele que as
+//  mensagens do MVP 1.5 vao apontar. Na interface ele aparece como
+//  "Atendimento" — o termo do escritorio. Modelo e rotulo nao precisam
+//  ser a mesma palavra.
+//
+//  A REGRA que atravessa tudo: a conversa pertence ao TENANT. O
+//  funcionario e o responsavel ATUAL. Transferir troca o responsavel;
+//  nao cria outro atendimento, nem torna o anterior invisivel.
+// =====================================================================
+
+enum ConversationStatus {
+  NEW
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  WAITING_OFFICE
+  RESOLVED
+
+  @@map("conversation_status")
+}
+
+/// Tipos do historico. Um so lugar registra o que aconteceu.
+enum ConversationEventType {
+  CREATED
+  VIEWED
+  ASSIGNED
+  UNASSIGNED
+  TRANSFERRED
+  STATUS_CHANGED
+  TAG_ADDED
+  TAG_REMOVED
+  NOTE_CREATED
+  NOTE_EDITED
+  RESOLVED
+  REOPENED
+
+  /// O CLIENTE escolheu o setor, respondendo a saudacao do WhatsApp.
+  /// Nao e TRANSFERRED: transferir e decisao do escritorio, e apagar
+  /// essa diferenca esconderia justamente o que alguem vai querer
+  /// auditar. `actorMembershipId` fica NULO — nao foi ninguem daqui.
+  TRIAGED
+
+  /// O atendimento ficou SEM RESPOSTA e a coordenacao foi avisada.
+  /// Guardado como evento, e nao como coluna, por dois motivos: vira
+  /// historico legivel na conversa, e e a propria trava de "ja avisei"
+  /// — a varredura pula quem ja tem este evento. `actorMembershipId`
+  /// fica NULO: quem escalou foi o relogio.
+  ESCALATED
+
+  @@map("conversation_event_type")
+}
+
+/// Um atendimento.
+model Conversation {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+
+  /// O cliente da projecao. Nulo enquanto o contato nao foi identificado —
+  /// mensagem de numero desconhecido gera atendimento do mesmo jeito.
+  customerReferenceId String? @map("customer_reference_id") @db.Uuid
+
+  /// "WHATSAPP" hoje e "MANUAL" para o que o escritorio abre por conta
+  /// propria. Texto, e nao enum: canal novo nao deve exigir migration.
+  channel String @default("WHATSAPP")
+
+  /// Quem e o cliente DENTRO do canal externo — no WhatsApp, o `wa_id`
+  /// (telefone em E.164 sem o "+").
+  ///
+  /// Existe por duas razoes praticas:
+  ///
+  ///   1. e o endereco de RESPOSTA. Sem ele nao ha para onde mandar a
+  ///      mensagem que o funcionario escreve no Elo;
+  ///   2. e a chave que reencontra o atendimento quando a mesma pessoa
+  ///      escreve de novo — inclusive quando o contato nao foi
+  ///      identificado como cliente (`customerReferenceId` nulo).
+  ///
+  /// Nulo nos canais internos (`INTERNAL`, `DEV`), que nao tem outro lado.
+  externalContactId String? @map("external_contact_id")
+
+  status ConversationStatus @default(NEW)
+
+  /// Responsavel ATUAL. Nulo = na fila, de quem quiser assumir.
+  assignedMembershipId String? @map("assigned_membership_id") @db.Uuid
+  /// Area responsavel, INDEPENDENTE de haver pessoa. E o que permite fila
+  /// departamental: "Fiscal, sem responsavel" e um estado valido.
+  assignedDepartmentId String? @map("assigned_department_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Os quatro marcos que as metricas futuras vao medir. Cada um so e
+  /// gravado UMA vez, na primeira ocorrencia — "tempo ate a primeira
+  /// resposta" nao pode mudar quando a segunda chega.
+  firstViewedAt   DateTime? @map("first_viewed_at") @db.Timestamptz(6)
+  firstAssignedAt DateTime? @map("first_assigned_at") @db.Timestamptz(6)
+  firstResponseAt DateTime? @map("first_response_at") @db.Timestamptz(6)
+  resolvedAt      DateTime? @map("resolved_at") @db.Timestamptz(6)
+
+  /// Ordena a lista. Muda a cada evento relevante.
+  lastActivityAt DateTime @default(now()) @map("last_activity_at") @db.Timestamptz(6)
+
+  /// Trava otimista. Toda alteracao concorrente compara e incrementa —
+  /// sem isso, duas transferencias simultaneas fariam a ultima vencer em
+  /// silencio e a primeira sumir sem ninguem saber.
+  version Int @default(0)
+
+  /// Contador de mensagens desta conversa. E daqui que sai o `sequence` de
+  /// cada mensagem, por um UPDATE ... RETURNING: o proprio banco trava a
+  /// linha, entao dois envios simultaneos recebem numeros diferentes e a
+  /// ordem para de depender da precisao do relogio. Ver messages/service.ts.
+  messageSeq Int @default(0) @map("message_seq")
+
+  tenant     Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer   ExternalCustomerReference? @relation(fields: [customerReferenceId], references: [id], onDelete: SetNull)
+  assignee   Membership?                @relation(fields: [assignedMembershipId], references: [id], onDelete: SetNull)
+  department Department?                @relation(fields: [assignedDepartmentId], references: [id], onDelete: SetNull)
+
+  views    ConversationView[]
+  events   ConversationEvent[]
+  tags     ConversationTag[]
+  notes    InternalNote[]
+  messages Message[]
+
+  /// UM atendimento por pessoa, por canal.
+  ///
+  /// E o que impede duas mensagens que chegam no mesmo segundo criarem
+  /// dois atendimentos para o mesmo cliente — a corrida que existe de
+  /// verdade quando alguem manda tres mensagens seguidas no WhatsApp.
+  /// Quem decide e o INDICE, e nao um `findFirst` seguido de `create`:
+  /// entre os dois cabe a segunda mensagem inteira (a mesma licao de S26
+  /// e S36).
+  ///
+  /// Vale tambem para atendimento RESOLVIDO: mensagem nova volta para o
+  /// MESMO atendimento, sobe na lista e aparece como nao lida — que e
+  /// exatamente o que S42 decidiu. Nao nasce um caso novo a cada retorno.
+  ///
+  /// `NULL` nao colide com `NULL` no Postgres, entao os canais internos,
+  /// sem `externalContactId`, nao sao afetados.
+  @@unique([tenantId, channel, externalContactId], map: "conversations_contato_externo")
+  @@index([tenantId, status, lastActivityAt])
+  @@index([tenantId, assignedMembershipId, lastActivityAt])
+  @@index([tenantId, assignedDepartmentId, lastActivityAt])
+  @@map("conversations")
+}
+
+/// Quem abriu este atendimento.
+///
+/// Uma linha por (atendimento, pessoa), acumulando. Guardar um evento por
+/// abertura encheria o historico de ruido — quem abre um caso o abre dez
+/// vezes num dia. O que interessa e "quem viu, quando pela primeira vez,
+/// quando pela ultima". O evento VIEWED do historico e gravado apenas na
+/// PRIMEIRA vez de cada pessoa.
+///
+/// VISUALIZAR NAO E ASSUMIR. Esta tabela nao toca em assignedMembershipId.
+model ConversationView {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  membershipId   String   @map("membership_id") @db.Uuid
+  firstViewedAt  DateTime @default(now()) @map("first_viewed_at") @db.Timestamptz(6)
+  lastViewedAt   DateTime @default(now()) @map("last_viewed_at") @db.Timestamptz(6)
+  viewCount      Int      @default(1) @map("view_count")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  membership   Membership   @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, membershipId])
+  @@index([tenantId, membershipId])
+  @@map("conversation_views")
+}
+
+/// O historico. UMA linha do tempo para tudo.
+///
+/// Os campos que importam sao colunas, nao chaves dentro de um JSON: "de
+/// quem para quem" e "de qual status para qual" sao perguntas que se faz
+/// o tempo todo, e cavar JSON para responde-las envelhece mal. `metadata`
+/// existe para o resto.
+///
+/// Nao ha tabela separada de atribuicao: duas linhas do tempo paralelas
+/// divergem, e a pergunta "o que aconteceu com este atendimento?" passaria
+/// a ter duas respostas.
+/// ATENCAO: existe um indice UNICO PARCIAL que o Prisma nao sabe
+/// declarar — `conversation_events_escalated_unico`, em
+/// (conversation_id) WHERE type = 'ESCALATED'. Ele vive na migration
+/// 20260925005802_escalonamento_unico e e a trava de concorrencia do
+/// escalonamento: sem ele, duas varreduras simultaneas avisariam a
+/// coordenacao duas vezes. `prisma migrate dev` nao o conhece e pode
+/// querer apaga-lo; `migrate deploy`, que e o que roda aqui, nao mexe.
+model ConversationEvent {
+  id             String                @id @default(uuid()) @db.Uuid
+  tenantId       String                @map("tenant_id") @db.Uuid
+  conversationId String                @map("conversation_id") @db.Uuid
+  type           ConversationEventType
+
+  /// Quem fez. Nulo = o sistema (criacao por mensagem recebida, por ex.).
+  actorMembershipId String? @map("actor_membership_id") @db.Uuid
+
+  fromMembershipId String? @map("from_membership_id") @db.Uuid
+  toMembershipId   String? @map("to_membership_id") @db.Uuid
+  fromDepartmentId String? @map("from_department_id") @db.Uuid
+  toDepartmentId   String? @map("to_department_id") @db.Uuid
+
+  fromStatus ConversationStatus? @map("from_status")
+  toStatus   ConversationStatus? @map("to_status")
+
+  /// So codigo e rotulo. Nunca segredo, nunca conteudo de mensagem.
+  metadata Json?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, conversationId, createdAt])
+  @@map("conversation_events")
+}
+
+/// Etiqueta do escritorio. Por tenant, criada por quem administra —
+/// "Urgente" e "Documento pendente" sao dados, nao constantes do codigo.
+model Tag {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  slug      String
+  name      String
+  /// Token de cor da interface ("acao", "atencao", "erro", "ok", "neutro").
+  /// Nao um hexadecimal: cor crua nao sobrevive a troca de tema.
+  tone      String   @default("neutro")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversations ConversationTag[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("tags")
+}
+
+model ConversationTag {
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @map("tenant_id") @db.Uuid
+  conversationId      String   @map("conversation_id") @db.Uuid
+  tagId               String   @map("tag_id") @db.Uuid
+  addedByMembershipId String?  @map("added_by_membership_id") @db.Uuid
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  tag          Tag          @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, tagId])
+  @@index([tenantId, tagId])
+  @@map("conversation_tags")
+}
+
+/// Nota interna.
+///
+/// NUNCA vai para o cliente. Isso e estrutural, nao uma marcacao: nota e
+/// uma TABELA separada de mensagem. Um campo `interna: boolean` dentro de
+/// mensagem seria um `false` de distancia da nota do escritorio chegar no
+/// WhatsApp do cliente.
+model InternalNote {
+  id                 String   @id @default(uuid()) @db.Uuid
+  tenantId           String   @map("tenant_id") @db.Uuid
+  conversationId     String   @map("conversation_id") @db.Uuid
+  authorMembershipId String   @map("author_membership_id") @db.Uuid
+  content            String
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author       Membership   @relation(fields: [authorMembershipId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, conversationId, createdAt])
+  @@map("internal_notes")
+}
+
+// =====================================================================
+//  MVP 1.5 — motor de mensagens
+//
+//  `Message` aponta para `Conversation`, que ja existe. NAO ha um segundo
+//  modelo de conversa, e nao ha nada de WhatsApp aqui dentro: o canal e
+//  abstrato, e a Meta entrara depois como um ADAPTADOR que grava nestas
+//  mesmas tabelas. Se o nome de um provedor aparecer neste bloco, algo foi
+//  modelado errado.
+//
+//  Nota interna NAO e mensagem. `InternalNote` continua sendo tabela
+//  separada, e e por isso que nao existe caminho de codigo capaz de
+//  enviar uma nota ao cliente. Ver a nota daquele modelo.
+// =====================================================================
+
+/// De onde para onde.
+///
+/// SYSTEM existe para o caso — ainda nao usado — de um evento que precise
+/// aparecer no corpo da conversa. Transferencia, status e atribuicao NAO
+/// entram por aqui: eles ja vivem em `ConversationEvent`, e duplica-los
+/// como mensagem daria duas fontes de verdade para o mesmo fato.
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+  SYSTEM
+
+  @@map("message_direction")
+}
+
+/// O que a mensagem carrega.
+///
+/// AUDIO e VOICE sao tipos SEPARADOS de proposito, e a distincao nao e
+/// cosmetica: `AUDIO` e um arquivo de audio que alguem anexou; `VOICE` e
+/// uma mensagem gravada na hora. Sao coisas diferentes para quem le a
+/// conversa, aparecem diferente na tela — e o WhatsApp tambem as trata
+/// como tipos distintos (`audio` com `voice: true`). Juntar as duas agora
+/// significaria adivinhar depois, a partir do mimetype, qual era qual.
+enum MessageType {
+  TEXT
+  IMAGE
+  DOCUMENT
+  AUDIO
+  VOICE
+
+  @@map("message_type")
+}
+
+/// Estado no TRANSPORTE — o canal externo, quando existir.
+///
+/// Nao confundir com `MessageView`: "o cliente leu no WhatsApp" e "a Aline
+/// abriu no Elo" sao fatos diferentes, de sistemas diferentes, e um dia
+/// vao aparecer juntos na mesma tela. Por enquanto toda mensagem interna
+/// nasce e permanece QUEUED: nao ha canal para onde sair.
+enum MessageDeliveryStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+
+  @@map("message_delivery_status")
+}
+
+model Message {
+  id             String @id @default(uuid()) @db.Uuid
+  tenantId       String @map("tenant_id") @db.Uuid
+  conversationId String @map("conversation_id") @db.Uuid
+
+  /// Ordem determinstica DENTRO da conversa, vinda de
+  /// `conversations.message_seq` por UPDATE ... RETURNING. Timestamp nao
+  /// serve: duas mensagens no mesmo milissegundo empatariam, e "a ordem
+  /// depende de qual linha o banco devolveu primeiro" nao e ordem.
+  sequence Int
+
+  direction MessageDirection
+  type      MessageType      @default(TEXT)
+
+  /// SNAPSHOT da identidade de quem escreveu, no momento em que escreveu.
+  ///
+  /// Nao e enfeite nem desnormalizacao preguicosa: se a Aline mudar do
+  /// Fiscal para o Contabil em marco, a mensagem que ela escreveu em
+  /// janeiro NAO pode passar a dizer "Aline • Contabil". Referencia viva
+  /// reescreveria o passado a cada mudanca de setor. O `Id` fica para
+  /// ligar as coisas; o nome e a area ficam congelados.
+  senderMembershipId   String? @map("sender_membership_id") @db.Uuid
+  senderDisplayName    String? @map("sender_display_name")
+  senderDepartmentName String? @map("sender_department_name")
+
+  /// A outra ponta. Mensagem do cliente NAO finge ter vindo de um
+  /// Membership: ela tem identidade externa, e o canal que a produziu.
+  externalSenderId  String? @map("external_sender_id")
+  externalMessageId String? @map("external_message_id")
+  /// "DEV" hoje. "WHATSAPP" quando houver canal.
+  channel String @default("INTERNAL")
+
+  content String
+
+  /// Idempotencia. O navegador gera antes de enviar; duplo clique, retry e
+  /// reconexao mandam o MESMO valor, e o indice unico decide.
+  clientMessageId String? @map("client_message_id")
+
+  deliveryStatus MessageDeliveryStatus @default(QUEUED) @map("delivery_status")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Nenhum caminho de codigo escreve nestes dois no MVP 1.5. Editar e
+  /// apagar dependem de politica de retencao declarada, que e decisao de
+  /// produto e nao de implementacao. As colunas existem para que essa
+  /// politica nao precise de migration em cima de dado vivo.
+  editedAt  DateTime? @map("edited_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       Membership?  @relation(fields: [senderMembershipId], references: [id], onDelete: SetNull)
+
+  views       MessageView[]
+  attachments MessageAttachment[]
+
+  /// A ordem e unica por conversa — rede de seguranca caso alguem um dia
+  /// tente calcular o `sequence` fora do UPDATE atomico.
+  @@unique([conversationId, sequence])
+  /// A trava de idempotencia. NULL nao colide com NULL no Postgres, entao
+  /// mensagem sem `clientMessageId` (a de entrada) nao e afetada.
+  @@unique([tenantId, senderMembershipId, clientMessageId], map: "messages_idempotencia")
+  /// A mesma ideia para o que vem de fora: o canal reentrega, e reentrega
+  /// nao pode virar mensagem nova.
+  @@unique([tenantId, externalMessageId], map: "messages_externo")
+  @@index([tenantId, conversationId, sequence])
+  @@index([tenantId, conversationId, direction])
+  @@map("messages")
+}
+
+/// Quem, no ESCRITORIO, visualizou esta mensagem.
+///
+/// Informacao interna. Nao e o "visto" do cliente e nunca sai para ele —
+/// sao conceitos diferentes, de lados diferentes da conversa, e mistura-los
+/// e como confundir "li o e-mail" com "o destinatario leu o meu".
+///
+/// A linha so nasce por acao explicita da interface (conversa aberta,
+/// janela visivel, mensagem de fato na tela). Um GET de servidor nunca
+/// cria leitura: prefetch marcaria como lido o que ninguem olhou, e um
+/// numero de nao lidas em que a equipe nao confia nao serve para nada.
+model MessageView {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  messageId    String   @map("message_id") @db.Uuid
+  membershipId String   @map("membership_id") @db.Uuid
+  viewedAt     DateTime @default(now()) @map("viewed_at") @db.Timestamptz(6)
+
+  message    Message    @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, membershipId])
+  @@index([tenantId, membershipId])
+  @@map("message_views")
+}
+
+// =====================================================================
+//  MVP 1.6 — midia
+//
+//  O binario NAO mora no Postgres. A tabela guarda METADADO e uma CHAVE;
+//  os bytes ficam no storage, atras da abstracao em src/server/storage/.
+//  Blob em banco transforma backup, replicacao e migration num problema
+//  de disco, e nao ha nada que se ganhe com isso.
+// =====================================================================
+
+/// Como o anexo esta em relacao a uma mensagem.
+///
+/// Existe porque banco e object storage NAO compartilham transacao: o
+/// arquivo sobe antes de a mensagem existir. `PENDING` e o intervalo entre
+/// as duas coisas, e `expires_at` e o que impede esse intervalo de virar
+/// lixo permanente quando alguem fecha a aba no meio.
+enum AttachmentStatus {
+  /// Subiu, ainda nao pertence a nenhuma mensagem. Tem prazo de validade.
+  PENDING
+  /// Ligado a uma mensagem. Vive enquanto a mensagem viver.
+  ATTACHED
+
+  @@map("attachment_status")
+}
+
+/// Ponto de entrada para analise de malware — arquitetura, nao promessa.
+///
+/// Nao ha antivirus integrado nesta fase (ver o debito registrado no
+/// README). O padrao e `NOT_SCANNED` e nao `CLEAN` de proposito: dizer
+/// "limpo" sobre um arquivo que ninguem examinou seria mentira gravada no
+/// banco. O download recusa `BLOCKED`, entao ligar um scanner depois e
+/// preencher esta coluna — nao mexer no caminho de download.
+enum ScanStatus {
+  NOT_SCANNED
+  CLEAN
+  BLOCKED
+
+  @@map("scan_status")
+}
+
+model MessageAttachment {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+
+  /// NULO enquanto o upload nao virou mensagem. Ver AttachmentStatus.
+  messageId String? @map("message_id") @db.Uuid
+
+  /// O mesmo vocabulario da mensagem: IMAGE, DOCUMENT, AUDIO, VOICE.
+  type MessageType
+
+  /// Qual implementacao guardou os bytes ("local" em desenvolvimento,
+  /// "s3" em producao). Fica na linha para que trocar de provedor nao
+  /// exija adivinhar onde cada arquivo antigo foi parar.
+  storageProvider String @map("storage_provider")
+
+  /// O caminho DENTRO do storage. Aleatorio, com o tenant no prefixo, e
+  /// nunca derivado do nome do arquivo. Nunca sai para o cliente.
+  storageKey String @unique @map("storage_key")
+
+  /// So metadado, para exibir e para o download. NAO e a chave, e e
+  /// higienizado antes de ir para a tela ou para um cabecalho.
+  originalFileName String @map("original_file_name")
+  mimeType         String @map("mime_type")
+  sizeBytes        Int    @map("size_bytes")
+
+  /// Preenchidos quando fazem sentido. Dimensao ajuda a reservar espaco na
+  /// tela antes de a imagem chegar; duracao evita ter que baixar o audio
+  /// inteiro so para mostrar "0:37".
+  width      Int?
+  height     Int?
+  durationMs Int? @map("duration_ms")
+
+  /// Integridade e diagnostico. NUNCA autorizacao: conhecer o hash de um
+  /// arquivo nao pode dar acesso a ele. Deduplicacao futura, se houver,
+  /// so dentro do mesmo tenant.
+  sha256 String?
+
+  status     AttachmentStatus @default(PENDING)
+  scanStatus ScanStatus       @default(NOT_SCANNED) @map("scan_status")
+
+  /// Prazo do estado PENDING. Passou disso sem virar mensagem, e lixo.
+  expiresAt DateTime? @map("expires_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  message Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, messageId])
+  @@index([status, expiresAt])
+  @@map("message_attachments")
+}
+
+// =====================================================================
+//  MVP 1.7 — notificacoes, PWA e Web Push
+//
+//  O problema que esta fase resolve: um funcionario precisa ser avisado
+//  quando um cliente entra em contato, MESMO que nao esteja olhando para
+//  o Elo. O SSE do MVP 1.5 depende de pagina aberta; o Web Push nao.
+//
+//  Duas tabelas, as duas tenant-owned e as duas por MEMBERSHIP:
+//
+//    NotificationPreference  o que ESTA pessoa quer receber, neste
+//                            escritorio. Nao e configuracao do tenant:
+//                            quem decide se quer som e prévia e quem
+//                            escuta o som e le a prévia.
+//
+//    PushSubscription        um DISPOSITIVO. Notebook do escritorio,
+//                            computador de casa e celular sao tres
+//                            linhas; revogar uma nao toca nas outras.
+// =====================================================================
+
+/// O que cada funcionario quer ser avisado.
+///
+/// Uma linha por membership — e nao por identidade. A mesma pessoa pode
+/// querer alerta de tudo no escritorio onde atende e nada no escritorio
+/// onde so consulta.
+///
+/// Todos os padroes sao `true`, MENOS `showPreview`. Ver o comentario dele.
+model NotificationPreference {
+  id           String @id @default(uuid()) @db.Uuid
+  tenantId     String @map("tenant_id") @db.Uuid
+  membershipId String @unique @map("membership_id") @db.Uuid
+
+  /// Mensagem nova em atendimento que me interessa.
+  newMessages Boolean @default(true) @map("new_messages")
+  /// Atendimento novo chegando na fila da minha area.
+  newConversations Boolean @default(true) @map("new_conversations")
+  /// Alguem atribuiu um atendimento a mim.
+  assignedToMe Boolean @default(true) @map("assigned_to_me")
+  /// Alguem transferiu um atendimento para mim.
+  transferredToMe Boolean @default(true) @map("transferred_to_me")
+  /// Avisos do proprio Elo (versao nova, sincronizacao com problema).
+  systemNotices Boolean @default(true) @map("system_notices")
+
+  /// Som quando o Elo esta ABERTO. Nao vale para notificacao do sistema,
+  /// cujo som quem controla e o Windows/Android.
+  soundEnabled Boolean @default(true) @map("sound_enabled")
+
+  /// Mostrar um trecho da mensagem na notificacao do sistema.
+  ///
+  /// Padrao **false**, e este e o unico padrao restritivo da tabela. A
+  /// notificacao aparece na tela BLOQUEADA do Windows e do celular, e o
+  /// escritorio trata de assunto de terceiro: "Meu DAS esta atrasado" nao
+  /// pode aparecer para quem passar pela mesa. Com a prévia desligada o
+  /// aviso diz QUEM falou, nunca O QUE falou.
+  showPreview Boolean @default(false) @map("show_preview")
+
+  /// Nao perturbe, em MINUTOS desde a meia-noite (0..1439), hora local do
+  /// escritorio. Nulo nos dois = desligado.
+  ///
+  /// Silencia apenas o SOM. Nao existe push critico nesta fase, e por isso
+  /// tambem nao existe "prioridade de emergencia" para furar o horario:
+  /// inventar uma faria a pessoa desligar tudo.
+  quietHoursStart Int? @map("quiet_hours_start")
+  quietHoursEnd   Int? @map("quiet_hours_end")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("notification_preferences")
+}
+
+/// Um dispositivo inscrito para receber Web Push.
+///
+/// ---------------------------------------------------------------------
+///  O `endpoint` e um segredo de capacidade
+/// ---------------------------------------------------------------------
+///  Quem tem o endpoint mais as duas chaves consegue entregar notificacao
+///  naquele dispositivo. Por isso ele nunca sai numa resposta de API, nunca
+///  entra em log e nunca vai para a auditoria — o que a tela recebe e
+///  `endpointHash`, que serve para o navegador reconhecer "este dispositivo
+///  sou eu" e para mais nada.
+///
+///  `p256dh` e `auth` sao as chaves publicas do navegador para a cifra do
+///  RFC 8291. Sem elas o payload nao e cifrado, e sem cifra o provedor de
+///  push (Google, Mozilla, Microsoft) leria o conteudo.
+model PushSubscription {
+  id           String @id @default(uuid()) @db.Uuid
+  tenantId     String @map("tenant_id") @db.Uuid
+  membershipId String @map("membership_id") @db.Uuid
+
+  /// A URL que o provedor de push deu ao navegador.
+  endpoint String
+  /// SHA-256 do endpoint, em hex. E a chave de busca e a unica forma dele
+  /// que pode aparecer fora do servidor.
+  endpointHash String @map("endpoint_hash")
+
+  /// Chave publica do navegador (P-256, ponto nao comprimido, base64url).
+  p256dh String
+  /// Segredo de autenticacao do navegador (16 bytes, base64url).
+  auth String
+
+  /// Para a pessoa reconhecer o aparelho na tela. "Chrome no Windows".
+  /// Derivado do User-Agent no servidor; nao guardamos o UA inteiro.
+  deviceLabel String? @map("device_label")
+
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz(6)
+
+  /// Revogada: pela pessoa, pela troca de dono do aparelho, ou porque o
+  /// provedor respondeu 404/410. Nunca apagamos a linha — saber que aquele
+  /// aparelho existiu e foi desligado tem valor em auditoria.
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  /// Por que foi revogada: USER | EXPIRED | TAKEOVER | MEMBERSHIP.
+  revokedReason String? @map("revoked_reason")
+
+  /// Falhas seguidas de entrega. Zera a cada sucesso. Serve para desistir
+  /// de um endpoint que o provedor aceita mas nunca entrega.
+  failureCount Int @default(0) @map("failure_count")
+
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  /// Um aparelho, uma inscricao por escritorio. Reinscrever o mesmo
+  /// navegador ATUALIZA a linha em vez de criar a segunda.
+  @@unique([tenantId, endpointHash])
+  @@index([tenantId, membershipId])
+  @@index([endpointHash])
+  @@map("push_subscriptions")
+}

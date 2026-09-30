@@ -1,0 +1,108 @@
+====================================================================
+  FISCALE ELO — O QUE FAZER ANTES DE MIGRAR O NUMERO
+  Leia inteiro antes de comecar. Um dos passos NAO TEM VOLTA.
+====================================================================
+
+
+POR QUE ISSO E URGENTE
+----------------------
+Quando o numero do escritorio migra para a API do WhatsApp:
+
+  - o numero PARA DE FUNCIONAR no aplicativo do celular;
+  - a conversa que existe hoje NAO vai junto para o sistema;
+  - a exportacao de conversa deixa de ser possivel.
+
+Ou seja: tudo que nao for exportado ANTES esta perdido para sempre.
+Nao existe segunda chance nem suporte que recupere.
+
+
+--------------------------------------------------------------------
+PASSO 1 — LISTAR O QUE IMPORTA
+--------------------------------------------------------------------
+Nao da para exportar tudo de uma vez: o WhatsApp exporta UMA conversa
+por vez. Entao escolha.
+
+Sugestao de prioridade:
+  1. clientes ativos (os 19 do Fiscale);
+  2. conversas com combinado financeiro (valores, prazos, acordos);
+  3. conversas com documento importante (procuracao, contrato);
+  4. o resto, se sobrar tempo.
+
+Anote a lista antes de comecar. Sao uns 2 minutos por conversa.
+
+
+--------------------------------------------------------------------
+PASSO 2 — EXPORTAR (no celular)
+--------------------------------------------------------------------
+Para CADA conversa da lista:
+
+  1. Abra a conversa no WhatsApp.
+  2. Toque no NOME do contato, no topo.
+  3. Role ate o fim e toque em "Exportar conversa".
+  4. Escolha "INCLUIR MIDIA".
+     -> sem midia voce perde os audios e as fotos, que costumam ser
+        justamente a prova do que foi combinado.
+  5. Escolha salvar no Google Drive (ou envie por e-mail para voce).
+
+  OBS: com midia, o WhatsApp limita a ~10.000 mensagens por conversa.
+  Sem midia vai bem mais. Se a conversa for enorme, exporte as duas
+  formas: uma com midia (recente) e outra sem (historico completo).
+
+
+--------------------------------------------------------------------
+PASSO 3 — GUARDAR NUM LUGAR SO
+--------------------------------------------------------------------
+Crie no Google Drive:
+
+    FISCALE 2026 / Elo / historico-whatsapp /
+
+E dentro, uma pasta por cliente:
+
+    historico-whatsapp / MONTE ASSESSORIA /
+    historico-whatsapp / TRANSPORTES BETA TRANSPORTES /
+    ...
+
+Cada uma com o .txt e a pasta de midias daquela conversa.
+
+Quando o Elo estiver pronto, ele importa dessas pastas e o historico
+aparece na mesma linha do tempo das mensagens novas.
+
+
+--------------------------------------------------------------------
+PASSO 4 — CONFERIR ANTES DE MIGRAR
+--------------------------------------------------------------------
+Antes de acionar a migracao, confirme:
+
+  [ ] exportei todas as conversas da lista do Passo 1
+  [ ] abri pelo menos 3 arquivos .txt e vi que o conteudo esta la
+  [ ] as pastas de midia tem os audios e as imagens
+  [ ] tudo esta no Google Drive, nao so no celular
+  [ ] o Drive terminou de sincronizar (icone parado)
+
+So depois disso siga para a migracao.
+
+
+====================================================================
+  DEPOIS DA EXPORTACAO — O QUE VEM
+====================================================================
+  1. contratar o VPS
+  2. abrir conta na Meta e verificar a empresa (CNPJ + comprovante)
+  3. migrar o numero
+  4. o Elo entra no ar recebendo as mensagens novas
+  5. importar o historico exportado
+
+Os passos 1 e 2 podem ser feitos EM PARALELO com a exportacao — a
+verificacao da Meta leva alguns dias, entao quanto antes comecar,
+melhor.
+
+
+====================================================================
+  UMA COISA A DECIDIR AGORA
+====================================================================
+Avise nos termos de atendimento que as conversas sao GRAVADAS.
+
+Nao e burocracia: voces tratam dado fiscal de terceiros, a LGPD se
+aplica, e o arquivo protege o escritorio numa discussao com cliente
+sobre o que foi combinado. Uma linha no contrato ou uma mensagem
+automatica de primeiro contato resolve.
+====================================================================

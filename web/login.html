@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0C333B">
+<title>Entrar — FISCALE</title>
+<link rel="icon" href="icone.webp">
+<!--
+  PORTAL DE ACESSO (portal, Fase 1 — 13/09/2026)
+
+  É só a CARA nova do login que já existia. O que protege continua no
+  servidor e não mudou: limite de tentativas, mensagem única de erro, sessão
+  com hash do token e cookie HttpOnly. Nada de senha ou token passa por aqui
+  além do POST do próprio formulário.
+
+  Tudo é local: nenhuma fonte, imagem ou script de fora. A paisagem é SVG
+  desenhado aqui mesmo — a tela abre igual sem internet.
+-->
+<style>
+  :root{
+    --petroleo:#10444E; --verde:#0F8A5F;
+    --tinta:#1B2328; --suave:#5C6B72; --borda:#D5DDE0; --erro:#B3382C;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:"Segoe UI",Roboto,-apple-system,Arial,sans-serif;color:var(--tinta);
+       background:#0A2A31;-webkit-font-smoothing:antialiased}
+
+  .tela{min-height:100vh;display:grid;grid-template-columns:minmax(300px,380px) 1fr}
+
+  /* ── Painel da marca ─────────────────────────────────────────────────── */
+  .marca{position:relative;overflow:hidden;color:#E6F0F1;padding:44px 38px 34px;
+    display:flex;flex-direction:column;
+    background:linear-gradient(180deg,#0F3F48 0%,#0B3038 55%,#08242A 100%)}
+  .marca::after{content:"";position:absolute;inset:auto 0 0 0;height:45%;
+    background:radial-gradient(120% 70% at 20% 100%,rgba(127,209,222,.10),transparent 70%);
+    pointer-events:none}
+  .logo{display:flex;align-items:center;gap:15px}
+  .logo svg{width:62px;height:62px;flex:0 0 62px;border-radius:16px;
+    box-shadow:0 10px 26px -10px rgba(0,0,0,.6)}
+  .logo b{display:block;font-size:30px;font-weight:800;letter-spacing:.02em;color:#fff}
+  .logo small{display:block;font-size:13px;color:#A8C4C9;margin-top:2px}
+  .lema{font-size:14.5px;line-height:1.6;color:#CFE0E3;margin:44px 0 26px}
+  .recursos{list-style:none;display:flex;flex-direction:column;gap:6px}
+  .recursos li{display:flex;align-items:center;gap:14px;font-size:14.5px;color:#EAF2F3;padding:9px 0}
+  .recursos svg{width:22px;height:22px;flex:0 0 22px;stroke:#A8D5DD;fill:none;stroke-width:1.7;
+    stroke-linecap:round;stroke-linejoin:round}
+  .seguro{margin-top:auto;display:flex;align-items:center;gap:13px;padding-top:30px;
+    position:relative;z-index:1}
+  .seguro svg{width:30px;height:30px;flex:0 0 30px;stroke:#7FD1DE;fill:none;stroke-width:1.7;
+    stroke-linecap:round;stroke-linejoin:round}
+  .seguro b{display:block;font-size:13px;color:#fff}
+  .seguro span{display:block;font-size:12px;color:#9DB9BE;margin-top:1px}
+
+  /* ── Área do cartão, sobre a paisagem ────────────────────────────────── */
+  .palco{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;
+    padding:32px 20px;background:#9DB8BC}
+  .paisagem{position:absolute;inset:0;width:100%;height:100%}
+
+  .cartao{position:relative;width:100%;max-width:440px;background:#fff;border-radius:18px;
+    padding:38px 38px 26px;box-shadow:0 2px 6px rgba(8,36,42,.10),0 30px 70px -20px rgba(8,36,42,.55)}
+  .cartao h1{font-size:27px;font-weight:800;color:var(--petroleo);letter-spacing:-.01em}
+  .cartao .sub{font-size:14px;line-height:1.55;color:var(--suave);margin:8px 0 26px}
+
+  .campo{position:relative;margin-bottom:16px}
+  .campo label{display:block;font-size:12.5px;font-weight:700;color:#34444B;margin:0 0 6px}
+  .caixa{display:flex;align-items:center;gap:10px;border:1px solid var(--borda);border-radius:11px;
+    padding:0 12px;background:#fff;transition:border-color .15s ease,box-shadow .15s ease}
+  .caixa:focus-within{border-color:var(--verde);box-shadow:0 0 0 3px rgba(15,138,95,.15)}
+  .caixa svg{width:19px;height:19px;flex:0 0 19px;stroke:#6B7B82;fill:none;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round}
+  .caixa input{flex:1;min-width:0;border:0;outline:0;font:inherit;font-size:15px;padding:13px 0;
+    background:transparent;color:var(--tinta)}
+  .caixa input::placeholder{color:#9AA7AD}
+  .olho{border:0;background:transparent;cursor:pointer;display:flex;padding:6px;border-radius:8px}
+  .olho:hover{background:#EEF3F4}
+
+  .entrar{width:100%;font:inherit;font-size:15px;font-weight:800;letter-spacing:.06em;
+    padding:14px;border:0;border-radius:11px;cursor:pointer;color:#fff;margin-top:6px;
+    background:linear-gradient(180deg,#136B72,#0E5760);box-shadow:0 10px 22px -12px rgba(14,87,96,.9);
+    transition:filter .15s ease,transform .15s ease}
+  .entrar:hover{filter:brightness(1.08)}
+  .entrar:active{transform:translateY(1px)}
+  .entrar[disabled]{opacity:.7;cursor:progress}
+
+  .opcoes{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;
+    font-size:13px;color:var(--suave)}
+  .opcoes label{display:flex;align-items:center;gap:8px;cursor:pointer}
+  .opcoes input{width:16px;height:16px;accent-color:var(--petroleo)}
+  .link{border:0;background:none;font:inherit;font-size:13px;color:var(--petroleo);
+    text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+
+  .erro{display:none;background:#FBE9E7;color:var(--erro);font-size:13px;border-radius:10px;
+    padding:10px 12px;margin-bottom:16px;line-height:1.45}
+  .aviso{background:#EEF5F6;border:1px solid #CFE0E3;color:#2E4A50;font-size:12.5px;border-radius:10px;
+    padding:11px 13px;margin-top:14px;line-height:1.5}
+  .boas{background:#E8F5EF;border:1px solid #b9e0cf;color:#0b5c40;font-size:13px;border-radius:10px;
+    padding:11px 13px;margin-bottom:18px;line-height:1.5}
+  .dica{font-size:12px;color:var(--suave);margin-top:14px;line-height:1.5;text-align:center}
+
+  .rodape{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:24px;padding-top:18px;
+    border-top:1px solid #EDF1F2;font-size:12.5px;color:var(--suave)}
+  .rodape svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.9;
+    stroke-linecap:round;stroke-linejoin:round}
+  .rodape.sem{color:#8A6A12}
+
+  .hid{display:none!important}
+
+  @media (max-width:900px){
+    .tela{grid-template-columns:1fr}
+    .marca{padding:26px 24px}
+    .lema,.recursos,.seguro{display:none}
+    .cartao{padding:30px 24px 22px}
+  }
+  @media (prefers-reduced-motion:reduce){ .entrar,.caixa{transition:none} }
+</style>
+</head>
+<body>
+<div class="tela">
+
+  <!-- ═══ Painel da marca ═══════════════════════════════════════════════ -->
+  <aside class="marca">
+    <div class="logo">
+      <!-- o mesmo símbolo de web/fiscale-logo.svg, embutido: a tela de login
+           abre antes da sessão, e só as rotas livres respondem nesse momento -->
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <defs><linearGradient id="lgF" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#17616C"/><stop offset="1" stop-color="#0E3D45"/></linearGradient></defs>
+        <rect width="64" height="64" rx="15" fill="url(#lgF)"/>
+        <rect x="17" y="15" width="6.5" height="34" rx="3.25" fill="#fff"/>
+        <rect x="17" y="15" width="27" height="6.5" rx="3.25" fill="#fff"/>
+        <rect x="17" y="28" width="19" height="6.5" rx="3.25" fill="#7FD1DE"/>
+        <circle cx="45.5" cy="44.5" r="10" fill="#7FD1DE"/>
+        <path d="M40.8 44.6l3.4 3.4 6.4-7.4" fill="none" stroke="#0C333B" stroke-width="3"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div><b>FISCALE</b><small>Plataforma Fiscal do Escritório</small></div>
+    </div>
+
+    <p class="lema">Mais controle, segurança e agilidade<br>para o seu escritório.</p>
+
+    <ul class="recursos">
+      <li><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>NF-e / NFC-e</li>
+      <li><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 11h6M9 15h6"/><path d="M15 3v3h3"/></svg>NFS-e</li>
+      <li><svg viewBox="0 0 24 24"><path d="M2 7h11v9H2z"/><path d="M13 10h4l4 3v3h-8"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>CT-e</li>
+      <li><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2M8 18h8"/></svg>Apuração Fiscal</li>
+      <li><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 13l2 2 4-4"/></svg>Acervo e Conferência</li>
+    </ul>
+
+    <div class="seguro">
+      <svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+      <div><b>Ambiente seguro</b><span>Acesso restrito para usuários autorizados.</span></div>
+    </div>
+  </aside>
+
+  <!-- ═══ Palco: paisagem + cartão ══════════════════════════════════════ -->
+  <main class="palco">
+    <!-- Paisagem: decoração discreta, e só. -->
+    <svg class="paisagem" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#DCE7E8"/><stop offset=".55" stop-color="#B5CACD"/><stop offset="1" stop-color="#8FAEB2"/>
+        </linearGradient>
+        <linearGradient id="nevoa" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".35"/>
+        </linearGradient>
+      </defs>
+      <rect width="1200" height="800" fill="url(#ceu)"/>
+      <path d="M0 430 L120 330 L210 390 L330 250 L450 360 L560 290 L690 380 L820 240 L960 350 L1080 300 L1200 370 V800 H0Z" fill="#9BB5B9"/>
+      <path d="M330 250 L360 285 L345 290 L330 275 L312 292 L300 280Z M820 240 L852 280 L834 284 L820 268 L800 286 L790 274Z" fill="#E9F0F1" opacity=".8"/>
+      <rect y="300" width="1200" height="200" fill="url(#nevoa)"/>
+      <path d="M0 520 L140 430 L260 500 L400 400 L520 480 L660 420 L780 500 L930 410 L1060 480 L1200 430 V800 H0Z" fill="#6F9296"/>
+      <path d="M0 610 L110 560 L230 600 L380 530 L520 590 L640 550 L800 610 L950 540 L1100 590 L1200 560 V800 H0Z" fill="#46696D"/>
+      <path d="M0 700 L90 660 L200 690 L320 640 L470 690 L600 655 L760 700 L900 650 L1050 690 L1200 660 V800 H0Z" fill="#2C4C50"/>
+    </svg>
+
+    <div class="cartao">
+
+      <!-- ENTRAR (uso normal) -->
+      <form id="fLogin" class="hid" onsubmit="entrar(event)" novalidate>
+        <h1>Bem-vindo(a)!</h1>
+        <p class="sub">Acesse o portal para usar o FISCALE e<br>outros módulos do sistema.</p>
+        <div id="erro" class="erro" role="alert"></div>
+
+        <div class="campo">
+          <label for="usuario">Usuário ou e-mail</label>
+          <div class="caixa">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+            <input id="usuario" autocomplete="username" required spellcheck="false"
+                   placeholder="Digite seu usuário ou e-mail">
+          </div>
+        </div>
+
+        <div class="campo">
+          <label for="senha">Senha</label>
+          <div class="caixa">
+            <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            <input id="senha" type="password" autocomplete="current-password" required
+                   placeholder="Digite sua senha">
+            <button type="button" class="olho" id="olho" onclick="alternarSenha()"
+                    aria-label="Mostrar senha" title="Mostrar senha">
+              <svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="entrar" id="btnEntrar">ENTRAR</button>
+
+        <div class="opcoes">
+          <label title="Continua conectado por 7 dias neste navegador. Não marque em computador compartilhado.">
+            <input type="checkbox" id="manter"> Manter conectado</label>
+          <button type="button" class="link" onclick="esqueci()">Esqueci minha senha</button>
+        </div>
+        <!-- Não há envio de senha por e-mail, e é de propósito: o Fiscale não
+             tem servidor de e-mail configurado, e um link de redefinição
+             exposto seria mais uma porta. Quem redefine é o administrador. -->
+        <div id="avisoSenha" class="aviso hid">
+          <b>A senha é redefinida pelo administrador do escritório</b>, na tela
+          <b>Usuários</b>. Por segurança, o FISCALE não envia senha por e-mail.
+        </div>
+      </form>
+
+      <!-- PRIMEIRO ACESSO (não há nenhum usuário ainda) -->
+      <form id="fPrimeiro" class="hid" onsubmit="criar(event)">
+        <h1>Primeiro acesso</h1>
+        <p class="sub">Crie a senha do administrador do FISCALE.</p>
+        <div class="boas"><b>Bem-vindo!</b> Este é o primeiro acesso. Crie a senha do usuário
+          <b>admin</b> — é com ele que você cadastra os demais usuários.</div>
+        <div id="erro2" class="erro" role="alert"></div>
+        <div class="campo">
+          <label for="s1">Senha do admin</label>
+          <div class="caixa">
+            <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            <input id="s1" type="password" autocomplete="new-password" required minlength="8" maxlength="128">
+          </div>
+        </div>
+        <div class="campo">
+          <label for="s2">Repita a senha</label>
+          <div class="caixa">
+            <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            <input id="s2" type="password" autocomplete="new-password" required minlength="8" maxlength="128">
+          </div>
+        </div>
+        <button type="submit" class="entrar">CRIAR E ENTRAR</button>
+        <div class="dica" id="dicaSenha">Use pelo menos 8 caracteres. Para maior
+          segurança, recomendamos uma frase com 12 caracteres ou mais.
+          Guarde bem: sem ela não há acesso ao sistema.</div>
+      </form>
+
+      <!-- primeiro acesso tentado de outra máquina -->
+      <div id="fRemoto" class="hid">
+        <h1>FISCALE ainda sem usuários</h1>
+        <p class="sub">Falta um passo no servidor do escritório.</p>
+        <div class="boas">O Sistema Web FISCALE ainda não tem usuários. Por segurança, a senha do
+          <b>admin</b> só pode ser criada <b>no próprio servidor do escritório</b>.
+          Faça isso lá e depois acesse o FISCALE pelo navegador.</div>
+      </div>
+
+      <!-- Honesto sobre o canal: só diz "SSL" quando a página veio por HTTPS.
+           Na rede do escritório, hoje, ela vem por HTTP — e a tela diz isso. -->
+      <div class="rodape" id="rodape">
+        <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+        <span id="canal">Conexão segura • SSL</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+
+function canal(){
+  if(location.protocol === 'https:') return;
+  const local = ['localhost','127.0.0.1','[::1]'].includes(location.hostname);
+  $('#rodape').classList.add('sem');
+  $('#canal').textContent = local ? 'Acesso local ao servidor • sem SSL'
+                                  : 'Rede do escritório • sem SSL';
+}
+
+async function inicio(){
+  canal();
+  let d = {primeiro:false, local:true};
+  try{ d = await (await fetch('/api/primeiro-acesso')).json(); }catch(e){}
+  if(!d.primeiro){ $('#fLogin').classList.remove('hid'); $('#usuario').focus(); }
+  else if(d.local){ $('#fPrimeiro').classList.remove('hid'); $('#s1').focus(); }
+  else { $('#fRemoto').classList.remove('hid'); }
+}
+
+function mostrarErro(el, texto){ el.textContent = texto; el.style.display = 'block'; }
+
+function alternarSenha(){
+  const s = $('#senha'), visivel = s.type === 'text';
+  s.type = visivel ? 'password' : 'text';
+  $('#olho').setAttribute('aria-label', visivel ? 'Mostrar senha' : 'Ocultar senha');
+  $('#olho').title = visivel ? 'Mostrar senha' : 'Ocultar senha';
+}
+
+function esqueci(){ $('#avisoSenha').classList.toggle('hid'); }
+
+async function entrar(ev){
+  ev.preventDefault();
+  const erro = $('#erro'), btn = $('#btnEntrar');
+  const usuario = $('#usuario').value.trim(), senha = $('#senha').value;
+  if(!usuario || !senha){ mostrarErro(erro, 'Informe o usuário e a senha.'); return; }
+  erro.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'ENTRANDO…';
+  try{
+    const r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({usuario, senha, manter: $('#manter').checked})});
+    const d = await r.json();
+    if(d.ok){
+      // Só destino do próprio servidor: nada vindo da URL decide para onde ir.
+      location.href = (typeof d.destino === 'string' && d.destino.startsWith('/')
+                       && !d.destino.startsWith('//')) ? d.destino : '/central.html';
+      return;
+    }
+    mostrarErro(erro, d.erro || 'Usuário ou senha inválidos.');
+  }catch(e){
+    mostrarErro(erro, 'O FISCALE não respondeu. Verifique a conexão com o servidor do escritório ou com a rede privada.');
+  }
+  $('#senha').value = ''; $('#senha').focus();
+  btn.disabled = false; btn.textContent = 'ENTRAR';
+}
+
+async function criar(ev){
+  ev.preventDefault();
+  const e2 = $('#erro2');
+  if($('#s1').value !== $('#s2').value){
+    mostrarErro(e2, 'As duas senhas não são iguais.');
+    $('#s2').value=''; $('#s2').focus(); return;
+  }
+  const r = await fetch('/api/primeiro-acesso',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({senha:$('#s1').value})});
+  const d = await r.json();
+  if(d.ok){ location.href='/central.html'; }
+  else{ mostrarErro(e2, d.erro||'Não foi possível criar o admin.'); }
+}
+inicio();
+</script>
+</body>
+</html>

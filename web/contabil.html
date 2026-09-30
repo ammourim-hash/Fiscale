@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contábil · Fiscale</title>
+<style>
+  :root{
+    --tinta:#16232B; --tinta-suave:#5B7078; --borda:#DDE4E7; --superficie:#fff;
+    --ok:#0F8A5F; --ok-fraco:#E7F5EF;
+    --aviso:#B07D10; --aviso-fraco:#FBF3E0;
+    --ruim:#B3382C; --ruim-fraco:#FBEAE8;
+    --mudo:#8A9BA2; --mudo-fraco:#F1F4F5;
+    --roxo:#6D28D9; --roxo-fraco:#F1EBFD;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--tinta);
+       background:#EEF2F4;color-scheme:light}
+
+  /* ── A casca da APLICAÇÃO Contábil (Contábil 1B) ─────────────────────
+     Aplicação própria, como o ELO: não carrega a barra de módulos do
+     FISCALE nem nenhuma função de administração. */
+  .app{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:100vh}
+  .lateral{position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;gap:12px;
+           padding:16px 12px;background:linear-gradient(170deg,#3B1A7A 0%,#26104F 70%,#1E0C40 100%);color:#EDE9FE}
+  .lateral .marca{display:flex;align-items:center;gap:10px;padding:2px 4px 12px;border-bottom:1px solid rgba(255,255,255,.14)}
+  .lateral .marca span{width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.14);
+           display:flex;align-items:center;justify-content:center;font-size:18px}
+  .lateral .marca b{font-size:16px;letter-spacing:.01em}
+  .lateral .marca small{display:block;font-size:10.5px;color:#C4B5FD;font-weight:600}
+  .ctx{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:10px 11px}
+  .ctx small{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:#C4B5FD;font-weight:700}
+  .ctx b{display:block;font-size:13.5px;line-height:1.3;margin:2px 0}
+  .ctx .doc{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:#DDD6FE}
+  .ctx button{margin-top:8px;width:100%;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;
+           border-radius:999px;padding:5px 10px;font-weight:700;font-size:12px;cursor:pointer}
+  .ctx button:hover{background:rgba(255,255,255,.12)}
+  .abas{display:flex;flex-direction:column;gap:2px;margin:0}
+  .aba{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;text-align:left;
+       border:0;background:transparent;padding:8px 10px;border-radius:11px;font:inherit;font-weight:700;
+       font-size:13px;cursor:pointer;color:#DDD6FE}
+  .aba:hover{background:rgba(255,255,255,.08);color:#fff}
+  .aba.on{background:#fff;color:var(--roxo)}
+  .aba .dev{font-size:9.5px;font-weight:700;color:#A78BFA;white-space:nowrap}
+  .aba.on .dev{color:#7C3AED}
+  .abas hr{border:0;border-top:1px solid rgba(255,255,255,.14);margin:6px 4px}
+  .lateral .voltar{margin-top:auto;display:block;text-decoration:none;color:#DDD6FE;font-weight:700;font-size:13px;
+       padding:9px 10px;border-radius:11px;border:1px solid rgba(255,255,255,.18)}
+  .lateral .voltar:hover{background:rgba(255,255,255,.08);color:#fff}
+  .corpo{min-width:0}
+  .topo{display:flex;align-items:center;gap:12px;padding:14px 22px;background:#fff;border-bottom:1px solid var(--borda);
+        position:sticky;top:0;z-index:10}
+  .trilha{font-size:13px;color:var(--tinta-suave);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .trilha a{color:var(--tinta-suave);text-decoration:none;font-weight:700}
+  .trilha a:hover{color:var(--roxo)}
+  .trilha b{color:var(--tinta)}
+  .topo .eu{margin-left:auto;font-size:12.5px;color:var(--tinta-suave);white-space:nowrap}
+  .topo .eu b{color:var(--tinta)}
+  main{padding:18px 22px 60px}
+  .escolha{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:12px}
+  .escolha button{text-align:left;border:1px solid var(--borda);background:#fff;border-radius:14px;padding:13px 15px;
+       font:inherit;cursor:pointer;color:inherit}
+  .escolha button:hover{border-color:var(--roxo);box-shadow:0 0 0 3px var(--roxo-fraco)}
+  .escolha b{display:block;font-size:14px}
+  .escolha span{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--tinta-suave)}
+  @media (max-width:900px){
+    .app{grid-template-columns:1fr}
+    .lateral{position:static;height:auto}
+    .abas{flex-direction:row;flex-wrap:wrap}
+    .aba{width:auto}
+    /* O traço separa os módulos prontos dos que ainda não existem. Numa
+       fila que quebra linha ele precisa ocupar a largura toda, senão vira
+       um risco de 1px no meio da fila e a separação se perde. */
+    .abas hr{flex:0 0 100%;width:100%}
+    .topo{position:static;flex-wrap:wrap}
+  }
+  .painel{background:var(--superficie);border:1px solid var(--borda);padding:18px 20px;margin:0 0 16px}
+  .painel > h2{margin:0 0 4px;font-size:16px;font-weight:800}
+  .painel > h3{margin:14px 0 6px;font-size:14px;font-weight:800}
+  .dica{color:var(--tinta-suave);font-size:12.5px;margin:0 0 10px}
+  .linha{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+  .campo{display:flex;flex-direction:column;gap:4px;min-width:140px}
+  .campo label{font-size:11.5px;font-weight:700;color:var(--tinta-suave)}
+  input,select,textarea{border:1px solid var(--borda);padding:7px 10px;font:inherit;background:#fff;color:inherit}
+  input[type=file]{padding:6px}
+  .btn{border:1px solid var(--borda);background:#fff;padding:7px 14px;font-weight:700;font-size:13px;cursor:pointer;color:inherit}
+  .btn:hover{background:#F5F8F9}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-primario{background:#10444E;border-color:#10444E;color:#fff}
+  .btn-primario:hover{background:#0C3038}
+  .btn-mini{padding:3px 10px;font-size:12px}
+  .perigo{color:var(--ruim)}
+
+  .contexto{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:0 0 14px}
+
+  .resumo{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 16px}
+  .stat{background:var(--superficie);border:1px solid var(--borda);padding:13px 16px;min-width:150px;flex:0 0 auto}
+  .stat b{display:block;font-size:23px;font-weight:800;line-height:1.15}
+  .stat span{font-size:11px;color:var(--tinta-suave);text-transform:uppercase;letter-spacing:.04em}
+  .stat small{display:block;font-size:11px;color:var(--tinta-suave);margin-top:3px;max-width:220px}
+  .stat.ok b{color:var(--ok)} .stat.amarelo b{color:var(--aviso)} .stat.ruim b{color:var(--ruim)}
+
+  .rolagem{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid #EDF1F2;vertical-align:top}
+  thead th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--tinta-suave);
+           font-weight:700;white-space:nowrap;border-bottom:2px solid var(--borda)}
+  tbody tr:hover{background:#FAFCFC}
+  tr.clicavel{cursor:pointer}
+  tr.sel{background:var(--roxo-fraco)!important}
+  td.num,th.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .entra{color:var(--ok)} .sai{color:var(--ruim)}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+  .inativa{color:var(--mudo)}
+
+  .etq{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;
+       border:1px solid transparent;white-space:nowrap}
+  .e-ok{background:var(--ok-fraco);color:#0A6A49;border-color:#BFE5D6}
+  .e-aviso{background:var(--aviso-fraco);color:#8A620C;border-color:#EFDCAE}
+  .e-ruim{background:var(--ruim-fraco);color:#8E2C22;border-color:#F0C7C2}
+  .e-mudo{background:var(--mudo-fraco);color:#6B7C83;border-color:#E1E7E9}
+  .e-roxo{background:var(--roxo-fraco);color:#5B21B6;border-color:#DDD0FB}
+
+  .aviso{padding:10px 13px;font-size:13px;margin:10px 0 0;border:1px solid}
+  .aviso.ok{background:var(--ok-fraco);border-color:#BFE5D6}
+  .aviso.ruim{background:var(--ruim-fraco);border-color:#F0C7C2}
+  .aviso.info{background:var(--mudo-fraco);border-color:#E1E7E9}
+  .oculto{display:none!important}
+
+  .dev-painel{border-style:dashed}
+  .dev-painel .selo{display:inline-block;background:var(--mudo-fraco);color:#6B7C83;border:1px solid #E1E7E9;
+       padding:3px 11px;border-radius:999px;font-weight:800;font-size:12px;margin:0 0 8px}
+
+  .duas{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px}
+  @media (max-width:1100px){.duas{grid-template-columns:1fr}}
+
+  .cadeia{display:flex;flex-direction:column;gap:6px;margin:6px 0 0}
+  .elo{border:1px solid var(--borda);padding:8px 11px;background:#FBFCFC}
+  .elo b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--tinta-suave)}
+  .elo.vazio{color:var(--mudo);font-style:italic}
+  .seta{color:var(--mudo);font-size:12px;padding-left:12px}
+
+  .partidas td{padding:4px 5px}
+  .partidas select{max-width:320px}
+  .totais{font-weight:800;margin:8px 0}
+  dl.campos{display:grid;grid-template-columns:max-content 1fr;gap:3px 12px;margin:0;font-size:13px}
+  dl.campos dt{color:var(--tinta-suave);font-weight:700}
+  dl.campos dd{margin:0;word-break:break-word}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="lateral">
+  <div class="marca"><span>📒</span><div><b>Contábil</b><small>Aplicação da plataforma</small></div></div>
+  <div class="ctx oculto" id="ctxEmpresa">
+    <small>Empresa aberta</small>
+    <b id="ctxNome"></b>
+    <span class="doc" id="ctxDoc"></span>
+    <button id="btnTrocar" title="Voltar à escolha de empresa">Trocar empresa</button>
+  </div>
+  <nav class="abas" id="abas" aria-label="Módulos do Contábil"></nav>
+  <a class="voltar" href="central.html#aplicacoes">← Aplicações</a>
+</aside>
+
+<div class="corpo">
+<header class="topo">
+  <div class="trilha"><a href="central.html#aplicacoes">Aplicações</a> › <a href="contabil.html">Contábil</a><span id="trilhaEmpresa"></span><span id="trilhaModulo"></span></div>
+  <span class="eu" id="eu"></span>
+  <button class="btn btn-mini" id="btnSair">Sair</button>
+</header>
+<main>
+  <div id="avisoServidor" class="aviso ruim oculto"></div>
+
+  <!-- ═════════════ ENTRADA: escolher a empresa ═════════════ -->
+  <section id="telaEmpresa" class="oculto">
+    <div class="painel">
+      <h2>Abrir empresa</h2>
+      <p class="dica">O Contábil trabalha dentro de <b>uma empresa por vez</b>. Tudo o que aparecer depois —
+        plano, lançamentos, extratos, conciliação — é só dela. Para trabalhar em outra, use "Trocar empresa".</p>
+      <div class="campo" style="max-width:420px"><label for="buscaEmpresa">Procurar</label>
+        <input id="buscaEmpresa" placeholder="nome ou CNPJ/CPF"></div>
+      <div id="msgEmpresa"></div>
+      <div class="escolha" id="listaEmpresas"></div>
+    </div>
+  </section>
+
+  <div class="contexto oculto" id="barraComp">
+    <div class="campo">
+      <label for="selComp">Competência</label>
+      <select id="selComp"><option value="">todas</option></select>
+    </div>
+    <div class="campo">
+      <label for="compNova">Abrir outra</label>
+      <div class="linha" style="gap:6px">
+        <input type="month" id="compNova" title="Um mês que ainda não aparece na lista">
+        <button class="btn btn-mini" id="btnCompNova">abrir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════ VISÃO GERAL ═════════════ -->
+  <section id="aba-visao" class="aba-corpo oculto">
+    <div class="painel" id="painelCompetencia">
+      <h2>Competência <span id="compTitulo"></span> <span id="compEstado"></span></h2>
+      <p class="dica" id="compDica"></p>
+      <div class="linha">
+        <button class="btn" data-estado="ABERTA">Reabrir</button>
+        <button class="btn" data-estado="EM_CONFERENCIA">Marcar em conferência</button>
+        <button class="btn" data-estado="FECHADA">Fechar competência</button>
+        <span class="dica" style="margin:0">Mês fechado não aceita lançamento novo, confirmação nem
+          cancelamento. Reabrir exige motivo, e a reabertura fica no histórico.</span>
+      </div>
+      <div id="compMsg"></div>
+      <div id="compHistorico"></div>
+    </div>
+
+    <div class="painel" id="painelFiscal">
+      <h2>Fiscal → Contábil</h2>
+      <p class="dica">Os documentos que o FISCALE já apurou nesta competência, trazidos como
+        <b>fatos contábeis</b>. O documento continua no acervo fiscal: aqui ficam o vínculo, a
+        sugestão de lançamento e o caminho de volta ao XML. Sincronizar duas vezes não duplica nada.</p>
+      <div class="linha">
+        <button class="btn btn-primario" id="btnSincronizar">Sincronizar competência</button>
+        <button class="btn" id="btnGerarLanc">Gerar lançamentos sugeridos</button>
+        <span class="dica" style="margin:0">Todo lançamento gerado nasce <b>PENDENTE</b>.</span>
+      </div>
+      <div id="fiscalMsg"></div>
+      <div class="resumo" id="fiscalCards" style="margin-top:14px"></div>
+      <div id="fiscalDivergencias"></div>
+      <div class="linha" style="margin:10px 0">
+        <div class="campo"><label for="ffTipo">Tipo</label><select id="ffTipo"><option value="">todos</option></select></div>
+        <div class="campo"><label for="ffEstado">Situação do fato</label><select id="ffEstado"><option value="">todas</option></select></div>
+        <button class="btn" id="ffBuscar">Filtrar</button>
+      </div>
+      <div class="rolagem"><table id="fatosTabela"></table></div>
+      <div id="fatoDetalhe"></div>
+    </div>
+
+    <div class="resumo" id="visaoCards"></div>
+    <div class="painel">
+      <h2>Estado da conciliação bancária</h2>
+      <p class="dica">O percentual é calculado <b>só sobre os movimentos efetivamente importados</b>.
+        Conta bancária cujo extrato não foi importado não entra na conta — o sistema não sabe que ela existe.</p>
+      <div class="rolagem"><table id="visaoEstados"></table></div>
+    </div>
+  </section>
+
+  <!-- ═════════════ PLANO DE CONTAS ═════════════ -->
+  <section id="aba-plano" class="aba-corpo oculto">
+    <div class="painel">
+      <h2>Nova conta</h2>
+      <p class="dica">O código é hierárquico por ponto (1, 1.1, 1.1.01). A conta-pai precisa existir e ser
+        sintética; o grupo é herdado dela. Só conta <b>analítica ativa</b> recebe lançamento.
+        Os campos ECD/ECF guardam o código referencial para o mapeamento futuro — ECD e ECF não são gerados nesta fase.</p>
+      <div class="linha">
+        <div class="campo"><label for="pcCodigo">Código</label><input id="pcCodigo" placeholder="1.1.01" size="10"></div>
+        <div class="campo" style="min-width:240px"><label for="pcDesc">Descrição</label><input id="pcDesc"></div>
+        <div class="campo"><label for="pcTipo">Tipo</label>
+          <select id="pcTipo"><option value="ANALITICA">Analítica</option><option value="SINTETICA">Sintética</option></select></div>
+        <div class="campo"><label for="pcNat">Natureza</label>
+          <select id="pcNat"><option value="DEVEDORA">Devedora</option><option value="CREDORA">Credora</option></select></div>
+        <div class="campo"><label for="pcGrupo">Grupo</label><select id="pcGrupo"><option value="">(herdar da pai)</option></select></div>
+        <div class="campo"><label for="pcEcd">Ref. ECD</label><input id="pcEcd" size="12"></div>
+        <div class="campo"><label for="pcEcf">Ref. ECF</label><input id="pcEcf" size="12"></div>
+        <button class="btn btn-primario" id="pcCriar">Criar conta</button>
+      </div>
+      <div id="pcMsg"></div>
+      <h3>Importar plano de uma planilha CSV</h3>
+      <p class="dica">Colunas: <span class="mono">codigo; descricao; tipo; natureza; grupo; ref_ecd; ref_ecf</span>
+        (tipo S/A ou SINTETICA/ANALITICA; natureza D/C). <b>Tudo ou nada</b>: se uma linha for recusada, nenhuma conta entra.</p>
+      <div class="linha">
+        <input type="file" id="pcArquivo" accept=".csv,.txt">
+        <button class="btn" id="pcImportar">Importar planilha</button>
+      </div>
+      <div id="pcImpMsg"></div>
+    </div>
+    <div class="painel">
+      <h2>Contas padrão</h2>
+      <p class="dica">É o que liga o <b>papel</b> ("clientes", "fornecedores") à conta desta empresa.
+        Sem essa ligação o Contábil não sugere lançamento para os documentos fiscais — e não inventa
+        conta nenhuma: diz qual papel falta. Só conta analítica ativa, do grupo que o papel aceita.</p>
+      <div class="rolagem"><table id="mapaTabela"></table></div>
+      <div id="mapaMsg"></div>
+    </div>
+    <div class="painel">
+      <h2>Plano de contas</h2>
+      <p class="dica" id="pcResumo"></p>
+      <div class="rolagem"><table id="pcTabela"></table></div>
+    </div>
+  </section>
+
+  <!-- ═════════════ LANÇAMENTOS ═════════════ -->
+  <section id="aba-lancamentos" class="aba-corpo oculto">
+    <div class="painel">
+      <h2>Novo lançamento</h2>
+      <p class="dica">Partida dobrada: o botão só libera quando débitos e créditos fecham ao centavo.
+        Todo lançamento nasce <b>PENDENTE</b> — confirmar é outro passo, feito por uma pessoa.</p>
+      <div class="linha">
+        <div class="campo"><label for="lcData">Data</label><input type="date" id="lcData"></div>
+        <div class="campo"><label for="lcComp">Competência</label><input type="month" id="lcComp"></div>
+        <div class="campo" style="min-width:300px;flex:1"><label for="lcHist">Histórico</label><input id="lcHist"></div>
+        <div class="campo"><label for="lcDoc">Documento/origem</label><input id="lcDoc" size="14"></div>
+        <div class="campo"><label for="lcLote">Lote</label><input id="lcLote" size="10"></div>
+        <div class="campo"><label for="lcOrigem">Origem</label><select id="lcOrigem"></select></div>
+      </div>
+      <table class="partidas" id="lcPartidas" style="margin-top:10px;max-width:760px"></table>
+      <button class="btn btn-mini" id="lcMais">+ partida</button>
+      <div class="totais" id="lcTotais"></div>
+      <button class="btn btn-primario" id="lcCriar" disabled>Criar lançamento PENDENTE</button>
+      <div id="lcMsg"></div>
+    </div>
+    <div class="painel">
+      <h2>Lançamentos</h2>
+      <div class="linha" style="margin-bottom:10px">
+        <div class="campo"><label for="lfStatus">Status</label><select id="lfStatus"><option value="">todos</option></select></div>
+        <div class="campo"><label for="lfOrigem">Origem</label><select id="lfOrigem"><option value="">todas</option></select></div>
+        <div class="campo"><label for="lfTexto">Histórico / documento / lote</label><input id="lfTexto"></div>
+        <button class="btn" id="lfBuscar">Filtrar</button>
+      </div>
+      <div class="rolagem"><table id="lcTabela"></table></div>
+      <div id="lcDetalhe"></div>
+    </div>
+  </section>
+
+  <!-- ═════════════ BANCOS ═════════════ -->
+  <section id="aba-bancos" class="aba-corpo oculto">
+    <div class="painel">
+      <h2>Importar Extrato</h2>
+      <p class="dica">Formatos lidos item a item: <b>OFX</b> (1.x e 2.x) e <b>CSV</b> com cabeçalho.
+        PDF: o sistema diz se o arquivo tem texto, mas ainda não há leitor de layout de banco — ele nasce de uma amostra real.
+        O arquivo original é guardado byte a byte; reimportar o mesmo arquivo não muda nada.
+        Nenhum movimento vira lançamento sozinho.</p>
+      <div class="linha">
+        <div class="campo"><label for="exArquivo">Arquivo do extrato</label><input type="file" id="exArquivo" accept=".ofx,.qfx,.csv,.txt,.pdf"></div>
+        <div class="campo" style="min-width:260px"><label for="exConta">Conta bancária</label>
+          <select id="exConta"><option value="">(OFX: detectar pelo arquivo)</option></select></div>
+        <button class="btn" id="exPrevia">Prévia</button>
+        <button class="btn btn-primario" id="exImportar">Importar</button>
+      </div>
+      <div id="exMsg"></div>
+    </div>
+
+    <div class="duas">
+      <div class="painel">
+        <h2>Contas bancárias</h2>
+        <p class="dica">A conta contábil do banco (grupo ATIVO, analítica) é o que permite gerar lançamento a partir do movimento.</p>
+        <div class="rolagem"><table id="cbTabela"></table></div>
+        <h3>Cadastrar conta bancária</h3>
+        <div class="linha">
+          <div class="campo"><label for="cbBanco">Banco</label><input id="cbBanco" size="6" placeholder="341"></div>
+          <div class="campo"><label for="cbAg">Agência</label><input id="cbAg" size="7"></div>
+          <div class="campo"><label for="cbNum">Conta</label><input id="cbNum" size="12"></div>
+          <div class="campo"><label for="cbDesc">Descrição</label><input id="cbDesc"></div>
+          <div class="campo"><label for="cbCC">Conta contábil</label><select id="cbCC"></select></div>
+          <button class="btn" id="cbCriar">Cadastrar</button>
+        </div>
+        <div id="cbMsg"></div>
+      </div>
+      <div class="painel">
+        <h2>Arquivos importados</h2>
+        <div class="rolagem"><table id="impTabela"></table></div>
+        <div id="impIgnoradas"></div>
+      </div>
+    </div>
+
+    <div class="painel">
+      <h2>Movimentos e conciliação</h2>
+      <p class="dica">Busca por valor, data, descrição, documento, CNPJ/CPF, cliente/fornecedor e conta contábil.
+        A categoria é <b>sugestão</b>; a confirmação é sua e fica registrada ao lado.</p>
+      <div class="linha" style="margin-bottom:10px">
+        <div class="campo"><label for="mfConta">Conta</label><select id="mfConta"><option value="">todas</option></select></div>
+        <div class="campo"><label for="mfDe">De</label><input type="date" id="mfDe"></div>
+        <div class="campo"><label for="mfAte">Até</label><input type="date" id="mfAte"></div>
+        <div class="campo"><label for="mfValor">Valor</label><input id="mfValor" size="10" placeholder="5.000,00"></div>
+        <div class="campo"><label for="mfTexto">Descrição</label><input id="mfTexto" size="14"></div>
+        <div class="campo"><label for="mfDocumento">Documento</label><input id="mfDocumento" size="10"></div>
+        <div class="campo"><label for="mfDoc">CNPJ/CPF</label><input id="mfDoc" size="14"></div>
+        <div class="campo"><label for="mfContra">Cliente/fornecedor</label><input id="mfContra" size="14"></div>
+        <div class="campo"><label for="mfCC">Conta contábil</label><select id="mfCC"><option value="">todas</option></select></div>
+        <div class="campo"><label for="mfEstado">Estado</label><select id="mfEstado"><option value="">todos</option></select></div>
+        <div class="campo"><label for="mfCat">Categoria</label><select id="mfCat"><option value="">todas</option></select></div>
+        <button class="btn" id="mfBuscar">Buscar</button>
+      </div>
+      <p class="dica" id="mvResumo"></p>
+      <div class="rolagem"><table id="mvTabela"></table></div>
+    </div>
+    <div class="painel oculto" id="mvDetalhe"></div>
+  </section>
+
+  <!-- ═════════════ EM DESENVOLVIMENTO ═════════════ -->
+  <section id="aba-dev" class="aba-corpo oculto">
+    <div class="painel dev-painel">
+      <span class="selo">Em desenvolvimento</span>
+      <h2 id="devTitulo"></h2>
+      <p class="dica" id="devTexto"></p>
+    </div>
+  </section>
+</main>
+</div><!-- .corpo -->
+</div><!-- .app -->
+
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
+  (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const reais = (c) => {
+  if (c === null || c === undefined || c === '') return '—';
+  const n = Number(c), s = n < 0 ? '-' : '', a = Math.abs(n);
+  return s + 'R$ ' + Math.floor(a / 100).toLocaleString('pt-BR') + ',' + String(a % 100).padStart(2, '0');
+};
+const dataBR = (d) => d ? d.slice(0, 10).split('-').reverse().join('/') : '';
+
+let VOC = null, EMPRESA = '', CSRF = '', CONTAS = [], MOV_SEL = '';
+
+const DEV = {
+  clientes: 'Cadastro contábil de clientes e contas a receber. Nesta fase, o cliente aparece na conciliação a partir do próprio acervo fiscal (tomador das NFS-e emitidas, destinatário das NF-e de venda).',
+  fornecedores: 'Cadastro contábil de fornecedores e contas a pagar. Nesta fase, o fornecedor aparece na conciliação a partir do acervo fiscal (emitente das NF-e e NFS-e recebidas).',
+  estoque: 'Controle de estoque e CMV. Não implementado — nenhum cálculo de custo é feito nesta fase.',
+  imobilizado: 'Bens do imobilizado e depreciação. Não implementado — nenhuma depreciação é calculada nesta fase.',
+  emprestimos: 'Contratos de empréstimo e financiamento. Nesta fase, os movimentos bancários de empréstimo só são reconhecidos como sugestão de categoria.',
+  socios: 'Quadro societário, pró-labore e distribuição de lucros. Nesta fase, aporte e retirada só aparecem como sugestão de categoria no extrato.',
+  fechamento: 'Fechamento de competência. Não existe nesta fase: a Visão Geral mostra o estado, mas nada é fechado nem travado.',
+  demonstracoes: 'Balancete, DRE e Balanço. Não implementado nesta fase.',
+  sped: 'ECD e ECF. Não implementado — o plano de contas já guarda o código referencial para o mapeamento futuro.'
+};
+
+// ── Servidor ────────────────────────────────────────────────────────────
+async function pegarCsrf(){
+  try{ const r = await fetch('/api/csrf'); if(r.ok) CSRF = (await r.json()).csrf || ''; }catch(e){ CSRF = ''; }
+  return CSRF;
+}
+async function get(rota, params){
+  const q = new URLSearchParams(Object.assign({empresa: EMPRESA}, params || {}));
+  for (const [k, v] of [...q.entries()]) if (v === '' || v == null) q.delete(k);
+  const r = await fetch('/api/contabil/' + rota + '?' + q.toString());
+  let d = {}; try{ d = await r.json(); }catch(e){}
+  if(!r.ok) throw new Error(d.erro || ('erro ' + r.status));
+  return d;
+}
+async function post(rota, corpo, arquivo){
+  if(!CSRF) await pegarCsrf();
+  const cab = {'X-Fiscale-Csrf': CSRF};
+  let body;
+  if(arquivo){
+    body = new FormData();
+    body.append('empresa', EMPRESA);
+    for (const k in (corpo || {})) body.append(k, corpo[k]);
+    body.append('arquivo', arquivo);
+  } else {
+    cab['Content-Type'] = 'application/json';
+    body = JSON.stringify(Object.assign({empresa: EMPRESA}, corpo || {}));
+  }
+  const r = await fetch('/api/contabil/' + rota, {method: 'POST', headers: cab, body});
+  let d = {}; try{ d = await r.json(); }catch(e){}
+  if(!r.ok) { const e = new Error(d.erro || ('erro ' + r.status)); e.dados = d; throw e; }
+  return d;
+}
+function msg(alvo, texto, tipo){
+  $(alvo).innerHTML = texto ? '<div class="aviso ' + (tipo || 'info') + '">' + texto + '</div>' : '';
+}
+
+// ── Abas ────────────────────────────────────────────────────────────────
+// A EMPRESA MORA NA URL (?empresa=...). É o contexto da aplicação inteira:
+// sobrevive a recarregar, a voltar do navegador e a abrir cada módulo, e não
+// depende de armazenamento do navegador. Trocar de empresa é navegar de novo
+// para a entrada — a página recomeça do zero, sem nada da empresa anterior
+// na memória (movimento aberto, formulário pela metade, plano carregado).
+const PARAMS = new URLSearchParams(location.search);
+function abaAtual(){ return PARAMS.get('aba') || 'visao'; }
+function montarAbas(){
+  const prontos = VOC.modulos.filter((m) => m.pronto), dev = VOC.modulos.filter((m) => !m.pronto);
+  const botao = (m) => '<button class="aba' + (m.id === abaAtual() ? ' on' : '') + '" data-aba="' + m.id + '">' +
+    '<span>' + esc(m.nome) + '</span>' + (m.pronto ? '' : '<span class="dev">em desenvolvimento</span>') + '</button>';
+  $('abas').innerHTML = prontos.map(botao).join('') + '<hr>' + dev.map(botao).join('');
+  $('abas').querySelectorAll('.aba').forEach((b) => b.onclick = () => irPara(b.dataset.aba));
+}
+function irPara(aba){
+  PARAMS.set('aba', aba);
+  const u = new URL(location.href); u.search = PARAMS.toString(); history.pushState(null, '', u);
+  montarAbas(); mostrar();
+}
+window.addEventListener('popstate', () => {
+  const agora = new URLSearchParams(location.search);
+  // Voltar para OUTRA empresa (ou para a entrada) recarrega: o contexto muda inteiro.
+  if((agora.get('empresa') || '') !== EMPRESA){ location.reload(); return; }
+  PARAMS.set('aba', agora.get('aba') || 'visao'); montarAbas(); mostrar();
+});
+function mostrar(){
+  const aba = abaAtual();
+  const m = VOC.modulos.find((x) => x.id === aba) || VOC.modulos[0];
+  $('trilhaModulo').innerHTML = ' › <b>' + esc(m.nome) + '</b>';
+  document.querySelectorAll('.aba-corpo').forEach((s) => s.classList.add('oculto'));
+  if(!m.pronto){
+    $('aba-dev').classList.remove('oculto');
+    $('devTitulo').textContent = m.nome;
+    $('devTexto').textContent = (DEV[m.id] || '') + ' Esta área ainda não tem tela — e nenhuma tela provisória foi posta no lugar.';
+    return;
+  }
+  $('aba-' + m.id).classList.remove('oculto');
+  if(!EMPRESA) return;
+  ({visao: carregarVisao, plano: carregarPlano, lancamentos: carregarLancamentos, bancos: carregarBancos}[m.id])();
+}
+
+// ── Visão Geral ─────────────────────────────────────────────────────────
+const ROT_SIT = {SEM_MOVIMENTO: ['Sem movimento', 'e-mudo'], EM_ABERTO: ['Em aberto', 'e-aviso'], CONCILIADA: ['Conciliada', 'e-ok']};
+async function carregarVisao(){
+  const d = await get('visao', {competencia: $('selComp').value});
+  const v = d.visao;
+  const comps = v.competencias || [];
+  const atual = $('selComp').value;
+  $('selComp').innerHTML = '<option value="">todas</option>' + comps.map((c) =>
+    '<option value="' + c + '"' + (c === atual ? ' selected' : '') + '>' + c.slice(5) + '/' + c.slice(0, 4) + '</option>').join('');
+  const sit = ROT_SIT[v.situacao] || [v.situacao, 'e-mudo'];
+  const pct = v.percentual_conciliado == null ? '—' : v.percentual_conciliado.toLocaleString('pt-BR') + '%';
+  $('visaoCards').innerHTML = [
+    ['Situação da competência', '<span class="etq ' + sit[1] + '">' + sit[0] + '</span>', '', 'Não há fechamento nesta fase.'],
+    ['Lançamentos pendentes', v.lancamentos_pendentes, v.lancamentos_pendentes ? 'amarelo' : '', 'aguardando confirmação'],
+    ['Movimentos importados', v.movimentos_importados, '', v.movimentos_com_problema ? v.movimentos_com_problema + ' com dado ilegível' : ''],
+    ['Não identificados', v.nao_identificados, v.nao_identificados ? 'amarelo' : '', 'sem categoria sugerida'],
+    ['Divergências', v.divergencias, v.divergencias ? 'ruim' : '', ''],
+    ['Total conciliado', reais(v.total_conciliado), 'ok', ''],
+    ['Total pendente', reais(v.total_pendente), v.total_pendente ? 'amarelo' : '', 'pendente + sugestão'],
+    ['% conciliado', pct, '', 'sobre os ' + v.movimentos_importados + ' movimentos efetivamente importados' +
+      (v.percentual_conciliado_valor == null ? '' : ' · ' + v.percentual_conciliado_valor.toLocaleString('pt-BR') + '% do valor')]
+  ].map(([t, n, c, s]) => '<div class="stat ' + c + '"><span>' + t + '</span><b>' + n + '</b>' + (s ? '<small>' + esc(s) + '</small>' : '') + '</div>').join('');
+  carregarFiscal();
+  const pe = v.por_estado || {};
+  $('visaoEstados').innerHTML = '<thead><tr><th>Estado</th><th class="num">Movimentos</th></tr></thead><tbody>' +
+    VOC.estados.map((e) => '<tr><td>' + etqEstado(e) + '</td><td class="num">' + (pe[e] || 0) + '</td></tr>').join('') +
+    '<tr><td>Entradas / saídas</td><td class="num"><span class="entra">' + reais(v.entradas) + '</span> · <span class="sai">' + reais(v.saidas) + '</span></td></tr>' +
+    '<tr><td>Lançamentos por status</td><td class="num">' + VOC.status.map((s) => s + ': ' + ((v.lancamentos || {})[s] || 0)).join(' · ') + '</td></tr></tbody>';
+}
+const COR_ESTADO = {CONCILIADO: 'e-ok', SUGESTAO: 'e-roxo', PENDENTE: 'e-mudo', DIVERGENTE: 'e-ruim'};
+const etqEstado = (e) => '<span class="etq ' + (COR_ESTADO[e] || 'e-mudo') + '">' + esc(e === 'SUGESTAO' ? 'SUGESTÃO' : e) + '</span>';
+const COR_STATUS = {PENDENTE: 'e-aviso', CONFIRMADO: 'e-ok', AJUSTADO: 'e-roxo', CANCELADO: 'e-mudo'};
+const etqStatus = (s) => '<span class="etq ' + (COR_STATUS[s] || 'e-mudo') + '">' + esc(s) + '</span>';
+
+// ── Fiscal → Contábil (Contábil 2) ──────────────────────────────────────
+const COR_COMP = {ABERTA: 'e-ok', EM_CONFERENCIA: 'e-aviso', FECHADA: 'e-mudo'};
+const ROT_COMP = {ABERTA: 'ABERTA', EM_CONFERENCIA: 'EM CONFERÊNCIA', FECHADA: 'FECHADA'};
+const COR_FATO = {SEM_LANCAMENTO: 'e-aviso', LANCADO: 'e-ok', IGNORADO: 'e-mudo', SEM_EFEITO: 'e-mudo'};
+
+function competenciaEscolhida(){ return $('selComp').value; }
+
+async function carregarFiscal(){
+  const comp = competenciaEscolhida();
+  const semComp = !comp;
+  // Sem competência escolhida não há o que mostrar: os dois painéis são
+  // POR competência, e mostrar "todas" misturaria meses — que é justamente
+  // o que esta fase existe para impedir.
+  $('painelCompetencia').classList.toggle('oculto', semComp);
+  $('painelFiscal').classList.toggle('oculto', semComp);
+  if(semComp){
+    $('fiscalMsg').innerHTML = '';
+    return;
+  }
+  let d;
+  try{ d = await get('fiscal', {competencia: comp, tipo: $('ffTipo').value, estado: $('ffEstado').value}); }
+  catch(e){ msg('fiscalMsg', esc(e.message), 'ruim'); return; }
+  const p = d.panorama, est = p.estado || {};
+  $('compTitulo').textContent = comp.slice(5) + '/' + comp.slice(0, 4);
+  $('compEstado').innerHTML = '<span class="etq ' + (COR_COMP[est.estado] || 'e-mudo') + '">' +
+    (ROT_COMP[est.estado] || est.estado) + '</span>';
+  $('compDica').innerHTML = est.quando_utc
+    ? 'Último estado definido por <b>' + esc(est.usuario || '—') + '</b> em ' + dataBR(est.quando_utc) +
+      (est.motivo ? ' · motivo: ' + esc(est.motivo) : '')
+    : 'Competência aberta: nunca foi fechada nem posta em conferência.';
+  $('compHistorico').innerHTML = (est.historico || []).length
+    ? '<p class="dica">Histórico: ' + est.historico.map((h) => esc(h.acao) + ' por ' + esc(h.usuario || '—') +
+        ' em ' + dataBR(h.quando_utc) + (h.detalhe ? ' (' + esc(h.detalhe) + ')' : '')).join(' · ') + '</p>'
+    : '';
+
+  const pct = p.cobertura == null ? '—' : p.cobertura.toLocaleString('pt-BR') + '%';
+  $('fiscalCards').innerHTML = [
+    ['Documentos fiscais', p.documentos, '', Object.entries(p.por_especie || {}).map(([k, v]) => k + ': ' + v).join(' · ')],
+    ['Fatos contábeis', p.fatos, '', 'um por documento'],
+    ['Lançamentos sugeridos', p.sugeridos_pendentes, p.sugeridos_pendentes ? 'amarelo' : '', 'pendentes de confirmação'],
+    ['Confirmados', p.confirmados, 'ok', ''],
+    ['Sem lançamento', p.sem_lancamento, p.sem_lancamento ? 'amarelo' : '', 'de ' + p.exigem_lancamento + ' que pedem lançamento'],
+    ['Divergências', (p.divergencias || []).length, (p.divergencias || []).length ? 'ruim' : '', ''],
+    ['Valor fiscal', reais(p.valor_fiscal), '', 'documentos com efeito'],
+    ['Valor contabilizado', reais(p.valor_contabilizado), p.diferenca_valor ? 'amarelo' : 'ok',
+     p.diferenca_valor ? 'diferença de ' + reais(p.diferenca_valor) : 'bate com o fiscal'],
+    ['Cobertura contábil', pct, '', 'fatos com lançamento ÷ fatos que pedem lançamento']
+  ].map(([t, n, c, s]) => '<div class="stat ' + c + '"><span>' + t + '</span><b>' + n + '</b>' +
+    (s ? '<small>' + esc(s) + '</small>' : '') + '</div>').join('');
+
+  $('fiscalDivergencias').innerHTML = (p.divergencias || []).length
+    ? '<h3>Divergências Fiscal × Contábil</h3><table><thead><tr><th>Tipo</th><th>Documento</th><th>Detalhe</th></tr></thead><tbody>' +
+      p.divergencias.map((x) => '<tr><td><span class="etq e-ruim">' + esc(x.tipo) + '</span></td>' +
+        '<td class="mono">' + esc((x.id_documento || '').slice(0, 12)) + '</td><td>' + esc(x.detalhe) + '</td></tr>').join('') +
+      '</tbody></table>' : '';
+
+  const fs = d.fatos || [];
+  $('fatosTabela').innerHTML = '<thead><tr><th>Documento</th><th>Emissão</th><th>Contraparte</th>' +
+    '<th>Tipo (contábil)</th><th class="num">Valor</th><th>Situação</th><th>Lançamento</th><th></th></tr></thead><tbody>' +
+    (fs.length ? fs.map((f) => '<tr><td>' + esc(f.especie) + (f.numero ? ' nº ' + esc(f.numero) : '') +
+        '<br><small class="mono dica">' + esc(f.id_documento.slice(0, 12)) + '</small></td>' +
+      '<td>' + dataBR(f.data_emissao) + '</td>' +
+      '<td>' + esc(f.contraparte_nome || f.contraparte_doc || '—') + '</td>' +
+      '<td>' + esc(f.rotulo_tipo) + (f.cfops ? '<br><small class="dica">CFOP ' + esc(f.cfops) + '</small>' : '') + '</td>' +
+      '<td class="num">' + reais(f.valor) + (f.retencoes ? '<br><small class="dica">ret. ' + reais(f.retencoes) + '</small>' : '') + '</td>' +
+      '<td><span class="etq ' + (COR_FATO[f.estado] || 'e-mudo') + '">' + esc(f.estado) + '</span>' +
+        (f.situacao && f.situacao !== 'NORMAL' ? '<br><small class="dica">' + esc(f.situacao) + '</small>' : '') + '</td>' +
+      '<td>' + (f.lancamento ? 'nº ' + f.lancamento.numero + ' ' + etqStatus(f.lancamento.status)
+        : '<small class="dica">' + esc(f.sugestao && f.sugestao.tem ? 'sugestão pronta' : (f.sugestao && f.sugestao.motivo) || '') + '</small>') + '</td>' +
+      '<td><button class="btn btn-mini" data-fato="' + f.id + '">ver</button></td></tr>').join('')
+      : '<tr><td colspan="8" class="dica">Nenhum documento fiscal nesta competência. Use "Sincronizar competência".</td></tr>') +
+    '</tbody>';
+  $('fatosTabela').querySelectorAll('[data-fato]').forEach((b) => b.onclick = () => verFato(b.dataset.fato));
+}
+
+async function verFato(id){
+  const d = await get('fiscal/fato', {id});
+  const r = d.rastreio, doc = r.documento, op = r.operacao, ft = r.fato, s = r.sugestao, lc = r.lancamento;
+  const elo = (t, v) => '<div class="elo' + (v ? '' : ' vazio') + '"><b>' + t + '</b>' + (v || 'nada ainda') + '</div>';
+  const partidas = (ps) => ps.map((p) => p.tipo + ' ' + esc(p.codigo || '') + ' ' + esc(p.descricao || '') +
+    ' ' + reais(p.valor)).join('<br>');
+  $('fatoDetalhe').innerHTML = '<h3>' + esc(doc.especie) + (doc.numero ? ' nº ' + esc(doc.numero) : '') + '</h3>' +
+    '<div class="cadeia">' +
+      elo('Documento fiscal', esc(doc.especie) + ' · emissão ' + dataBR(doc.data_emissao) +
+        ' · ' + esc(doc.contraparte_nome || doc.contraparte_doc || '') +
+        '<br><small class="dica mono">id ' + esc(doc.id_documento) + (doc.chave ? ' · chave …' + esc(doc.chave.slice(-6)) : '') + '</small>' +
+        '<br><small class="dica">XML: <span class="mono">' + esc(doc.caminho || '—') + '</span> · leitor ' + esc(doc.fonte_leitor || '—') + '</small>') +
+      '<div class="seta">↓</div>' +
+      elo('Operação fiscal', esc(op.sentido) + (op.natureza_fiscal ? ' · ' + esc(op.natureza_fiscal) : '') +
+        (op.cfops ? ' · CFOP ' + esc(op.cfops) : '') + ' · ' + reais(op.valor) +
+        (op.retencoes ? ' · retenções ' + reais(op.retencoes) : '') +
+        '<br><small class="dica">' + (op.entra_na_receita ? 'entra na receita' : 'fora da receita') + '</small>') +
+      '<div class="seta">↓</div>' +
+      elo('Fato contábil', esc(ft.rotulo) + ' · competência ' + esc(ft.competencia) +
+        ' · <span class="etq ' + (COR_FATO[ft.estado] || 'e-mudo') + '">' + esc(ft.estado) + '</span>' +
+        (ft.motivo ? '<br><small class="dica">' + esc(ft.motivo) + '</small>' : '')) +
+      '<div class="seta">↓</div>' +
+      elo('Sugestão', s.tem ? partidas(s.partidas) + (s.aviso ? '<br><small class="dica">' + esc(s.aviso) + '</small>' : '')
+        : '<small class="dica">' + esc(s.motivo) + '</small>') +
+      '<div class="seta">↓</div>' +
+      elo('Lançamento', lc ? 'nº ' + lc.numero + ' ' + etqStatus(lc.status) + ' · ' + esc(lc.historico) +
+        '<br>' + partidas(lc.partidas) : '') +
+    '</div>' +
+    '<div class="linha" style="margin-top:10px">' +
+      (!lc && s.tem ? '<button class="btn btn-mini" id="fbLancar">gerar lançamento PENDENTE</button>' : '') +
+      (!lc && ft.estado !== 'IGNORADO' ? '<button class="btn btn-mini" id="fbIgnorar">não lançar este documento</button>' : '') +
+      (ft.estado === 'IGNORADO' ? '<button class="btn btn-mini" id="fbVoltar">voltar a considerar</button>' : '') +
+    '</div><div id="fatoMsg"></div>';
+  if($('fbLancar')) $('fbLancar').onclick = async () => {
+    try{ const x = await post('fiscal/lancar', {id}); msg('fatoMsg', 'Lançamento nº ' + x.lancamento.numero +
+      ' criado como PENDENTE.', 'ok'); carregarFiscal(); verFato(id); }
+    catch(e){ msg('fatoMsg', esc(e.message), 'ruim'); }
+  };
+  if($('fbIgnorar')) $('fbIgnorar').onclick = async () => {
+    const motivo = prompt('Por que este documento não gera lançamento?'); if(!motivo) return;
+    try{ await post('fiscal/ignorar', {id, motivo}); carregarFiscal(); verFato(id); }
+    catch(e){ msg('fatoMsg', esc(e.message), 'ruim'); }
+  };
+  if($('fbVoltar')) $('fbVoltar').onclick = async () => {
+    try{ await post('fiscal/reconsiderar', {id}); carregarFiscal(); verFato(id); }
+    catch(e){ msg('fatoMsg', esc(e.message), 'ruim'); }
+  };
+  $('fatoDetalhe').scrollIntoView({behavior: 'smooth', block: 'nearest'});
+}
+
+$('btnSincronizar').onclick = async () => {
+  const comp = competenciaEscolhida();
+  if(!comp) return msg('fiscalMsg', 'Escolha a competência no alto da tela.', 'ruim');
+  msg('fiscalMsg', 'Lendo o acervo fiscal…');
+  try{
+    const d = await post('fiscal/sincronizar', {competencia: comp});
+    msg('fiscalMsg', d.documentos + ' documento(s) na competência: ' + d.novos + ' novo(s), ' +
+      d.atualizados + ' atualizado(s), ' + d.inalterados + ' sem mudança.', 'ok');
+    carregarVisao(); carregarFiscal();
+  }catch(e){ msg('fiscalMsg', esc(e.message), 'ruim'); }
+};
+$('btnGerarLanc').onclick = async () => {
+  const comp = competenciaEscolhida();
+  if(!comp) return msg('fiscalMsg', 'Escolha a competência.', 'ruim');
+  try{
+    const d = await post('fiscal/lancar', {competencia: comp});
+    msg('fiscalMsg', d.gerados.length + ' lançamento(s) criado(s) como PENDENTE' +
+      (d.recusados.length ? ' · ' + d.recusados.length + ' sem sugestão: ' +
+        esc(d.recusados.slice(0, 3).map((x) => x.motivo).join('; ')) : ''), d.gerados.length ? 'ok' : 'info');
+    carregarVisao(); carregarFiscal();
+  }catch(e){ msg('fiscalMsg', esc(e.message), 'ruim'); }
+};
+$('ffBuscar').onclick = carregarFiscal;
+// Abrir um mês que ainda não está na lista: é o caso da primeira
+// sincronização de uma competência só com NFS-e, que o índice fiscal não
+// enumera.
+$('btnCompNova').onclick = () => {
+  const c = $('compNova').value;
+  if(!c) return;
+  if(![...$('selComp').options].some((o) => o.value === c))
+    $('selComp').insertAdjacentHTML('beforeend',
+      '<option value="' + c + '">' + c.slice(5) + '/' + c.slice(0, 4) + '</option>');
+  $('selComp').value = c;
+  mostrar();
+};
+$('painelCompetencia').querySelectorAll('[data-estado]').forEach((b) => b.onclick = async () => {
+  const comp = competenciaEscolhida();
+  if(!comp) return msg('compMsg', 'Escolha a competência.', 'ruim');
+  let motivo = '';
+  if(b.dataset.estado === 'ABERTA'){
+    motivo = prompt('Motivo para reabrir a competência ' + comp + ':') || '';
+    if(!motivo) return;
+  }
+  try{ await post('competencia/estado', {competencia: comp, estado: b.dataset.estado, motivo});
+    msg('compMsg', '', ''); carregarFiscal(); }
+  catch(e){ msg('compMsg', esc(e.message), 'ruim'); }
+});
+
+// ── Plano de contas ─────────────────────────────────────────────────────
+async function carregarContas(){
+  const d = await get('plano');
+  CONTAS = d.contas || [];
+  const lancaveis = CONTAS.filter((c) => c.tipo === 'ANALITICA' && c.ativa);
+  const op = (lista) => lista.map((c) => '<option value="' + c.id + '">' + esc(c.codigo + ' ' + c.descricao) + '</option>').join('');
+  $('cbCC').innerHTML = '<option value="">(depois)</option>' + op(lancaveis.filter((c) => c.grupo === 'ATIVO'));
+  $('mfCC').innerHTML = '<option value="">todas</option>' + op(lancaveis);
+  return CONTAS;
+}
+async function carregarMapa(){
+  const d = await get('mapa');
+  const lanc = CONTAS.filter((c) => c.tipo === 'ANALITICA' && c.ativa);
+  $('mapaTabela').innerHTML = '<thead><tr><th>Papel</th><th>Para que serve</th><th>Grupos aceitos</th><th>Conta</th></tr></thead><tbody>' +
+    (d.mapa || []).map((m) => '<tr><td><b>' + esc(m.papel) + '</b></td><td>' + esc(m.rotulo) + '</td>' +
+      '<td><small class="dica">' + m.grupos.join(' · ') + '</small></td>' +
+      '<td><select data-papel="' + m.papel + '"><option value="">(não ligado)</option>' +
+      lanc.filter((c) => m.grupos.includes(c.grupo)).map((c) => '<option value="' + c.id + '"' +
+        (c.id === m.conta_id ? ' selected' : '') + '>' + esc(c.codigo + ' ' + c.descricao) + '</option>').join('') +
+      '</select></td></tr>').join('') + '</tbody>';
+  $('mapaTabela').querySelectorAll('[data-papel]').forEach((s) => s.onchange = async () => {
+    try{ await post('mapa', {papel: s.dataset.papel, conta_id: s.value});
+      msg('mapaMsg', 'Contas padrão atualizadas.', 'ok'); }
+    catch(e){ msg('mapaMsg', esc(e.message), 'ruim'); carregarMapa(); }
+  });
+}
+
+async function carregarPlano(){
+  await carregarContas();
+  await carregarMapa();
+  $('pcResumo').textContent = CONTAS.length ? CONTAS.length + ' contas (' +
+    CONTAS.filter((c) => c.tipo === 'ANALITICA' && c.ativa).length + ' analíticas ativas)' :
+    'Esta empresa ainda não tem plano de contas.';
+  $('pcTabela').innerHTML = '<thead><tr><th>Código</th><th>Descrição</th><th>Tipo</th><th>Natureza</th><th>Grupo</th><th>ECD</th><th>ECF</th><th>Situação</th><th></th></tr></thead><tbody>' +
+    CONTAS.map((c) => '<tr class="' + (c.ativa ? '' : 'inativa') + '"><td class="mono">' + esc(c.codigo) + '</td>' +
+      '<td style="padding-left:' + (9 + 12 * (c.codigo.split('.').length - 1)) + 'px">' + (c.tipo === 'SINTETICA' ? '<b>' + esc(c.descricao) + '</b>' : esc(c.descricao)) + '</td>' +
+      '<td>' + (c.tipo === 'SINTETICA' ? 'Sintética' : 'Analítica') + '</td><td>' + (c.natureza === 'DEVEDORA' ? 'Devedora' : 'Credora') + '</td>' +
+      '<td>' + esc(c.grupo) + '</td><td class="mono">' + esc(c.ref_ecd) + '</td><td class="mono">' + esc(c.ref_ecf) + '</td>' +
+      '<td>' + (c.ativa ? '<span class="etq e-ok">ativa</span>' : '<span class="etq e-mudo">inativa</span>') + '</td>' +
+      '<td><button class="btn btn-mini" data-editar="' + c.id + '">editar</button> ' +
+      '<button class="btn btn-mini" data-ativa="' + c.id + '" data-v="' + (c.ativa ? 0 : 1) + '">' + (c.ativa ? 'desativar' : 'reativar') + '</button></td></tr>').join('') + '</tbody>';
+  $('pcTabela').querySelectorAll('[data-ativa]').forEach((b) => b.onclick = async () => {
+    try{ await post('plano/alterar', {id: b.dataset.ativa, ativa: b.dataset.v === '1'}); carregarPlano(); }
+    catch(e){ msg('pcMsg', esc(e.message), 'ruim'); }
+  });
+  $('pcTabela').querySelectorAll('[data-editar]').forEach((b) => b.onclick = async () => {
+    const c = CONTAS.find((x) => x.id === b.dataset.editar);
+    const desc = prompt('Descrição da conta ' + c.codigo, c.descricao); if(desc === null) return;
+    const ecd = prompt('Código referencial ECD (pode ficar vazio)', c.ref_ecd); if(ecd === null) return;
+    const ecf = prompt('Código referencial ECF (pode ficar vazio)', c.ref_ecf); if(ecf === null) return;
+    try{ await post('plano/alterar', {id: c.id, descricao: desc, ref_ecd: ecd, ref_ecf: ecf}); carregarPlano(); }
+    catch(e){ msg('pcMsg', esc(e.message), 'ruim'); }
+  });
+}
+$('pcCriar').onclick = async () => {
+  try{
+    const d = await post('plano/conta', {codigo: $('pcCodigo').value, descricao: $('pcDesc').value,
+      tipo: $('pcTipo').value, natureza: $('pcNat').value, grupo: $('pcGrupo').value,
+      ref_ecd: $('pcEcd').value, ref_ecf: $('pcEcf').value});
+    msg('pcMsg', 'Conta ' + esc(d.conta.codigo) + ' criada.', 'ok');
+    $('pcCodigo').value = ''; $('pcDesc').value = ''; $('pcEcd').value = ''; $('pcEcf').value = '';
+    carregarPlano();
+  }catch(e){ msg('pcMsg', esc(e.message), 'ruim'); }
+};
+$('pcImportar').onclick = async () => {
+  const f = $('pcArquivo').files[0]; if(!f) return msg('pcImpMsg', 'Escolha a planilha.', 'ruim');
+  const texto = await f.text();
+  try{
+    const d = await post('plano/importar', {texto});
+    msg('pcImpMsg', d.criadas.length + ' contas criadas.', 'ok'); carregarPlano();
+  }catch(e){
+    const erros = (e.dados && e.dados.erros) || [];
+    msg('pcImpMsg', erros.length ? 'Nenhuma conta entrou. ' + erros.map((x) => 'Linha ' + x.linha + ': ' + esc(x.erro)).join('<br>') : esc(e.message), 'ruim');
+  }
+};
+
+// ── Lançamentos ─────────────────────────────────────────────────────────
+function linhaPartida(){
+  const tr = document.createElement('tr');
+  const lanc = CONTAS.filter((c) => c.tipo === 'ANALITICA' && c.ativa);
+  tr.innerHTML = '<td><select class="pConta"><option value="">conta…</option>' +
+    lanc.map((c) => '<option value="' + c.id + '">' + esc(c.codigo + ' ' + c.descricao) + '</option>').join('') + '</select></td>' +
+    '<td><select class="pTipo"><option value="D">Débito</option><option value="C">Crédito</option></select></td>' +
+    '<td><input class="pValor" size="12" placeholder="0,00"></td><td><button class="btn btn-mini pTira">×</button></td>';
+  tr.querySelector('.pTira').onclick = () => { tr.remove(); totais(); };
+  tr.querySelectorAll('select,input').forEach((x) => x.oninput = totais);
+  $('lcPartidas').appendChild(tr);
+}
+function centavosDe(s){
+  s = String(s || '').trim().replace(/R\$|\s/g, '');
+  if(!s) return 0;
+  if(s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  const n = Number(s); return isFinite(n) ? Math.round(n * 100) : NaN;
+}
+function partidasDaTela(){
+  return [...$('lcPartidas').querySelectorAll('tr')].map((tr) => ({
+    conta_id: tr.querySelector('.pConta').value, tipo: tr.querySelector('.pTipo').value,
+    valor: tr.querySelector('.pValor').value}));
+}
+function totais(){
+  let d = 0, c = 0, ruim = false;
+  partidasDaTela().forEach((p) => { const v = centavosDe(p.valor); if(isNaN(v)) ruim = true; else if(p.tipo === 'D') d += v; else c += v; });
+  const ok = !ruim && d > 0 && d === c && partidasDaTela().every((p) => p.conta_id);
+  $('lcTotais').innerHTML = 'Débitos ' + reais(d) + ' · Créditos ' + reais(c) +
+    (d === c ? '' : ' · <span class="perigo">diferença ' + reais(d - c) + '</span>');
+  $('lcCriar').disabled = !ok;
+}
+async function carregarLancamentos(){
+  await carregarContas();
+  if(!$('lcPartidas').children.length){ linhaPartida(); linhaPartida(); totais(); }
+  const d = await get('lancamentos', {competencia: $('selComp').value, status: $('lfStatus').value,
+    origem: $('lfOrigem').value, texto: $('lfTexto').value});
+  const ls = d.lancamentos || [];
+  $('lcTabela').innerHTML = '<thead><tr><th>Nº</th><th>Data</th><th>Comp.</th><th>Histórico</th><th>Documento</th><th>Origem</th><th>Lote</th><th>Status</th><th class="num">Valor</th><th></th></tr></thead><tbody>' +
+    (ls.length ? ls.map((l) => '<tr><td>' + l.numero + '</td><td>' + dataBR(l.data) + '</td><td>' + esc(l.competencia) + '</td><td>' + esc(l.historico) + '</td>' +
+      '<td>' + esc(l.documento) + '</td><td>' + esc(l.origem) + '</td><td>' + esc(l.lote) + '</td><td>' + etqStatus(l.status) + '</td>' +
+      '<td class="num">' + reais(l.total) + '</td><td style="white-space:nowrap"><button class="btn btn-mini" data-ver="' + l.id + '">ver</button> ' +
+      (l.status === 'PENDENTE' ? '<button class="btn btn-mini" data-conf="' + l.id + '">confirmar</button> <button class="btn btn-mini" data-canc="' + l.id + '">cancelar</button>' : '') +
+      '</td></tr>').join('') : '<tr><td colspan="10" class="dica">Nenhum lançamento.</td></tr>') + '</tbody>';
+  $('lcTabela').querySelectorAll('[data-ver]').forEach((b) => b.onclick = () => verLancamento(b.dataset.ver));
+  $('lcTabela').querySelectorAll('[data-conf]').forEach((b) => b.onclick = async () => {
+    if(!confirm('Confirmar este lançamento? Depois de confirmado ele só é corrigido por ajuste.')) return;
+    try{ await post('lancamento/confirmar', {id: b.dataset.conf}); carregarLancamentos(); }catch(e){ alert(e.message); }
+  });
+  $('lcTabela').querySelectorAll('[data-canc]').forEach((b) => b.onclick = async () => {
+    const motivo = prompt('Motivo do cancelamento'); if(!motivo) return;
+    try{ await post('lancamento/cancelar', {id: b.dataset.canc, motivo}); carregarLancamentos(); }catch(e){ alert(e.message); }
+  });
+}
+async function verLancamento(id){
+  const d = await get('lancamento', {id});
+  const l = d.lancamento;
+  $('lcDetalhe').innerHTML = '<h3>Lançamento nº ' + l.numero + ' ' + etqStatus(l.status) + '</h3>' +
+    '<table><thead><tr><th>Conta</th><th>Grupo</th><th class="num">Débito</th><th class="num">Crédito</th></tr></thead><tbody>' +
+    l.partidas.map((p) => '<tr><td>' + esc(p.codigo + ' ' + p.descricao) + '</td><td>' + esc(p.grupo) + '</td><td class="num">' + (p.tipo === 'D' ? reais(p.valor) : '') + '</td><td class="num">' + (p.tipo === 'C' ? reais(p.valor) : '') + '</td></tr>').join('') +
+    '</tbody></table>' +
+    (l.movimentos.length ? '<p class="dica">Movimento(s) bancário(s) ligado(s): ' + l.movimentos.map((m) => dataBR(m.data) + ' ' + esc(m.descricao) + ' ' + reais(m.valor) + ' (' + m.estado + ')').join('; ') + '</p>' : '') +
+    '<p class="dica">Trilha: ' + l.eventos.map((e) => esc(e.acao) + ' por ' + esc(e.usuario || '—') + ' em ' + esc(e.quando_utc.slice(0, 16).replace('T', ' ')) + ' UTC').join(' · ') + '</p>' +
+    (l.status === 'CONFIRMADO' ? '<button class="btn btn-mini" id="lcAjustar">criar ajuste deste lançamento</button>' : '');
+  if($('lcAjustar')) $('lcAjustar').onclick = () => {
+    $('lcHist').value = 'Ajuste do lançamento nº ' + l.numero; $('lcOrigem').value = 'AJUSTE';
+    $('lcCriar').dataset.ajusta = l.id; $('lcCriar').textContent = 'Criar AJUSTE (pendente) do nº ' + l.numero;
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  };
+}
+$('lcMais').onclick = () => { linhaPartida(); totais(); };
+$('lcCriar').onclick = async () => {
+  const corpo = {data: $('lcData').value, competencia: $('lcComp').value || $('lcData').value.slice(0, 7),
+    historico: $('lcHist').value, documento: $('lcDoc').value, lote: $('lcLote').value,
+    origem: $('lcOrigem').value, partidas: partidasDaTela()};
+  const ajusta = $('lcCriar').dataset.ajusta;
+  try{
+    const d = ajusta ? await post('lancamento/ajustar', Object.assign(corpo, {id: ajusta})) : await post('lancamentos', corpo);
+    msg('lcMsg', 'Lançamento nº ' + d.lancamento.numero + ' criado como PENDENTE.', 'ok');
+    delete $('lcCriar').dataset.ajusta; $('lcCriar').textContent = 'Criar lançamento PENDENTE';
+    $('lcPartidas').innerHTML = ''; linhaPartida(); linhaPartida(); totais();
+    carregarLancamentos();
+  }catch(e){ msg('lcMsg', esc(e.message), 'ruim'); }
+};
+$('lfBuscar').onclick = carregarLancamentos;
+
+// ── Bancos ──────────────────────────────────────────────────────────────
+async function carregarBancos(){
+  await carregarContas();
+  const d = await get('bancos');
+  const cs = d.contas || [];
+  const opConta = cs.map((c) => '<option value="' + c.id + '">' + esc([c.banco, c.agencia, c.numero].filter(Boolean).join(' / ') + (c.descricao ? ' — ' + c.descricao : '')) + '</option>').join('');
+  $('exConta').innerHTML = '<option value="">(OFX: detectar pelo arquivo)</option>' + opConta;
+  $('mfConta').innerHTML = '<option value="">todas</option>' + opConta;
+  const ativos = CONTAS.filter((c) => c.tipo === 'ANALITICA' && c.ativa && c.grupo === 'ATIVO');
+  $('cbTabela').innerHTML = '<thead><tr><th>Banco</th><th>Agência</th><th>Conta</th><th>Descrição</th><th>Conta contábil</th><th class="num">Mov.</th></tr></thead><tbody>' +
+    (cs.length ? cs.map((c) => '<tr><td>' + esc(c.banco) + '</td><td>' + esc(c.agencia) + '</td><td class="mono">' + esc(c.numero) + '</td><td>' + esc(c.descricao) + '</td>' +
+      '<td><select data-cc="' + c.id + '"><option value="">(nenhuma)</option>' + ativos.map((a) => '<option value="' + a.id + '"' + (a.id === c.conta_contabil_id ? ' selected' : '') + '>' + esc(a.codigo + ' ' + a.descricao) + '</option>').join('') + '</select></td>' +
+      '<td class="num">' + c.movimentos + '</td></tr>').join('') : '<tr><td colspan="6" class="dica">Nenhuma conta. O OFX cria a conta sozinho; para CSV, cadastre abaixo.</td></tr>') + '</tbody>';
+  $('cbTabela').querySelectorAll('[data-cc]').forEach((s) => s.onchange = async () => {
+    try{ await post('bancos/conta', {id: s.dataset.cc, conta_contabil_id: s.value}); }catch(e){ alert(e.message); }
+  });
+  const imps = d.importacoes || [];
+  $('impTabela').innerHTML = '<thead><tr><th>Quando</th><th>Arquivo</th><th>Formato</th><th>Período</th><th class="num">Lidos</th><th class="num">Novos</th><th class="num">Já existiam</th><th class="num">Não-mov.</th><th></th></tr></thead><tbody>' +
+    (imps.length ? imps.map((i) => '<tr><td>' + dataBR(i.quando_utc) + '</td><td>' + esc(i.nome_arquivo) + '<br><small class="mono">sha256 ' + esc(i.sha256.slice(0, 16)) + '…</small></td><td>' + esc(i.formato) + '</td>' +
+      '<td>' + dataBR(i.periodo_ini) + ' a ' + dataBR(i.periodo_fim) + '</td><td class="num">' + i.movimentos_lidos + '</td><td class="num">' + i.movimentos_novos + '</td>' +
+      '<td class="num">' + i.movimentos_existentes + '</td><td class="num">' + i.linhas_ignoradas + '</td>' +
+      '<td style="white-space:nowrap"><a class="btn btn-mini" href="/api/contabil/extrato/original?empresa=' + EMPRESA + '&importacao=' + i.id + '">original</a> ' +
+      (i.linhas_ignoradas ? '<button class="btn btn-mini" data-ign="' + i.id + '">linhas</button>' : '') + '</td></tr>').join('') : '<tr><td colspan="9" class="dica">Nenhum extrato importado.</td></tr>') + '</tbody>';
+  $('impTabela').querySelectorAll('[data-ign]').forEach((b) => b.onclick = async () => {
+    const r = await get('importacao/ignoradas', {id: b.dataset.ign});
+    $('impIgnoradas').innerHTML = '<h3>Linhas que não são movimento</h3><table><thead><tr><th>Linha</th><th>Motivo</th><th>Conteúdo</th></tr></thead><tbody>' +
+      r.linhas.map((l) => '<tr><td>' + l.linha + '</td><td>' + esc(l.motivo) + '</td><td class="mono">' + esc(l.conteudo) + '</td></tr>').join('') + '</tbody></table>';
+  });
+  buscarMovimentos();
+}
+async function buscarMovimentos(){
+  const d = await get('movimentos', {conta: $('mfConta').value, de: $('mfDe').value, ate: $('mfAte').value,
+    valor: $('mfValor').value, texto: $('mfTexto').value, documento: $('mfDocumento').value, doc: $('mfDoc').value,
+    contraparte: $('mfContra').value, conta_contabil: $('mfCC').value, estado: $('mfEstado').value, categoria: $('mfCat').value});
+  const ms = d.movimentos || [];
+  const rot = Object.fromEntries(VOC.categorias.map((c) => [c.id, c.nome]));
+  const ent = ms.filter((m) => m.valor > 0).reduce((a, m) => a + m.valor, 0);
+  const sai = ms.filter((m) => m.valor < 0).reduce((a, m) => a + m.valor, 0);
+  $('mvResumo').innerHTML = ms.length + ' movimento(s) · entradas <span class="entra">' + reais(ent) + '</span> · saídas <span class="sai">' + reais(sai) + '</span>';
+  $('mvTabela').innerHTML = '<thead><tr><th>Data</th><th>Descrição</th><th>Documento</th><th class="num">Valor</th><th class="num">Saldo</th><th>Categoria (sugestão)</th><th>Confirmada</th><th>Conciliação</th></tr></thead><tbody>' +
+    (ms.length ? ms.map((m) => '<tr class="clicavel' + (m.id === MOV_SEL ? ' sel' : '') + '" data-mov="' + m.id + '"><td>' + dataBR(m.data) + '</td>' +
+      '<td>' + esc(m.descricao) + (m.problema ? '<br><span class="etq e-ruim">' + esc(m.problema) + '</span>' : '') + '</td><td class="mono">' + esc(m.documento) + '</td>' +
+      '<td class="num ' + (m.valor > 0 ? 'entra' : 'sai') + '">' + reais(m.valor) + '</td><td class="num">' + reais(m.saldo) + '</td>' +
+      '<td>' + esc(rot[m.categoria] || m.categoria) + '<br><small class="dica">' + esc(m.sugestao) + (m.confianca ? ' · confiança ' + esc(m.confianca.toLowerCase()) : '') + '</small></td>' +
+      '<td>' + (m.categoria_confirmada ? esc(rot[m.categoria_confirmada]) + '<br><small class="dica">por ' + esc(m.confirmada_por) + '</small>' : '<small class="dica">—</small>') + '</td>' +
+      '<td>' + etqEstado(m.estado_conciliacao) + '</td></tr>').join('') : '<tr><td colspan="8" class="dica">Nenhum movimento.</td></tr>') + '</tbody>';
+  $('mvTabela').querySelectorAll('[data-mov]').forEach((tr) => tr.onclick = () => verMovimento(tr.dataset.mov));
+}
+$('mfBuscar').onclick = buscarMovimentos;
+
+async function verMovimento(id){
+  MOV_SEL = id;
+  $('mvTabela').querySelectorAll('tr.sel').forEach((t) => t.classList.remove('sel'));
+  const tr = $('mvTabela').querySelector('[data-mov="' + id + '"]'); if(tr) tr.classList.add('sel');
+  const d = await get('movimento', {id});
+  const m = d.movimento, r = d.rastreio;
+  const rot = Object.fromEntries(VOC.categorias.map((c) => [c.id, c.nome]));
+  const lanc = CONTAS.filter((c) => c.tipo === 'ANALITICA' && c.ativa);
+  const cand = d.candidatos || [];
+  const ativas = (d.ligacoes || []).filter((l) => !l.desfeita_utc);
+  const desfeitas = (d.ligacoes || []).filter((l) => l.desfeita_utc);
+  const origemTxt = r.arquivos.map((a) => esc(a.nome_arquivo || a.formato) + ' · linha ' + a.linha + (a.pagina ? ' · página ' + a.pagina : '') + ' · movimento ' + a.ordem).join('<br>');
+  const docTxt = r.documentos_fiscais.length ? r.documentos_fiscais.map((x) => esc(x.especie + ' nº ' + (x.numero || '—') + ' · ' + dataBR(x.data) + ' · ' + reais(x.valor) + ' · ' + (x.contraparte_nome || x.contraparte_doc || '')) + ' ' + etqEstado(x.estado)).join('<br>') : '';
+  const opTxt = r.documentos_fiscais.map((x) => esc(x.operacao || '')).filter(Boolean).join('<br>');
+  const lcTxt = r.lancamentos.length ? r.lancamentos.map((l) => 'nº ' + l.numero + ' ' + etqStatus(l.status) + ' ' + esc(l.historico) + ' · ' +
+    l.partidas.map((p) => p.tipo + ' ' + esc(p.codigo) + ' ' + reais(p.valor)).join(' / ') + ' ' + etqEstado(l.estado)).join('<br>') : '';
+  const elo = (t, v) => '<div class="elo' + (v ? '' : ' vazio') + '"><b>' + t + '</b>' + (v || 'nada ligado') + '</div>';
+  $('mvDetalhe').classList.remove('oculto');
+  $('mvDetalhe').innerHTML =
+    '<h2>Movimento de ' + dataBR(m.data) + ' · <span class="' + (m.valor > 0 ? 'entra' : 'sai') + '">' + reais(m.valor) + '</span> ' + etqEstado(m.estado_conciliacao) + '</h2>' +
+    '<div class="duas"><div>' +
+      '<dl class="campos"><dt>Descrição</dt><dd>' + esc(m.descricao) + '</dd><dt>Data / lançamento</dt><dd>' + dataBR(m.data) + ' / ' + dataBR(m.data_lancamento) + '</dd>' +
+      '<dt>Documento</dt><dd class="mono">' + esc(m.documento || '—') + '</dd><dt>Tipo de operação</dt><dd>' + esc(m.tipo_operacao || '—') + '</dd>' +
+      '<dt>Identificador (FITID)</dt><dd class="mono">' + esc(m.id_transacao || '—') + '</dd><dt>Sentido</dt><dd>' + esc(m.sentido) + '</dd>' +
+      '<dt>Saldo</dt><dd>' + reais(m.saldo) + '</dd><dt>Banco / ag. / conta</dt><dd>' + esc([m.banco, m.agencia, m.conta].join(' / ')) + '</dd>' +
+      '<dt>Contraparte lida</dt><dd>' + esc(m.contraparte_nome || '—') + (m.contraparte_doc ? ' <span class="mono">' + esc(m.contraparte_doc) + '</span>' : '') + '</dd>' +
+      '<dt>Sugestão</dt><dd>' + esc(rot[m.categoria] || m.categoria) + ' — ' + esc(m.sugestao || '') + ' <small class="dica">(regra ' + esc(m.regra) + ', confiança ' + esc(m.confianca) + ')</small></dd>' +
+      '<dt>Confirmada</dt><dd>' + (m.categoria_confirmada ? esc(rot[m.categoria_confirmada]) + ' por ' + esc(m.confirmada_por) : 'não') + '</dd></dl>' +
+      '<h3>Confirmar a categoria</h3><div class="linha"><select id="dvCat">' + VOC.categorias.map((c) => '<option value="' + c.id + '"' + (c.id === (m.categoria_confirmada || m.categoria) ? ' selected' : '') + '>' + esc(c.nome) + '</option>').join('') +
+        '</select><button class="btn btn-mini" id="dvCatOk">confirmar categoria</button></div>' +
+      '<p class="dica">Confirmar a categoria não cria lançamento.</p>' +
+      '<h3>Gerar lançamento (nasce PENDENTE)</h3><div class="linha"><select id="dvContra"><option value="">contrapartida…</option>' +
+        lanc.map((c) => '<option value="' + c.id + '">' + esc(c.codigo + ' ' + c.descricao + ' (' + c.grupo + ')') + '</option>').join('') +
+        '</select><input id="dvHist" placeholder="histórico" value="' + esc(m.descricao) + '" style="min-width:220px"><button class="btn btn-mini" id="dvLancar">gerar</button></div>' +
+      '<div id="dvMsg"></div>' +
+    '</div><div>' +
+      '<h3 style="margin-top:0">Rastreio</h3><div class="cadeia">' +
+        elo('Banco', esc([r.banco && r.banco.banco, r.banco && r.banco.agencia, r.banco && r.banco.numero].filter(Boolean).join(' / ')) + '<br><small class="dica">' + origemTxt + '</small>') + '<div class="seta">↓</div>' +
+        elo('Movimento', esc(m.descricao) + ' · ' + reais(m.valor)) + '<div class="seta">↓</div>' +
+        elo('Documento fiscal', docTxt) + '<div class="seta">↓</div>' +
+        elo('Operação', opTxt) + '<div class="seta">↓</div>' +
+        elo('Lançamento', lcTxt) + '</div>' +
+      '<h3>Ligações</h3>' + (ativas.length ? ativas.map((l) => '<div class="elo">' + etqEstado(l.estado) + ' ' + esc(l.alvo_tipo === 'LANCAMENTO' ? 'Lançamento nº ' + (l.alvo_resumo.numero || '') : (l.alvo_resumo.especie || '') + ' nº ' + (l.alvo_resumo.numero || '')) +
+          (l.diferenca ? ' · diferença ' + reais(l.diferenca) : '') + (l.motivo ? '<br><small class="dica">' + esc(l.motivo) + '</small>' : '') +
+          ' <small class="dica">por ' + esc(l.usuario || '—') + '</small> <button class="btn btn-mini" data-desf="' + l.id + '">desfazer</button></div>').join('') : '<p class="dica">Nenhuma.</p>') +
+      (desfeitas.length ? '<p class="dica">' + desfeitas.length + ' ligação(ões) desfeita(s) guardada(s) no histórico.</p>' : '') +
+      '<h3>Candidatos (sugestão)</h3>' + (cand.length ? cand.map((c) => '<div class="elo">' + esc(c.alvo_tipo === 'LANCAMENTO' ? 'Lançamento nº ' + c.alvo_resumo.numero + ' · ' + c.alvo_resumo.status :
+          (c.alvo_resumo.especie + ' nº ' + (c.alvo_resumo.numero || '—') + ' · ' + dataBR(c.alvo_resumo.data) + ' · ' + (c.alvo_resumo.contraparte_nome || ''))) + ' · ' + reais(c.alvo_resumo.valor || c.alvo_resumo.total) +
+          '<br><small class="dica">' + esc(c.motivo) + ' · pontuação ' + c.pontuacao + '</small> <button class="btn btn-mini" data-conc="' + esc(c.alvo_tipo) + '|' + esc(c.alvo_id) + '">conciliar</button></div>').join('') : '<p class="dica">Nenhum candidato com o mesmo valor.</p>') +
+      '<button class="btn btn-mini" id="dvProcurar">procurar de novo</button>' +
+      '<h3>Procurar documento fiscal</h3><div class="linha"><input id="dvBValor" size="10" placeholder="valor" value="' + (m.valor ? (Math.abs(m.valor) / 100).toFixed(2).replace('.', ',') : '') + '">' +
+        '<input id="dvBTexto" size="14" placeholder="nome ou número"><input id="dvBDoc" size="14" placeholder="CNPJ/CPF"><button class="btn btn-mini" id="dvBuscarDoc">buscar</button></div><div id="dvDocs"></div>' +
+    '</div></div>';
+  const recarregar = () => { verMovimento(id); buscarMovimentos(); };
+  $('dvCatOk').onclick = async () => { try{ await post('movimento/categoria', {id, categoria: $('dvCat').value}); recarregar(); }catch(e){ msg('dvMsg', esc(e.message), 'ruim'); } };
+  $('dvLancar').onclick = async () => {
+    try{ const x = await post('movimento/lancar', {id, conta_contrapartida_id: $('dvContra').value, historico: $('dvHist').value});
+      msg('dvMsg', 'Lançamento nº ' + x.lancamento.numero + ' criado como PENDENTE. Confirme-o em Lançamentos.', 'ok'); recarregar(); }
+    catch(e){ msg('dvMsg', esc(e.message), 'ruim'); }
+  };
+  $('dvProcurar').onclick = async () => { await post('movimento/procurar', {id}); recarregar(); };
+  const conciliar = async (tipo, alvo) => {
+    let motivo = '';
+    try{ await post('conciliar', {movimento_id: id, alvo_tipo: tipo, alvo_id: alvo}); recarregar(); }
+    catch(e){
+      if(/motivo/.test(e.message)){ motivo = prompt(e.message + '\n\nMotivo:'); if(!motivo) return;
+        try{ await post('conciliar', {movimento_id: id, alvo_tipo: tipo, alvo_id: alvo, motivo}); recarregar(); }catch(e2){ alert(e2.message); } }
+      else alert(e.message);
+    }
+  };
+  $('mvDetalhe').querySelectorAll('[data-conc]').forEach((b) => b.onclick = () => { const [t, a] = b.dataset.conc.split('|'); conciliar(t, a); });
+  $('mvDetalhe').querySelectorAll('[data-desf]').forEach((b) => b.onclick = async () => {
+    const motivo = prompt('Motivo para desfazer'); if(!motivo) return;
+    try{ await post('conciliacao/desfazer', {id: b.dataset.desf, motivo}); recarregar(); }catch(e){ alert(e.message); }
+  });
+  $('dvBuscarDoc').onclick = async () => {
+    try{
+      const x = await get('documentos', {valor: $('dvBValor').value, texto: $('dvBTexto').value, doc: $('dvBDoc').value});
+      $('dvDocs').innerHTML = (x.documentos.length ? x.documentos.map((doc) => '<div class="elo">' + esc(doc.especie + ' nº ' + (doc.numero || '—') + ' · ' + dataBR(doc.data) + ' · ' + reais(doc.valor) + ' · ' + doc.sentido + ' · ' + (doc.contraparte_nome || doc.contraparte_doc)) +
+        '<br><small class="dica">' + esc(doc.operacao) + '</small> <button class="btn btn-mini" data-doc="' + esc(doc.alvo_id) + '">conciliar</button></div>').join('') : '<p class="dica">Nada no acervo fiscal desta empresa.</p>') +
+        (x.total > x.documentos.length ? '<p class="dica">Mostrando ' + x.documentos.length + ' de ' + x.total + '.</p>' : '');
+      $('dvDocs').querySelectorAll('[data-doc]').forEach((b) => b.onclick = () => conciliar('DOCUMENTO_FISCAL', b.dataset.doc));
+    }catch(e){ $('dvDocs').innerHTML = '<p class="perigo">' + esc(e.message) + '</p>'; }
+  };
+  $('mvDetalhe').scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
+async function lerExtrato(previa){
+  const f = $('exArquivo').files[0]; if(!f) return msg('exMsg', 'Escolha o arquivo do extrato.', 'ruim');
+  msg('exMsg', previa ? 'Lendo…' : 'Importando…');
+  try{
+    const d = await post(previa ? 'bancos/previa' : 'bancos/importar', {conta_bancaria_id: $('exConta').value}, f);
+    if(previa){
+      msg('exMsg', 'Prévia (nada foi gravado): ' + esc(d.formato) + ' · ' + d.linhas_total + ' linhas · <b>' + d.movimentos + ' movimentos</b> · ' + d.ignoradas + ' linhas que não são movimento' +
+        (d.conta ? ' · conta ' + esc([d.banco, d.agencia, d.conta].filter(Boolean).join(' / ')) : ''), 'info');
+    } else {
+      msg('exMsg', esc(d.mensagem), d.desfecho === 'DUPLICATA' ? 'info' : 'ok');
+      carregarBancos();
+    }
+  }catch(e){ msg('exMsg', esc(e.message), 'ruim'); }
+}
+$('exPrevia').onclick = () => lerExtrato(true);
+$('exImportar').onclick = () => lerExtrato(false);
+$('cbCriar').onclick = async () => {
+  try{ await post('bancos/conta', {banco: $('cbBanco').value, agencia: $('cbAg').value, numero: $('cbNum').value,
+    descricao: $('cbDesc').value, conta_contabil_id: $('cbCC').value}); msg('cbMsg', 'Conta cadastrada.', 'ok'); carregarBancos(); }
+  catch(e){ msg('cbMsg', esc(e.message), 'ruim'); }
+};
+
+// ── Início ──────────────────────────────────────────────────────────────
+async function iniciar(){
+  try{
+    const r = await fetch('/api/contabil/vocabulario');
+    if(r.status === 404){
+      $('avisoServidor').classList.remove('oculto');
+      $('avisoServidor').textContent = 'O servidor do FISCALE ainda não foi reiniciado com o módulo Contábil. ' +
+        'Encerre o FISCALE (ícone ao lado do relógio → Encerrar) e abra de novo.';
+      return;
+    }
+    VOC = await r.json();
+  }catch(e){ return; }
+  const opcoes = (el, lista, primeiro) => { el.innerHTML = (primeiro || '') + lista.map((x) => '<option value="' + x + '">' + x + '</option>').join(''); };
+  opcoes($('pcGrupo'), VOC.grupos, '<option value="">(herdar da pai)</option>');
+  opcoes($('lcOrigem'), VOC.origens);
+  $('lcOrigem').value = 'MANUAL';
+  opcoes($('lfStatus'), VOC.status, '<option value="">todos</option>');
+  opcoes($('lfOrigem'), VOC.origens, '<option value="">todas</option>');
+  opcoes($('mfEstado'), VOC.estados, '<option value="">todos</option>');
+  opcoes($('ffEstado'), VOC.estados_fato, '<option value="">todas</option>');
+  $('ffTipo').innerHTML = '<option value="">todos</option>' +
+    VOC.tipos_fato.map((t) => '<option value="' + t.id + '">' + esc(t.nome) + '</option>').join('');
+  $('mfCat').innerHTML = '<option value="">todas</option>' + VOC.categorias.map((c) => '<option value="' + c.id + '">' + esc(c.nome) + '</option>').join('');
+  $('lcData').value = new Date().toISOString().slice(0, 10);
+
+  // A lista vem do cadastro de Clientes, pelo servidor. Empresa fora dela
+  // não abre — nem digitada à mão na URL.
+  const e = await get('empresas');
+  const lista = e.empresas || [];
+  const pedida = (PARAMS.get('empresa') || '').replace(/\D/g, '');
+  const aberta = lista.find((x) => x.identidade === pedida);
+  if(!aberta){
+    if(pedida) msg('msgEmpresa', 'Essa empresa não está no cadastro de Clientes. Escolha uma da lista.', 'ruim');
+    telaDeEntrada(lista);
+    return;
+  }
+  EMPRESA = aberta.identidade;
+  $('ctxNome').textContent = aberta.nome;
+  $('ctxDoc').textContent = aberta.identidade;
+  $('ctxEmpresa').classList.remove('oculto');
+  $('barraComp').classList.remove('oculto');
+  $('trilhaEmpresa').innerHTML = ' › <b>' + esc(aberta.nome) + '</b>';
+  document.title = aberta.nome + ' · Contábil';
+  $('selComp').onchange = mostrar;
+  montarAbas();
+  pegarCsrf();
+  mostrar();
+  // Chegou do Fiscal por "Ver impacto contábil": abre direto o documento.
+  if(PARAMS.get('documento')) abrirImpacto(PARAMS.get('documento'));
+}
+
+async function abrirImpacto(idDoc){
+  let d;
+  try{ d = await get('impacto', {id_documento: idDoc}); }
+  catch(e){ msg('fiscalMsg', esc(e.message), 'ruim'); return; }
+  if(!d.rastreio){
+    $('painelFiscal').classList.remove('oculto');
+    msg('fiscalMsg', esc(d.mensagem) + ' (documento <span class="mono">' +
+      esc(idDoc.slice(0, 12)) + '</span>)', 'info');
+    return;
+  }
+  const comp = d.rastreio.fato.competencia;
+  if($('selComp').value !== comp){
+    // A competência do documento manda: é o contexto em que ele existe.
+    if(![...$('selComp').options].some((o) => o.value === comp))
+      $('selComp').insertAdjacentHTML('beforeend',
+        '<option value="' + comp + '">' + comp.slice(5) + '/' + comp.slice(0, 4) + '</option>');
+    $('selComp').value = comp;
+    await carregarVisao();
+  }
+  verFato(d.rastreio.fato.id);
+}
+
+function telaDeEntrada(lista){
+  document.querySelectorAll('.aba-corpo').forEach((s) => s.classList.add('oculto'));
+  $('telaEmpresa').classList.remove('oculto');
+  $('trilhaModulo').innerHTML = ' › <b>Abrir empresa</b>';
+  const desenhar = () => {
+    const t = $('buscaEmpresa').value.trim().toLowerCase(), d = t.replace(/\D/g, '');
+    const achadas = lista.filter((x) => !t || x.nome.toLowerCase().includes(t) || (d && x.identidade.includes(d)));
+    $('listaEmpresas').innerHTML = achadas.length ? achadas.map((x) =>
+      '<button data-emp="' + x.identidade + '"><b>' + esc(x.nome) + '</b><span>' + x.identidade + '</span></button>').join('')
+      : '<p class="dica">' + (lista.length ? 'Nenhuma empresa com esse nome ou documento.' : 'Nenhuma empresa no cadastro de Clientes.') + '</p>';
+    $('listaEmpresas').querySelectorAll('[data-emp]').forEach((b) => b.onclick = () => abrirEmpresa(b.dataset.emp));
+  };
+  $('buscaEmpresa').oninput = desenhar;
+  desenhar();
+  $('buscaEmpresa').focus();
+}
+function abrirEmpresa(ident){
+  location.href = 'contabil.html?empresa=' + encodeURIComponent(ident) + '&aba=visao';
+}
+$('btnTrocar').onclick = () => { location.href = 'contabil.html'; };
+$('btnSair').onclick = async () => {
+  try{ await fetch('/api/logout', {method: 'POST'}); }catch(e){}
+  location.href = '/login.html';
+};
+// Quem está usando. Só o nome: dentro do Contábil não há função de
+// administração da plataforma para oferecer, seja qual for o perfil.
+fetch('/api/quem').then((r) => r.status === 401 ? (location.href = '/login.html', null) : r.json())
+  .then((q) => { if(q && q.usuario) $('eu').innerHTML = '👤 <b>' + esc(q.usuario) + '</b>'; })
+  .catch(() => {});
+iniciar();
+</script>
+</body>
+</html>

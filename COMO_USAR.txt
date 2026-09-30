@@ -1,0 +1,127 @@
+============================================================
+   FISCALE — Sistema integrado do setor fiscal
+   COMO USAR
+============================================================
+
+O que e:
+  Um sistema unico com os modulos NFS-e, NF-e/NFC-e, Clientes,
+  Classificador, CClassTrib, Consulta Optantes e CIM (Recife).
+  Roda no seu computador; outras maquinas da rede acessam pelo
+  navegador.
+
+
+------------------------------------------------------------
+  INSTALACAO (so uma vez)
+------------------------------------------------------------
+  1. De dois cliques em "FiscaleInstalador.exe".
+
+  2. Se o Windows mostrar a tela azul ("O Windows protegeu o
+     seu computador"):
+        -> clique em "Mais informacoes"
+        -> clique em "Executar assim mesmo"
+     (Aparece so porque o programa e novo. E seguro.)
+
+  3. Avance as telas (Avancar / Instalar / Concluir).
+     Sera criado um atalho na Area de Trabalho e no Menu Iniciar.
+
+
+------------------------------------------------------------
+  COMO ABRIR
+------------------------------------------------------------
+  - De dois cliques no atalho "Fiscale".
+  - Nao aparece nenhuma janela preta: o Fiscale abre direto o
+    navegador na tela de login e fica rodando discretamente,
+    com um icone ao lado do relogio (canto inferior direito).
+  - NO PRIMEIRO USO a propria tela do navegador pede para voce
+    criar a senha do usuario "admin".
+  - Depois disso, entre com "admin" e a senha criada.
+
+  IMPORTANTE: fechar a aba do navegador NAO encerra o Fiscale
+  - ele continua rodando por tras. Para encerrar DE VERDADE ha
+  duas formas:
+
+  1) O JEITO FACIL: na Home, botao vermelho "Encerrar" (canto
+     superior direito, ao lado de "Sair"). So aparece para o
+     admin e so na maquina onde o Fiscale roda.
+
+  2) Pelo icone ao lado do relogio: ATENCAO, o Windows costuma
+     escondê-lo atras da setinha "^" da barra de tarefas -
+     clique na setinha para ve-lo. Botao direito nele:
+        - Abrir o Fiscale  (reabre a tela no navegador)
+        - Pasta de dados   (abre onde ficam seus arquivos)
+        - Encerrar         (fecha o Fiscale)
+
+  DICA: para o icone ficar sempre visivel, arraste-o de dentro
+  da setinha "^" para a barra de tarefas.
+
+
+------------------------------------------------------------
+  USAR EM OUTRAS MAQUINAS (mesma rede)
+------------------------------------------------------------
+  NAO instale o Fiscale nas outras maquinas! Se instalar, cada
+  uma vira um sistema SEPARADO, com dados proprios - as suas
+  empresas e certificados nao apareceriam la.
+
+  O certo: as outras maquinas ABREM, pelo navegador, o Fiscale
+  que roda no computador principal. Todas compartilham os
+  mesmos dados, e so o principal precisa ficar ligado.
+
+  COMO FAZER (jeito que nao quebra):
+  Use o NOME do computador principal, nao o IP - o IP muda
+  sozinho (DHCP) e o atalho para de funcionar.
+
+    1. No computador principal, descubra o nome: tecle
+       Windows+R, digite  cmd  e depois  hostname
+    2. Na outra maquina, abra no navegador:
+          http://NOME-DO-PC:8777
+    3. Funcionou? Salve como atalho: no Chrome/Edge, menu "..."
+       -> Salvar e compartilhar -> Criar atalho.
+
+  Ja existe um atalho pronto em  dist\Fiscale (na rede).url  -
+  copie para a Area de Trabalho das outras maquinas.
+
+  (Na 1a vez, o Firewall do Windows pode perguntar se permite
+  o Fiscale na rede: marque "Redes privadas" e permita.)
+
+  OBS: a senha do "admin" do primeiro uso so pode ser criada
+  NA maquina principal, por seguranca. O mesmo vale para o
+  botao "Encerrar".
+
+  (Na 1a vez, o Firewall do Windows pode perguntar se permite
+  o Fiscale na rede: marque "Redes privadas" e permita.)
+
+
+------------------------------------------------------------
+  USUARIOS
+------------------------------------------------------------
+  - O admin clica em "Usuarios" (na Home) para criar, redefinir
+    senha ou excluir usuarios.
+  - Cada pessoa entra com o proprio login. Usuarios comuns usam
+    todos os modulos, mas nao gerenciam usuarios.
+  - Qualquer um troca a propria senha no botao "Senha" da Home.
+
+
+------------------------------------------------------------
+  ONDE FICAM OS DADOS
+------------------------------------------------------------
+  Em: C:\Users\SEU_USUARIO\Fiscale\dados
+  (clientes, usuarios, guias e faturas em PDF)
+  Atalho: icone ao lado do relogio -> "Pasta de dados".
+
+  E os certificados/XMLs do NFS-e em:
+      C:\Users\SEU_USUARIO\SistemaNFSe
+
+  Tudo fica local no computador. Para levar os dados a outra
+  maquina, copie a pasta "dados" para o mesmo local nela.
+
+  DEU PROBLEMA? Como nao ha mais janela preta, as mensagens do
+  sistema ficam no arquivo:
+      C:\Users\SEU_USUARIO\Fiscale\dados\fiscale.log
+
+
+------------------------------------------------------------
+  DESINSTALAR
+------------------------------------------------------------
+  Menu Iniciar -> "Desinstalar o Fiscale" (ou Configuracoes do
+  Windows -> Aplicativos). Os dados NAO sao apagados.
+============================================================

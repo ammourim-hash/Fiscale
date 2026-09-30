@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10444E">
+<title>Registro de acessos — Fiscale</title>
+<style>
+  :root{
+    --fundo:#EFF2F3; --superficie:#FFFFFF; --tinta:#1B2328; --tinta-suave:#5C6B72;
+    --borda:#C7CDD1; --petroleo:#10444E; --ok:#0F8A5F; --alerta:#B3382C;
+    --atencao:#B26A00;
+    --raio:16px; --sombra:0 1px 2px rgba(27,35,40,.06), 0 6px 18px rgba(27,35,40,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Roboto,-apple-system,Arial,sans-serif;background:var(--fundo);color:var(--tinta)}
+  header{background:var(--superficie);border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:20}
+  .barra{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:12px 20px}
+  .voltar{font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta);
+          background:var(--superficie);border:2px solid var(--borda);border-radius:11px;padding:9px 16px;cursor:pointer}
+  .voltar:hover{border-color:var(--petroleo);color:var(--petroleo)}
+  .modulo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+  .modulo .ponto{width:12px;height:12px;border-radius:4px;background:var(--petroleo)}
+
+  main{max-width:1240px;margin:0 auto;padding:20px}
+  .painel{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra);margin-bottom:16px}
+  .painel h2{font-size:14px;padding:14px 16px;border-bottom:1px solid var(--borda)}
+  .painel .corpo{padding:16px}
+
+  .saude{display:none;font-size:13px;border-radius:12px;padding:12px 14px;margin-bottom:16px;line-height:1.5}
+  .saude.mostrar{display:block}
+  .saude.critico{background:#FBE9E7;border:1px solid #E7C3C0;color:var(--alerta)}
+  .saude.bem{background:#F1F6F4;border:1px solid #CFE3DA;color:var(--tinta-suave)}
+  .saude b{color:inherit}
+
+  .filtros{display:grid;grid-template-columns:repeat(5,1fr) auto;gap:10px;align-items:end}
+  @media(max-width:980px){.filtros{grid-template-columns:1fr 1fr}}
+  label{display:block;font-size:12px;font-weight:600;color:var(--tinta-suave);margin:0 0 5px}
+  input,select{width:100%;font-size:13.5px;padding:8px 10px;border:1px solid var(--borda);border-radius:9px;background:#fff;color:var(--tinta)}
+  input:focus,select:focus{outline:none;border-color:var(--petroleo);box-shadow:0 0 0 3px rgba(16,68,78,.15)}
+  .btn{font-size:13.5px;font-weight:700;padding:9px 14px;border-radius:9px;border:none;cursor:pointer}
+  .btn-primario{background:var(--petroleo);color:#fff}.btn-primario:hover{background:#0b3138}
+  .btn-sec{background:#fff;border:1px solid var(--borda);color:var(--tinta)}
+  .btn-sec:hover{border-color:var(--petroleo);color:var(--petroleo)}
+  .btn[disabled]{opacity:.45;cursor:default}
+
+  .rolagem{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:900px}
+  th{text-align:left;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--tinta-suave);
+     font-weight:700;padding:10px 12px;border-bottom:1px solid var(--borda);white-space:nowrap}
+  td{padding:10px 12px;border-bottom:1px solid #EDF1F2;vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .quando{white-space:nowrap;color:var(--tinta-suave);font-variant-numeric:tabular-nums}
+  .mono{font-family:Consolas,"SF Mono",Menlo,monospace;font-size:12px;color:var(--tinta-suave)}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .pill.OK{background:#E5F4EC;color:var(--ok)}
+  .pill.RECUSADO{background:#FBE9E7;color:var(--alerta)}
+  .pill.BLOQUEADO{background:#FFF1DE;color:var(--atencao)}
+  .pill.ERRO{background:#FBE9E7;color:var(--alerta)}
+  .anon{font-style:italic;color:var(--tinta-suave)}
+  .vazio{padding:40px 16px;text-align:center;color:var(--tinta-suave);font-size:13.5px}
+  .rodape{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;
+          border-top:1px solid var(--borda);font-size:13px;color:var(--tinta-suave);flex-wrap:wrap}
+  .paginas{display:flex;align-items:center;gap:8px}
+  .aviso{font-size:11.5px;color:var(--tinta-suave);line-height:1.5;background:#F7F9FA;
+         border:1px solid var(--borda);border-radius:10px;padding:10px 12px;margin-top:14px}
+  .aviso b{color:var(--tinta)}
+</style>
+</head>
+<body>
+<header>
+  <div class="barra">
+    <button class="voltar" onclick="location.href='home_portal.html'">◄ Home</button>
+    <div class="modulo"><span class="ponto"></span> Segurança &middot; Registro de acessos</div>
+  </div>
+</header>
+
+<main>
+  <div id="saude" class="saude"></div>
+
+  <div class="painel">
+    <h2>Filtrar</h2>
+    <div class="corpo">
+      <div class="filtros">
+        <div><label for="f_de">De</label><input type="date" id="f_de"></div>
+        <div><label for="f_ate">Até</label><input type="date" id="f_ate"></div>
+        <div><label for="f_ator">Usuário</label><select id="f_ator"><option value="">Todos</option></select></div>
+        <div><label for="f_evento">Evento</label><select id="f_evento"><option value="">Todos</option></select></div>
+        <div><label for="f_resultado">Resultado</label><select id="f_resultado"><option value="">Todos</option></select></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primario" id="b_filtrar">Filtrar</button>
+          <button class="btn btn-sec" id="b_limpar">Limpar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="painel">
+    <h2>Eventos</h2>
+    <div class="rolagem">
+      <table>
+        <thead><tr>
+          <th>Data e hora</th><th>Evento</th><th>Resultado</th><th>Usuário</th>
+          <th>Alvo</th><th>IP</th><th>Dispositivo</th><th>Detalhe</th>
+        </tr></thead>
+        <tbody id="corpo"></tbody>
+      </table>
+    </div>
+    <div id="vazio" class="vazio" style="display:none">Nenhum evento neste filtro.</div>
+    <div class="rodape">
+      <div id="resumo">—</div>
+      <div class="paginas">
+        <label for="f_por" style="margin:0">Por página</label>
+        <select id="f_por" style="width:auto">
+          <option>25</option><option selected>50</option><option>100</option><option>200</option>
+        </select>
+        <button class="btn btn-sec" id="b_ant">◄</button>
+        <span id="pag">1 / 1</span>
+        <button class="btn btn-sec" id="b_prox">►</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="aviso">
+    As horas aparecem no <b>fuso deste computador</b>; no banco tudo é gravado em
+    <b>UTC</b>, para não mudar de significado com horário de verão.
+    O registro <b>só recebe acréscimo</b>: não há como editar nem apagar um evento
+    por aqui, e a única remoção é automática, por idade
+    (<b><span id="ret">180</span> dias</b>).
+    Entrada com um e-mail ou login que <b>não existe</b> aparece como
+    <i>identificador não cadastrado</i> — o que foi digitado não é guardado em
+    lugar nenhum. Esta tela não registra consulta a NF-e, NFS-e ou cliente.
+  </div>
+</main>
+
+<script src="fiscale-nav.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  let pagina = 1;
+
+  function texto(v) {
+    return String(v === null || v === undefined ? "" : v);
+  }
+
+  // Sempre via textContent / createElement: a coluna Dispositivo vem do
+  // cabeçalho User-Agent, que é escrito por quem faz a requisição. Montar
+  // HTML com isso seria deixar o visitante escrever na tela do administrador.
+  function celula(linha, valor, classe) {
+    const td = document.createElement("td");
+    if (classe) td.className = classe;
+    td.textContent = texto(valor);
+    linha.appendChild(td);
+    return td;
+  }
+
+  function horaLocal(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return texto(iso);
+    return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "medium" });
+  }
+
+  function detalheLegivel(ev) {
+    if (ev.evento === "RETENCAO_EXECUTADA")
+      return (ev.quantidade || 0) + " evento(s) apagado(s)";
+    if (ev.evento === "SESSAO_INVALIDADA" && ev.quantidade)
+      return ev.quantidade + " sessão(ões) encerrada(s)";
+    const mapa = {
+      CREDENCIAL_INVALIDA: "senha incorreta",
+      IDENTIFICADOR_INEXISTENTE: "identificador não cadastrado",
+      CONTA_INATIVA: "conta desativada",
+      ENTRADA_ACIMA_DO_LIMITE: "entrada acima do limite",
+      LIMITE_POR_CONTA: "limite por conta",
+      LIMITE_POR_IP: "limite por origem",
+      PAPEL_INSUFICIENTE: "sem permissão",
+      SEM_SESSAO: "sem sessão",
+      POR_DESATIVACAO: "por desativação",
+      POR_EXCLUSAO: "por exclusão",
+      VIROU_ADMIN: "passou a administrador",
+      VIROU_OPERADOR: "passou a operador"
+    };
+    const d = texto(ev.detalhe);
+    if (!d) return "—";
+    if (mapa[d]) return mapa[d];
+    // Edição de usuário: o servidor manda só os NOMES dos campos alterados.
+    return "campos alterados: " + d.split(",").join(", ");
+  }
+
+  function desenhar(r) {
+    const corpo = $("corpo");
+    corpo.textContent = "";
+    (r.itens || []).forEach((ev) => {
+      const tr = document.createElement("tr");
+      celula(tr, horaLocal(ev.quando_utc), "quando");
+      celula(tr, ev.evento_rotulo);
+      const td = document.createElement("td");
+      const p = document.createElement("span");
+      p.className = "pill " + texto(ev.resultado);
+      p.textContent = texto(ev.resultado_rotulo);
+      td.appendChild(p);
+      tr.appendChild(td);
+      if (ev.ator_uid) {
+        celula(tr, ev.ator_uid);
+      } else if (ev.derivado) {
+        // Identificador que não existe: o que se mostra é a chave derivada,
+        // não o que foi digitado — o digitado nunca foi guardado.
+        celula(tr, "não cadastrado", "anon");
+      } else {
+        celula(tr, "—", "anon");
+      }
+      celula(tr, ev.alvo_uid || "—");
+      celula(tr, ev.ip || "—", "mono");
+      celula(tr, ev.dispositivo || "—");
+      celula(tr, detalheLegivel(ev));
+      corpo.appendChild(tr);
+    });
+    $("vazio").style.display = (r.itens || []).length ? "none" : "block";
+    $("resumo").textContent = (r.total || 0) + " evento(s)";
+    $("pag").textContent = (r.pagina || 1) + " / " + (r.paginas || 1);
+    $("b_ant").disabled = (r.pagina || 1) <= 1;
+    $("b_prox").disabled = (r.pagina || 1) >= (r.paginas || 1);
+  }
+
+  function encher(sel, itens, atual) {
+    const v = atual !== undefined ? atual : sel.value;
+    while (sel.options.length > 1) sel.remove(1);
+    itens.forEach((it) => {
+      const o = document.createElement("option");
+      o.value = it.chave !== undefined ? it.chave : it;
+      o.textContent = it.rotulo !== undefined ? it.rotulo : it;
+      sel.appendChild(o);
+    });
+    sel.value = v;
+  }
+
+  function mostrarSaude(s) {
+    const caixa = $("saude");
+    if (!s) { caixa.className = "saude"; return; }
+    caixa.textContent = "";
+    caixa.className = "saude mostrar " + (s.critico ? "critico" : "bem");
+    const b = document.createElement("b");
+    if (s.critico) {
+      b.textContent = "O registro de acessos NÃO está gravando. ";
+      caixa.appendChild(b);
+      caixa.appendChild(document.createTextNode(
+        "Enquanto isso durar, criar, editar, desativar ou excluir usuário, " +
+        "trocar papel e trocar senha ficam recusados — mudança de segurança " +
+        "sem registro é justamente o que este livro existe para impedir. " +
+        "Entrar no sistema continua funcionando normalmente. Motivo técnico: " +
+        (s.motivo || "desconhecido")));
+    } else {
+      b.textContent = "Registro ativo. ";
+      caixa.appendChild(b);
+      caixa.appendChild(document.createTextNode(
+        (s.eventos || 0) + " evento(s) guardado(s), retenção de " +
+        (s.retencao_dias || 180) + " dias."));
+    }
+    $("ret").textContent = s.retencao_dias || 180;
+  }
+
+  async function carregar() {
+    const p = new URLSearchParams();
+    if ($("f_de").value) p.set("de", $("f_de").value);
+    // O `ate` vira o fim do dia: quem escolhe "até 27/08" quer o dia 27
+    // inteiro, e comparar com "27/08T00:00" devolveria zero evento.
+    if ($("f_ate").value) p.set("ate", $("f_ate").value + "T23:59:59.999Z");
+    if ($("f_ator").value) p.set("ator", $("f_ator").value);
+    if ($("f_evento").value) p.set("evento", $("f_evento").value);
+    if ($("f_resultado").value) p.set("resultado", $("f_resultado").value);
+    p.set("pagina", pagina);
+    p.set("por_pagina", $("f_por").value);
+
+    const resp = await fetch("/api/auditoria?" + p.toString(),
+                             { credentials: "same-origin" });
+    if (resp.status === 403) {
+      document.querySelector("main").innerHTML =
+        '<div class="painel"><div class="corpo">Esta tela é do administrador.</div></div>';
+      return;
+    }
+    if (resp.status === 401) { location.href = "login.html"; return; }
+    const r = await resp.json();
+    encher($("f_evento"), r.eventos || []);
+    encher($("f_resultado"), r.resultados || []);
+    encher($("f_ator"), r.atores || []);
+    mostrarSaude(r.saude);
+    desenhar(r);
+  }
+
+  $("b_filtrar").onclick = () => { pagina = 1; carregar(); };
+  $("b_limpar").onclick = () => {
+    ["f_de", "f_ate", "f_ator", "f_evento", "f_resultado"].forEach(
+      (k) => { $(k).value = ""; });
+    pagina = 1; carregar();
+  };
+  $("f_por").onchange = () => { pagina = 1; carregar(); };
+  $("b_ant").onclick = () => { if (pagina > 1) { pagina--; carregar(); } };
+  $("b_prox").onclick = () => { pagina++; carregar(); };
+
+  carregar();
+})();
+</script>
+</body>
+</html>

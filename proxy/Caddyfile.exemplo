@@ -1,0 +1,75 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  FISCALE — proxy reverso HTTPS (portal, Fase 3 — 13/09/2026)
+#
+#  MODELO. NÃO ESTÁ INSTALADO NEM ATIVO, E NÃO FOI VALIDADO PELO CADDY.
+#  Antes de usar: `caddy validate --config Caddyfile` na máquina do servidor.
+#
+#  O desenho:
+#      navegador ──HTTPS──► Caddy (só na interface da REDE PRIVADA)
+#                              └──HTTP──► FISCALE 127.0.0.1:8777
+#
+#  A 8777 nunca é publicada: quem fala com ela é o Caddy, pelo loopback.
+#  O FISCALE reconhece o proxy pelo soquete de loopback (fiscale_proxy.py) e,
+#  com isso, marca o cookie como Secure, manda HSTS, registra o IP real e —
+#  o mais importante — NÃO trata quem chega pelo proxy como "no próprio PC".
+#
+#  Variáveis (definidas no serviço do Caddy, nunca neste arquivo):
+#      FISCALE_HOST        app.sistemafiscale.com.br  (D97: o sistema; o www é o site institucional)
+#      CADDY_BIND          IP da máquina NA REDE PRIVADA (ex.: 100.x.y.z do Tailscale)
+#      FISCALE_ACME_EMAIL  e-mail para avisos do Let's Encrypt
+#      CF_API_TOKEN        token de DNS (só se o DNS estiver na Cloudflare)
+# ═══════════════════════════════════════════════════════════════════════════
+
+{
+	# A API de administração do Caddy fica só no loopback.
+	admin localhost:2019
+	email {$FISCALE_ACME_EMAIL}
+}
+
+{$FISCALE_HOST} {
+	# Escuta SÓ na rede privada. Sem isto, o Caddy abriria 443 em todas as
+	# interfaces — inclusive numa rede pública em que o notebook entrar.
+	bind {$CADDY_BIND}
+
+	# Certificado real (Let's Encrypt) por desafio de DNS: a máquina não
+	# precisa ficar alcançável pela internet para provar que o domínio é seu.
+	# Exige DNS com API. O Registro.br NÃO tem API — ver FISCALE_HTTPS.md.
+	# Requer o Caddy compilado com o módulo dns.providers.cloudflare.
+	tls {
+		dns cloudflare {env.CF_API_TOKEN}
+	}
+
+	encode zstd gzip
+
+	reverse_proxy 127.0.0.1:8777 {
+		# SOBRESCREVE (não acrescenta) o X-Forwarded-For com o IP de quem
+		# conectou. Um valor mandado pelo visitante nunca chega ao FISCALE.
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto https
+		header_up -Forwarded
+		header_up -X-Real-IP
+	}
+}
+
+# HTTP → HTTPS, também só na rede privada. O Caddy já faria isto sozinho;
+# fica explícito para ninguém "simplificar" e acabar servindo em HTTP.
+http://{$FISCALE_HOST} {
+	bind {$CADDY_BIND}
+	redir https://{$FISCALE_HOST}{uri} permanent
+}
+
+# ELO pelo mesmo caminho (OPCIONAL, depende de decisão): hoje o bilhete do
+# ELO aponta para http://127.0.0.1:3000, que só funciona NO PRÓPRIO PC. Para
+# abrir o ELO de outra máquina, ele precisa do seu próprio nome em HTTPS e o
+# `elo_config.json` precisa apontar para esse nome.
+#
+# elo.sistemafiscale.com.br {
+# 	bind {$CADDY_BIND}
+# 	tls {
+# 		dns cloudflare {env.CF_API_TOKEN}
+# 	}
+# 	reverse_proxy 127.0.0.1:3000 {
+# 		header_up X-Forwarded-For {remote_host}
+# 		header_up X-Forwarded-Proto https
+# 	}
+# }

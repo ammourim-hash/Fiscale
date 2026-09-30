@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10444E">
+<title>Clientes — Fiscale</title>
+<style>
+  :root{
+    --fundo:#EFF2F3; --superficie:#FFFFFF; --tinta:#1B2328; --tinta-suave:#5C6B72;
+    --borda:#C7CDD1; --petroleo:#10444E; --cli:#10444E; --cli-claro:#E8F0F1;
+    --ok:#0F8A5F; --alerta:#B3382C;
+    --saude:#0F8A5F; --cim:#8A5A0F; --recife:#B3382C; --simples:#B07D10; --mit:#6D28A8; --nfse:#0E7490;
+    --raio:16px; --sombra:0 1px 2px rgba(27,35,40,.06), 0 6px 18px rgba(27,35,40,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Roboto,-apple-system,Arial,sans-serif;background:var(--fundo);color:var(--tinta);-webkit-tap-highlight-color:transparent}
+  header{background:var(--superficie);border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:20}
+  .barra{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:12px 20px}
+  .voltar{font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta);
+          background:var(--superficie);border:2px solid var(--borda);border-radius:11px;padding:9px 16px;cursor:pointer}
+  .voltar:hover{border-color:var(--petroleo);color:var(--petroleo)}
+  .modulo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+  .modulo .ponto{width:12px;height:12px;border-radius:4px;background:var(--cli)}
+
+  main{max-width:1400px;margin:0 auto;padding:20px}
+  .cols{display:grid;grid-template-columns:5fr 7fr;gap:16px}
+  @media(max-width:900px){.cols{grid-template-columns:1fr}}
+
+  .painel{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra)}
+  .painel h2{font-size:14px;padding:14px 16px;border-bottom:1px solid var(--borda);display:flex;align-items:center;justify-content:space-between}
+  .painel .corpo{padding:16px}
+  label{display:block;font-size:12px;font-weight:600;color:var(--tinta-suave);margin:0 0 5px}
+  .campo{margin-bottom:12px}
+  .linha{display:flex;gap:10px;flex-wrap:wrap}.linha>*{flex:1;min-width:120px}
+  input,select{width:100%;font-size:14px;padding:9px 11px;border:1px solid var(--borda);border-radius:9px;background:#fff;color:var(--tinta)}
+  input:focus,select:focus{outline:none;border-color:var(--cli);box-shadow:0 0 0 3px rgba(16,68,78,.15)}
+  .btn{font-size:13.5px;font-weight:700;padding:9px 14px;border-radius:9px;border:none;cursor:pointer}
+  .btn-primario{background:var(--cli);color:#fff}.btn-primario:hover{background:#0b3138}
+  .btn-sec{background:#fff;border:1px solid var(--borda);color:var(--tinta)}.btn-sec:hover{border-color:var(--cli);color:var(--cli)}
+  .btn-perigo{background:#fff;border:1px solid #E7C3C0;color:#B3382C}.btn-perigo:hover{background:#FBE9E7}
+  .btn-mini{padding:6px 10px;font-size:12px}.btn-full{width:100%;margin-top:4px}
+  .aviso{font-size:11.5px;color:var(--tinta-suave);line-height:1.45;margin-top:10px;background:#F7F9FA;border:1px solid var(--borda);border-radius:10px;padding:10px 12px}
+  .dica{font-size:11.5px;color:var(--tinta-suave);line-height:1.5;margin-top:6px}
+  .dica b{color:var(--tinta)}
+  .aviso.ruim{background:#FBE9E7;border-color:#E7C3C0;color:#B3382C}
+  .aviso.bom{background:#E5F4EC;border-color:#CFE3DA;color:#0F8A5F}
+  #painelImportar table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
+  #painelImportar th{text-align:left;color:var(--tinta-suave);font-weight:600;padding:5px 8px;white-space:nowrap}
+  #painelImportar td{padding:5px 8px}
+  #painelImportar code{background:#EEF1F2;padding:1px 5px;border-radius:5px}
+  .aviso b{color:var(--tinta)}
+  .vazio{color:var(--tinta-suave);font-size:13px;padding:16px}
+
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--cli-claro);color:var(--cli)}
+  .tag.rec{background:#FBE9E7;color:var(--recife)}
+  .tag.sn{background:#FDF3DF;color:var(--simples)}
+  .tag.lp{background:#F0E8FA;color:var(--mit)}
+  .tag.cert{background:#E5F4EC;color:var(--ok)}
+  .tag.vencendo{background:#FDF3DF;color:var(--simples)}
+  .tag.venc{background:#FBE9E7;color:var(--recife)}
+  .banner-cert{font-size:12.5px;font-weight:600;border-radius:10px;padding:9px 12px;margin:12px 16px 0}
+  .banner-cert.v{background:#FBE9E7;color:#8a2b22;border:1px solid #E7C3C0}
+  .banner-cert.a{background:#FDF3DF;color:#8a5a0f;border:1px solid #F0DCA8}
+
+  .cli-item{padding:12px;border-bottom:1px solid #EDF1F2}
+  .cli-item .nome{font-weight:800;font-size:14px;line-height:1.45}
+  .cli-item .nome .tag{vertical-align:middle}
+  .cli-item .dados{font-size:12px;color:var(--tinta-suave);margin-top:4px;line-height:1.6;
+    overflow-wrap:anywhere}
+  /* Editar/Excluir desceram para a fileira de acoes: numa coluna estreita
+     eles empurravam o nome para duas linhas e nada mais cabia. */
+  .acoes{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .modlink{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:7px 11px;
+    border-radius:9px;border:1.5px solid var(--borda);background:#fff;color:var(--tinta);cursor:pointer;text-decoration:none}
+  .modlink:hover{border-color:var(--corm);color:var(--corm)}
+  .busca{padding:12px 16px;border-bottom:1px solid var(--borda)}
+  .busca-resumo{font-size:12px;color:var(--tinta-suave);margin-top:9px;line-height:1.6}
+  .busca-resumo .nada{color:var(--alerta);font-weight:700}
+
+  /* ── Colunas por regime ───────────────────────────────────────────────
+     Uma coluna por regime, e cada cliente em UMA delas. O regime decide o
+     cálculo inteiro (DAS, anexo, crédito de PIS/COFINS), então ver a
+     carteira separada por ele é ver de quantos cálculos diferentes o
+     escritório cuida. */
+  .regimes{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));
+    gap:12px;padding:14px 16px 18px;align-items:start}
+  .regime{border:1px solid var(--borda);border-radius:14px;background:#FBFCFC;
+    min-width:0;overflow:hidden;transition:opacity .16s ease}
+  .regime > header{display:flex;align-items:center;justify-content:space-between;
+    gap:8px;padding:10px 12px;background:var(--cf);border-bottom:1px solid var(--borda)}
+  .regime .rot{font-size:11.5px;font-weight:800;letter-spacing:.08em;color:var(--cr)}
+  .regime .cnt{font-size:11px;font-weight:800;color:var(--cr);background:#fff;
+    border-radius:999px;padding:2px 9px;white-space:nowrap}
+  .regime .nenhum{font-size:11.5px;color:var(--tinta-suave);padding:14px 12px;text-align:center}
+  /* Coluna sem resultado NAO some: fica apagada, dizendo que a busca passou
+     por ali e nao achou. Sumir esconderia metade da resposta. */
+  .regime.apagada{opacity:.42}
+  .regime .cli-item:last-child{border-bottom:none}
+  .cli-item mark{background:#FDF3DF;color:#8a5a0f;border-radius:4px;padding:0 3px;font-weight:800}
+  @media(max-width:1100px){.regimes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:640px){.regimes{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<script src="fiscale.js"></script>
+<header>
+  <div class="barra">
+    <button class="voltar" onclick="location.href='home_portal.html'">◄ Home</button>
+    <div class="modulo"><span class="ponto"></span> Clientes — cadastro unificado</div>
+  </div>
+</header>
+
+<main>
+  <div class="cols">
+    <!-- Só o administrador cadastra empresa e certificado. O servidor recusa
+         de qualquer jeito (403); esconder é para não oferecer o que não vai
+         ser aceito. -->
+    <div class="painel" data-operador>
+      <h2>Cadastro de clientes</h2>
+      <div class="corpo">
+        <div class="aviso">Você entrou como <b>operador</b>. A lista ao lado é
+          sua para consultar e usar nos outros módulos, mas <b>cadastrar,
+          editar ou excluir cliente</b> — e informar senha de certificado — é
+          do administrador do Fiscale.</div>
+      </div>
+    </div>
+
+    <div class="painel" data-admin>
+      <h2 id="tituloForm">Novo cliente
+        <button class="btn btn-sec btn-mini" style="float:right" onclick="toggleLote()" id="btnToggleLote">📦 Cadastrar em lote</button></h2>
+      <div class="corpo">
+        <!-- Cadastro em lote (vários certificados de uma vez) -->
+        <div id="loteBox" style="display:none;border:1px solid var(--borda);border-radius:12px;padding:14px;margin-bottom:14px;background:#F7F9FA">
+          <div style="font-weight:800;margin-bottom:8px">📦 Cadastro em lote — vários certificados</div>
+          <div class="campo"><label>Certificados A1 (.pfx / .p12) — selecione vários</label>
+            <input id="lote_pfx" type="file" accept=".pfx,.p12" multiple></div>
+          <div class="linha">
+            <div class="campo"><label>Senha <span style="font-weight:400;color:var(--tinta-suave)">(a MESMA para todos)</span></label>
+              <input id="lote_senha" type="password" placeholder="••••••"></div>
+            <div class="campo" style="flex:0 0 auto;display:flex;align-items:flex-end">
+              <button class="btn btn-primario" id="btnLote" onclick="processarLote()" style="white-space:nowrap">▶ Processar lote</button></div>
+          </div>
+          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;font-weight:400;color:var(--tinta-suave);margin:2px 0 8px;cursor:pointer">
+            <input type="checkbox" id="lote_unificar" checked style="width:auto;margin-top:2px">
+            <span>Registrar também como conta <b>NFS-e/NF-e</b> (senha protegida por DPAPI) e <b>buscar automaticamente</b>
+              município/UF/Simples e IE/IM dos documentos.</span></label>
+          <div id="loteLog" style="font-size:12px;max-height:220px;overflow:auto;line-height:1.7"></div>
+          <div class="aviso" style="margin-top:6px">Cada certificado vira um cliente: lê <b>nome, CNPJ e validade</b> e
+            completa o que houver. Senha diferente falha e aparece na lista para refazer individualmente. Já cadastrados são pulados.</div>
+        </div>
+
+        <!-- Etapa 1 · Certificado (o sistema reconhece nome + CNPJ) -->
+        <div class="campo"><label>1 · Certificado digital A1 (.pfx / .p12)</label>
+          <input id="f_pfx" type="file" accept=".pfx,.p12" onchange="aoEscolherPfx()"></div>
+        <div class="linha">
+          <div class="campo"><label>Senha do certificado <span style="font-weight:400;color:var(--tinta-suave)">— só para ler, não é guardada</span></label>
+            <input id="f_senha" type="password" placeholder="••••••" onkeydown="if(event.key==='Enter'){event.preventDefault();lerCertificado();}"></div>
+          <div class="campo" style="flex:0 0 auto;display:flex;align-items:flex-end">
+            <button class="btn btn-primario" id="btnLer" onclick="lerCertificado()" style="white-space:nowrap">🔎 Ler certificado</button></div>
+        </div>
+        <div id="certResult"></div>
+        <label id="rowUnificar" style="display:none;align-items:flex-start;gap:8px;font-size:12px;font-weight:400;
+               color:var(--tinta-suave);background:#F7F9FA;border:1px solid var(--borda);border-radius:10px;padding:10px 12px;margin-top:8px;cursor:pointer">
+          <input type="checkbox" id="f_unificar" checked style="width:auto;margin-top:2px">
+          <span>Usar este certificado <b>também nos módulos NFS-e e NF-e</b> (aparece na lista de empresas e permite
+            baixar notas). Para isso a <b>senha é guardada protegida</b> (DPAPI) neste computador. Desmarque para
+            manter só a leitura do CNPJ.</span></label>
+        <div style="text-align:center;margin:2px 0 4px">
+          <button class="btn btn-sec btn-mini" id="btnSemCert" onclick="mostrarComplemento(true)">ou cadastrar sem certificado ▾</button>
+        </div>
+
+        <!-- Etapa 2 · Complemento (aparece depois do certificado; tudo opcional/manual) -->
+        <div id="complemento" style="display:none;border-top:1px solid var(--borda);margin-top:6px;padding-top:14px">
+          <div class="campo"><label>Razão social / nome da empresa</label>
+            <input id="f_nome" placeholder="Reconhecido pelo certificado"></div>
+          <div class="linha">
+            <div class="campo"><label>CPF/CNPJ</label><input id="f_cnpj" placeholder="00.000.000/0000-00 ou 000.000.000-00"><div class="dica">Aceita os dois: nem todo cliente é empresa. O dígito verificador é conferido conforme o tipo.</div></div>
+            <div class="campo"><label>Regime tributário</label>
+              <select id="f_regime">
+                <option>Simples Nacional</option>
+                <option>Lucro Presumido</option>
+                <option>Lucro Real</option>
+                <option>MEI</option>
+              </select></div>
+          </div>
+          <div style="text-align:right;margin:-6px 0 10px">
+            <button class="btn btn-sec btn-mini" id="btnPublico" onclick="preencherPublico()"
+              title="Busca município, UF e situação no Simples pela base pública (CNPJ)">🔎 Preencher pelos dados públicos</button>
+          </div>
+          <div style="text-align:right;margin:0 0 6px">
+            <button class="btn btn-sec btn-mini" id="btnInscricoes" onclick="buscarInscricoes()"
+              title="Lê a IE das NF-e e a Inscrição Municipal das NFS-e já baixadas da empresa">🔎 Buscar IE / IM nos documentos</button>
+          </div>
+          <div class="linha">
+            <div class="campo"><label>Inscrição Estadual (IE)</label><input id="f_ie" placeholder="—"></div>
+            <div class="campo"><label>Inscrição Municipal (CIM)</label><input id="f_im" placeholder="Ex.: 1.234.567-8"></div>
+          </div>
+          <div class="linha">
+            <div class="campo"><label>Município</label><input id="f_mun" placeholder="Ex.: Recife"></div>
+            <div class="campo" style="flex:0 0 90px"><label>UF</label><input id="f_uf" maxlength="2" placeholder="PE"></div>
+          </div>
+          <div class="linha">
+            <div class="campo"><label>E-mail</label><input id="f_email" type="email" placeholder="email@empresa.com"></div>
+            <div class="campo"><label>Telefone</label><input id="f_tel" placeholder="(00) 00000-0000"></div>
+          </div>
+          <div class="linha">
+            <div class="campo"><label>Responsável pelo certificado</label>
+              <input id="f_resp" placeholder="Lido do certificado">
+              <div class="dica">Quem assina pela empresa no e-CNPJ. Vem do próprio certificado.</div></div>
+            <div class="campo" style="flex:0 0 170px"><label>CPF do responsável</label>
+              <input id="f_respcpf" placeholder="000.000.000-00"></div>
+          </div>
+          <div class="linha">
+            <div class="campo"><label>Início de atividade</label>
+              <input id="f_iniciativ" type="month">
+              <div class="dica">Empresa nova: nos 12 primeiros meses o RBT12 é <b>proporcional</b>
+                (CGSN 140/2018, art. 21, §2º). Sem esta data o DAS sai <b>menor</b> que o devido.</div></div>
+            <div class="campo"><label>Validade do certificado</label><input id="f_certval" type="date"></div>
+          </div>
+          <button class="btn btn-primario btn-full" id="btnSalvar" onclick="salvarCliente()">Salvar cliente</button>
+          <button class="btn btn-sec btn-full" id="btnCancelar" onclick="cancelarEdicao()" style="display:none;margin-top:6px">Cancelar edição</button>
+          <div class="aviso">Comece pelo <b>certificado</b>: o sistema lê a <b>razão social</b>, o <b>CPF/CNPJ</b> e a
+            <b>validade</b> sozinho. O resto é opcional — preencha conforme a necessidade. O <b>.pfx</b> fica guardado
+            localmente em <b>dados/certs/</b> e a senha <b>não é gravada</b>. Os atalhos (Plano de Saúde, CIM, Recife,
+            Simples, MIT) aparecem conforme o <b>regime</b> e o <b>município</b>.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="painel" data-admin id="painelImportar">
+      <h2>Importar planilha de empresas
+        <button class="btn btn-sec btn-mini" style="float:right" id="btnModelo"
+                onclick="baixarModelo(this)">⬇ Baixar modelo</button></h2>
+      <div class="corpo">
+        <!-- O recado do modelo vive AQUI, na tela, e não num `alert`. Quem
+             clica precisa ver o que houve sem fechar caixa nenhuma — e, se
+             falhar, precisa poder ler o motivo com calma. -->
+        <div id="statusModelo" role="status" aria-live="polite" hidden></div>
+        <div class="campo">
+          <label>Planilha (.xlsx ou .csv)</label>
+          <input type="file" id="arqPlanilha" accept=".xlsx,.csv">
+          <div class="dica">A primeira linha tem de ser o cabeçalho. A coluna
+            <b>CPF/CNPJ</b> é obrigatória; o resto é reconhecido por nome, com folga
+            (<i>Cidade</i> vale por <i>Município</i>, <i>IE</i> por
+            <i>Inscrição Estadual</i>). Baixe o modelo se estiver em dúvida.<br>
+            Empresa nova precisa de <b>CNAE principal</b>; <b>pessoa física não</b>.</div>
+        </div>
+        <button class="btn btn-primario" id="btnPrevia" onclick="previaImportacao()">
+          🔍 Conferir antes de importar</button>
+        <div id="previaImport"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- A lista ocupa a largura toda: são quatro colunas de regime, e dentro
+       de 7/12 da tela cada uma teria ~155px — estreito demais para nome,
+       documento e ações caberem sem quebrar. -->
+  <!-- A FICHA: o que o sistema sabe da empresa, e DE ONDE.
+       Não é uma segunda tela de cadastro: é a declaração de quem manda em cada
+       dado. Campo derivado aparece como derivado, com o nome da fonte, e
+       divergência entre a cópia e a origem aparece em vez de ser resolvida em
+       silêncio por quem lê por último. -->
+  <div class="painel" id="painelFicha" style="display:none">
+    <h2>De onde vem cada dado <span id="fichaEmpresa" class="tag"></span>
+      <button class="btn-mini" type="button" onclick="fecharFicha()">fechar</button></h2>
+    <div id="fichaCorpo"></div>
+  </div>
+
+  <div class="painel" id="painelClientes">
+    <h2>Clientes cadastrados <span id="qtd" class="tag"></span></h2>
+    <div id="alertaCert"></div>
+    <div class="busca">
+      <input id="f_busca" placeholder="🔎  Buscar por nome ou CNPJ..." oninput="renderClientes()">
+      <div id="buscaResumo" class="busca-resumo"></div>
+    </div>
+    <div id="lista"></div>
+  </div>
+</main>
+
+<script>
+let seq = 1;
+const clientes = [];
+let editandoId = null;
+
+const soDig = s => (s||'').replace(/\D/g,'');
+// Busca sem acento e sem caixa: o cadastro guarda "MARIA DAS VITORIAS" e
+// "SILVA E SOUZA", e ninguém digita acentuação certa numa caixa de busca.
+const normalizar = s => (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+
+/* Regime tributário a partir da base pública da Receita.
+   Função pura de propósito: é a regra que decide se uma empresa vai ou não ter
+   prévia de DAS, e precisa poder ser testada sem abrir a tela.
+
+   MEI e optante do Simples são inequívocos — a base decide e pronto.
+   "Não optante" NÃO é: a base pública não distingue Lucro Presumido de Lucro
+   Real. Nesse caso a função NÃO escolhe; devolve o regime como está e marca
+   `conflito`, para a tela pedir a decisão a quem sabe. Escolher sozinho aqui
+   seria arbitrar o regime tributário de um cliente por conta própria. */
+function regimeDaBasePublica(r, atual){
+  if(r && r.mei) return {valor:'MEI', conflito:false};
+  if(r && r.optante_simples) return {valor:'Simples Nacional', conflito:false};
+  const achaQueEhSimples = (atual === 'Simples Nacional' || atual === 'MEI');
+  return {valor: atual, conflito: achaQueEhSimples};
+}
+const ehRecife = c => (c.mun||'').trim().toLowerCase().startsWith('recife');
+
+async function api(url, opts){
+  const r = await fetch(url, opts);
+  if(!r.ok){ let e='erro '+r.status; try{ e=(await r.json()).erro||e; }catch(_){}; throw new Error(e); }
+  return r.json();
+}
+// dias até o vencimento do certificado (negativo = vencido); null se sem validade
+function diasParaVencer(validade){
+  if(!validade) return null;
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  const v=new Date(validade+'T00:00:00');
+  return Math.round((v-hoje)/86400000);
+}
+
+/* URLs oficiais */
+const URLS = {
+  extratoDam: "https://recifeemdia.recife.pe.gov.br/extratoDebitos/2",   // Extrato de Débitos e Emissão de Guias (DAM) — Inscrição Mercantil
+  recifeEmDia: "https://recifeemdia.recife.pe.gov.br/",
+  simples: "https://www8.receita.fazenda.gov.br/SimplesNacional/"
+};
+
+let certPendente = null;   // {arquivo, titular, cnpjLido} lido do .pfx, aguardando salvar
+
+// Formata CNPJ (14) e CPF (11). A versão anterior só conhecia 14 dígitos:
+// o CPF de uma cliente pessoa física saía cru na tela, embaixo de um rótulo
+// que dizia "CNPJ" — e quem procurava por ela achava que não estava lá.
+const soNum = c => String(c||'').replace(/\D/g,'');
+const fmtDoc = c => {
+  const d = soNum(c);
+  if (d.length === 14) return d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5');
+  if (d.length === 11) return d.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/,'$1.$2.$3-$4');
+  return String(c||'');
+};
+const rotuloDoc = c => soNum(c).length === 11 ? 'CPF' : 'CNPJ';
+const fmtCnpj = fmtDoc;          // nome antigo, para quem já chamava assim
+
+function mostrarComplemento(mostrar){
+  complemento.style.display = mostrar ? 'block' : 'none';
+  btnSemCert.style.display = mostrar ? 'none' : 'inline-block';
+}
+
+function aoEscolherPfx(){
+  // ao escolher o arquivo, se já tem senha lê direto; senão foca a senha
+  if(!f_pfx.files[0]) return;
+  certResult.innerHTML = '';
+  if(f_senha.value) lerCertificado(); else f_senha.focus();
+}
+
+async function lerCertificado(){
+  const arq = f_pfx.files[0];
+  if(!arq){ certResult.innerHTML = aviso('Escolha o arquivo .pfx/.p12 primeiro.','alerta'); return; }
+  const b = btnLer; b.disabled = true; const t0 = b.textContent; b.textContent = 'Lendo...';
+  try{
+    const res = await Fiscale.enviarArquivo(arq, 'cert', {senha: f_senha.value||''});
+    if(!res.temCrypto){ certResult.innerHTML = aviso('Este build não consegue ler certificados aqui. Preencha manualmente.','alerta'); mostrarComplemento(true); return; }
+    if(!res.leu){ certResult.innerHTML = aviso('Não consegui ler o CNPJ — confira a <b>senha</b> do certificado e tente de novo.','alerta'); return; }
+    // guarda também caminho + senha (em memória) para poder registrar a conta
+    // nos módulos NFS-e/NF-e ao salvar. A senha NUNCA vai para o state_clientes.
+    certPendente = {arquivo: res.arquivo||arq.name, titular: res.titular||'', cnpjLido: res.cnpj||'',
+                    caminho: res.caminho||'', senha: f_senha.value||''};
+    // Preenche TUDO o que o certificado sabe. O que ele NÃO sabe é o início de
+    // atividade da empresa (só tem o nascimento do responsável) e o regime
+    // tributário — esses dois vêm da base pública, no botão ao lado.
+    if(res.titular) f_nome.value = res.titular;
+    if(res.cnpj)    f_cnpj.value = fmtCnpj(res.cnpj);
+    if(res.validade) f_certval.value = res.validade;
+    if(res.email && !f_email.value.trim())     f_email.value = res.email;
+    if(res.municipio && !f_mun.value.trim())   f_mun.value = res.municipio;
+    if(res.uf && !f_uf.value.trim())           f_uf.value = res.uf;
+    if(res.responsavel)     f_resp.value = res.responsavel;
+    if(res.responsavel_cpf) f_respcpf.value = fmtDoc(res.responsavel_cpf);
+    f_senha.value = '';
+    rowUnificar.style.display = 'flex';
+    mostrarComplemento(true);
+    certResult.innerHTML =
+      `<div class="aviso" style="background:#E5F4EC;border-color:#Bfe3cf;color:#0b5c3f">
+         ✓ Certificado reconhecido (${res.tipo||'ICP-Brasil'})<br><b>${res.titular||'(sem nome no certificado)'}</b><br>
+         ${rotuloDoc(res.cnpj)} ${fmtDoc(res.cnpj)||'—'}${res.validade?' · validade '+res.validade.split('-').reverse().join('/'):''}
+         ${res.responsavel?'<br>Responsável: <b>'+res.responsavel+'</b>'+(res.responsavel_cpf?' · CPF '+fmtDoc(res.responsavel_cpf):''):''}
+         ${res.municipio?'<br>'+res.municipio+(res.uf?'/'+res.uf:''):''}${res.email?' · '+res.email:''}
+         ${res.emissor?'<br><span style="opacity:.75">emitido por '+res.emissor+'</span>':''}
+       </div>`;
+    f_nome.focus();
+  }catch(e){ certResult.innerHTML = aviso('Falha ao ler o certificado: '+(e.message||e),'alerta'); }
+  finally{ b.disabled = false; b.textContent = t0; }
+}
+
+function aviso(html,tipo){
+  const cor = tipo==='alerta' ? 'background:#FBE9E7;border-color:#E7C3C0;color:#8a2b22' : '';
+  return `<div class="aviso" style="${cor}">${html}</div>`;
+}
+
+async function preencherPublico(){
+  const cnpj = soDig(f_cnpj.value);
+  if(cnpj.length!==14){ alert('Preencha o CNPJ (14 dígitos) para buscar os dados públicos.'); return; }
+  const b = btnPublico; b.disabled=true; const t0=b.textContent; b.textContent='Buscando...';
+  try{
+    const r = await fetch('/api/optante?cnpj='+cnpj).then(x=>x.json());
+    if(!r.ok){ alert(r.erro||'Não encontrei esse CNPJ na base pública.'); return; }
+    if(r.razao_social && !f_nome.value.trim()) f_nome.value = r.razao_social;
+    if(r.municipio) f_mun.value = r.municipio;
+    if(r.uf) f_uf.value = r.uf;
+    // REGIME. Antes daqui só existia `if(optante) = 'Simples Nacional'`: MEI
+    // nunca era marcado, e uma empresa marcada como Simples que a Receita diz
+    // NÃO ser optante continuava marcada como Simples para sempre — com prévia
+    // de DAS e tudo. Agora:
+    //   MEI ou optante  -> a base decide, sem perguntar (é inequívoco);
+    //   não optante     -> a base NÃO distingue Presumido de Real, então o
+    //                      sistema NÃO escolhe: avisa o conflito e deixa a
+    //                      decisão com o contador.
+    const regimeAntes = f_regime.value;
+    const dec = regimeDaBasePublica(r, regimeAntes);
+    f_regime.value = dec.valor;
+    let conflito = '';
+    if(dec.conflito){
+      conflito = `<div class="aviso ruim">⚠ <b>Conflito de regime.</b> O cadastro diz
+        <b>${regimeAntes}</b>, mas a base da Receita mostra esta empresa como
+        <b>não optante do Simples</b>${r.data_exclusao_simples
+          ? ' (excluída em '+r.data_exclusao_simples.split('-').reverse().join('/')+')' : ''}.
+        A base pública não diz se é <b>Lucro Presumido</b> ou <b>Lucro Real</b> — escolha você
+        no campo Regime tributário. Enquanto estiver como Simples, o sistema calcula uma
+        prévia de DAS que não existe para ela.
+        <div style="margin-top:6px;display:flex;gap:6px">
+          <button class="btn btn-sec btn-mini" onclick="f_regime.value='Lucro Presumido';this.parentElement.parentElement.remove()">Marcar Lucro Presumido</button>
+          <button class="btn btn-sec btn-mini" onclick="f_regime.value='Lucro Real';this.parentElement.parentElement.remove()">Marcar Lucro Real</button>
+        </div></div>`;
+    }
+    const mudouRegime = f_regime.value !== regimeAntes
+      ? ` · regime atualizado para <b>${f_regime.value}</b>` : '';
+    // Início de atividade: vem da base pública da Receita, NÃO do certificado.
+    // O e-CNPJ não guarda a abertura da empresa — o que ele tem é a data de
+    // nascimento do responsável, que é outra coisa e décadas diferente.
+    // O campo é type="month": corta o dia.
+    if(r.inicio_atividade) f_iniciativ.value = r.inicio_atividade.slice(0,7);
+    const abriu = r.inicio_atividade
+      ? ' · abertura '+r.inicio_atividade.split('-').reverse().join('/') : '';
+    certResult.insertAdjacentHTML('beforeend',
+      aviso(`Base pública: ${r.razao_social||''} · ${r.municipio||'—'}/${r.uf||'—'} · `
+        +(r.mei?'<b>MEI</b>':(r.optante_simples?'<b>optante do Simples</b>':'não optante do Simples'))
+        +(r.situacao?' · '+r.situacao:'')+abriu+mudouRegime,''));
+    if(conflito) certResult.insertAdjacentHTML('beforeend', conflito);
+  }catch(e){ alert('Não consegui consultar agora: '+(e.message||e)); }
+  finally{ b.disabled=false; b.textContent=t0; }
+}
+
+/* ===== CADASTRO EM LOTE ===== */
+function toggleLote(){
+  const b=document.getElementById('loteBox'); const abrir = b.style.display==='none';
+  b.style.display = abrir ? 'block' : 'none';
+  btnToggleLote.textContent = abrir ? '✕ Fechar lote' : '📦 Cadastrar em lote';
+}
+let loteBusy=false;
+async function processarLote(){
+  if(loteBusy) return;
+  const files=[...lote_pfx.files]; const senha=lote_senha.value||''; const unif=lote_unificar.checked;
+  if(!files.length){ alert('Selecione os certificados (.pfx/.p12).'); return; }
+  loteBusy=true; const b=btnLote; b.disabled=true; const t0=b.textContent; loteLog.innerHTML='';
+  let ok=0, pulou=0, falhou=0;
+  for(let i=0;i<files.length;i++){
+    const f=files[i]; b.textContent=`Processando ${i+1}/${files.length}...`;
+    const linha=document.createElement('div'); linha.textContent=`⏳ ${f.name}...`; loteLog.appendChild(linha);
+    loteLog.scrollTop=loteLog.scrollHeight;
+    try{
+      const res=await Fiscale.enviarArquivo(f,'cert',{senha});
+      if(!res.temCrypto){ linha.textContent=`⚠ ${f.name}: este build não lê certificado`; falhou++; continue; }
+      if(!res.leu){ linha.innerHTML=`⚠ <b>${f.name}</b>: não li o CNPJ — confira a senha`; falhou++; continue; }
+      const cnpjDig=soDig(res.cnpj);
+      // RENOVAÇÃO. Antes, empresa já cadastrada era "pulada": o certificado NOVO
+      // ia embora e o VENCIDO continuava valendo — a validade na tela seguia a
+      // antiga e o módulo NFS-e continuava apontando para o .pfx vencido, que é
+      // justamente o arquivo que não abre mais. Agora o cadastro existente é
+      // ATUALIZADO: troca o certificado e a validade, e preserva o que é do
+      // cliente (regime, IE, IM, município, contato), que o certificado não sabe.
+      const existente = clientes.find(c=>soDig(c.cnpj)===cnpjDig);
+      const cli = existente || {id:seq++, nome:res.titular||'(sem nome)', cnpj:fmtCnpj(res.cnpj),
+        regime:'Simples Nacional', ie:'', im:'', mun:'', uf:'', email:'', tel:'',
+        inicioAtividade:null};
+      const anterior = existente ? existente.certValidade : null;
+      // A checagem vem ANTES de escrever qualquer coisa no cadastro: gravar a
+      // validade e o arquivo primeiro deixava o nome do .pfx vencido no
+      // registro mesmo quando a troca era recusada.
+      if(existente && anterior && res.validade && res.validade < anterior){
+        // O arquivo enviado vence ANTES do que já está no cadastro: quase sempre
+        // é o .pfx antigo escolhido por engano. Não substituir por um pior.
+        linha.innerHTML=`↺ <b>${cli.nome}</b>: o certificado enviado vence antes do cadastrado `
+          +`(${res.validade.split('-').reverse().join('/')} &lt; ${anterior.split('-').reverse().join('/')}) — mantido o atual`;
+        pulou++; continue;
+      }
+      cli.certValidade = res.validade || cli.certValidade || null;
+      cli.cert = {arquivo:res.arquivo||f.name, titular:res.titular||'', cnpjLido:res.cnpj||''};
+      if(unif){
+        if(res.caminho){ try{ await api('/api/certificados',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({caminho:res.caminho, senha, apelido:(cli.nome||'').slice(0,60), salvar_senha:true})}); }catch(e){} }
+        try{ const p=await fetch('/api/optante?cnpj='+cnpjDig).then(x=>x.json());
+          if(p.ok){ if(p.municipio)cli.mun=p.municipio; if(p.uf)cli.uf=p.uf;
+            if(p.inicio_atividade && !cli.inicioAtividade) cli.inicioAtividade=p.inicio_atividade.slice(0,7);
+            if(p.mei) cli.regime='MEI';
+            else if(p.optante_simples) cli.regime='Simples Nacional';
+            else if(cli.regime==='Simples Nacional' || cli.regime==='MEI'){
+              // Não optante: a base não diz se é Presumido ou Real. Marca a
+              // pendência em vez de escolher — e a lista mostra a etiqueta.
+              cli.regimeConflito = 'A Receita diz que NÃO é optante do Simples. Defina Presumido ou Real.';
+            }
+            if(p.optante_simples || p.mei) delete cli.regimeConflito; } }catch(e){}
+        try{ const s=await fetch('/api/clientes/inscricoes?cnpj='+cnpjDig).then(x=>x.json());
+          if(s.ok){ if(s.ie_sugerida)cli.ie=s.ie_sugerida; if(s.im_sugerida)cli.im=s.im_sugerida; } }catch(e){}
+      }
+      if(!existente) clientes.push(cli);
+      ok++;
+      const val = cli.certValidade ? ' · val '+cli.certValidade.split('-').reverse().join('/') : '';
+      linha.innerHTML=`${existente?'♻ <b>Certificado trocado</b> — ':'✓ '}<b>${cli.nome}</b> — ${cli.cnpj}${val}`
+        +(cli.mun?` · ${cli.mun}/${cli.uf}`:'')+(cli.ie?` · IE ${cli.ie}`:'')+(cli.im?` · IM ${cli.im}`:'');
+    }catch(e){ linha.innerHTML=`✖ <b>${f.name}</b>: ${e.message||e}`; falhou++; }
+  }
+  persistir(); renderClientes();
+  b.disabled=false; b.textContent=t0; loteBusy=false; lote_pfx.value=''; lote_senha.value='';
+  const resumo=document.createElement('div');
+  resumo.style.cssText='font-weight:800;margin-top:8px;padding-top:6px;border-top:1px solid var(--borda)';
+  resumo.textContent=`Concluído: ${ok} cadastrado(s)/atualizado(s)`
+    +(pulou?`, ${pulou} mantido(s) com o certificado atual`:'')
+    +(falhou?`, ${falhou} com falha`:'')+'.';
+  loteLog.appendChild(resumo);
+}
+
+async function buscarInscricoes(){
+  const cnpj = soDig(f_cnpj.value);
+  if(cnpj.length!==14){ alert('Preencha o CNPJ (14 dígitos) para varrer os documentos.'); return; }
+  const b = btnInscricoes; b.disabled=true; const t0=b.textContent; b.textContent='Varrendo...';
+  try{
+    const r = await fetch('/api/clientes/inscricoes?cnpj='+cnpj).then(x=>x.json());
+    if(!r.ok){ alert(r.erro||'Não consegui varrer os documentos.'); return; }
+    let msgs=[];
+    if(r.ie_sugerida){ f_ie.value = r.ie_sugerida; msgs.push('IE '+r.ie_sugerida+(r.ie.length>1?' (+'+(r.ie.length-1)+')':'')); }
+    if(r.im_sugerida){ f_im.value = r.im_sugerida; msgs.push('IM '+r.im_sugerida+(r.im.length>1?' (+'+(r.im.length-1)+')':'')); }
+    certResult.insertAdjacentHTML('beforeend', aviso(
+      msgs.length ? 'Dos documentos da empresa: '+msgs.join(' · ')
+                  : 'Não achei IE/IM nos XMLs desta empresa (baixe as NF-e/NFS-e dela primeiro).', ''));
+  }catch(e){ alert('Falha na varredura: '+(e.message||e)); }
+  finally{ b.disabled=false; b.textContent=t0; }
+}
+
+/* ── Chegada vinda das Pendências cadastrais da NF-e ──────────────────────
+   `clientes.html?revisar=1&cnpj=…&nome=…&ie_sugerida=…`
+
+   PREENCHE E PARA. Não salva, não cria, não altera nada — só deixa o
+   formulário pronto e diz de onde o número veio. Gravar sozinho poria no
+   cadastro uma IE que ninguém conferiu, e a IE cadastrada passa a valer para
+   a apuração; o custo de um erro aqui é fiscal, não cosmético.
+
+   Se o CNPJ já existe no cadastro, abre em EDIÇÃO — senão a revisão criaria
+   um segundo registro da mesma empresa, que é o oposto de reconciliar. */
+function revisarDaNFe(){
+  const q = new URLSearchParams(location.search);
+  if(q.get('revisar') !== '1') return;
+  const cnpj = q.get('cnpj') || '';
+  const dig = soDig(cnpj);
+  const jaExiste = dig ? clientes.find(c=> soDig(c.cnpj||'') === dig) : null;
+
+  if(jaExiste) editarCliente(jaExiste.id);
+  else{
+    limparForm();
+    if(cnpj) f_cnpj.value = cnpj;
+    if(q.get('nome')) f_nome.value = q.get('nome');
+  }
+
+  const ie = (q.get('ie_sugerida') || '').trim();
+  if(ie && !f_ie.value.trim()) f_ie.value = ie;
+
+  const caixa = document.createElement('div');
+  caixa.className = 'aviso';
+  caixa.style.cssText = 'margin:10px 0;padding:11px 13px;border-radius:14px;'
+    + 'background:#FFF7ED;border:1px solid #F0C4BE;font-size:13px';
+  caixa.innerHTML =
+    '<b>Revisão vinda das pendências da NF-e.</b> '
+    + (jaExiste ? 'Esta empresa já está cadastrada e abriu para edição. '
+                : 'Esta empresa ainda não estava cadastrada. ')
+    + (ie ? 'A Inscrição Estadual <b>' + ie.replace(/[&<>]/g,'') + '</b> foi '
+            + '<b>lida dos XMLs</b> desta empresa e preenchida como sugestão — '
+            + '<b>confira antes de salvar</b>. '
+          : 'Nenhuma IE foi encontrada nos XMLs desta empresa. ')
+    + 'Nada foi gravado ainda: revise e use <b>Salvar cliente</b>.';
+  const form = document.getElementById('f_nome').closest('.painel, .card, form')
+               || document.getElementById('f_nome').parentElement;
+  form.parentElement.insertBefore(caixa, form);
+  f_ie.focus();
+  f_ie.select && f_ie.select();
+}
+
+async function salvarCliente(){
+  const nome = f_nome.value.trim();
+  const cnpj = f_cnpj.value.trim();
+  if(!nome && !cnpj){ alert("Leia um certificado ou informe ao menos a razão social/CNPJ."); return; }
+
+  // unificação: registra o mesmo cert como CONTA dos módulos NFS-e/NF-e
+  if(certPendente && certPendente.caminho && f_unificar.checked){
+    try{
+      await api('/api/certificados', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({caminho: certPendente.caminho, senha: certPendente.senha||'',
+                              apelido: (nome||'').slice(0,60), salvar_senha: true})});
+    }catch(e){ alert('Cliente salvo, mas não consegui vincular como conta NFS-e/NF-e: '+(e.message||e)); }
+  }
+  if(certPendente) certPendente.senha = '';   // some com a senha da memória após uso
+  // guarda no cadastro só o essencial do cert (nunca senha nem caminho)
+  const certClean = certPendente
+    ? {arquivo: certPendente.arquivo, titular: certPendente.titular, cnpjLido: certPendente.cnpjLido}
+    : null;
+
+  const dados = {
+    nome: nome || '(sem nome)', cnpj, regime: f_regime.value,
+    ie: f_ie.value.trim(), im: f_im.value.trim(),
+    mun: f_mun.value.trim(), uf: f_uf.value.trim().toUpperCase(),
+    email: f_email.value.trim(), tel: f_tel.value.trim(),
+    // 'AAAA-MM'. É dado de CADASTRO, como o regime: o Classificador lê daqui em
+    // vez de pedir de novo em cada tela.
+    inicioAtividade: f_iniciativ.value || null,
+    // Responsável pelo e-CNPJ: sai do próprio certificado, que já está guardado
+    // na pasta de dados. Serve para procuração, e-CAC e para saber a quem pedir
+    // a renovação quando o certificado vence.
+    responsavel: f_resp.value.trim(),
+    responsavelCpf: soDig(f_respcpf.value),
+    certValidade: f_certval.value || null
+  };
+
+  // Mesmo CNPJ já cadastrado? Isso é RENOVAÇÃO de certificado, não cliente novo.
+  // Sem esta checagem o cadastro ficava com dois registros da mesma empresa —
+  // um com o certificado válido e outro com o vencido — e a tela mostrava o
+  // que viesse primeiro na lista.
+  const dup = editandoId ? null
+            : clientes.find(x=>soDig(x.cnpj)===soDig(cnpj) && soDig(cnpj));
+  const alvoId = editandoId || (dup && dup.id);
+
+  if(alvoId){
+    const c = clientes.find(x=>x.id===alvoId);
+    const anterior = c.certValidade;
+    if(editandoId){
+      // Edição explícita: o formulário foi preenchido A PARTIR do registro, então
+      // campo apagado é apagamento de propósito.
+      Object.assign(c, dados);
+    }else{
+      // Renovação de certificado: o formulário veio do .pfx e só tem nome, CNPJ
+      // e validade. Sobrescrever tudo apagaria regime, IE, IM, município,
+      // contato e início de atividade — dados que o certificado não sabe e que
+      // alguém digitou à mão. Aqui só entra o que foi realmente preenchido.
+      Object.entries(dados).forEach(([k, v]) => {
+        if(v !== '' && v !== null && v !== undefined) c[k] = v;
+      });
+    }
+    // Certificado que vence ANTES do que já estava guardado quase sempre é o
+    // arquivo antigo escolhido por engano: mantém o que vale mais tempo e avisa.
+    if(anterior && dados.certValidade && dados.certValidade < anterior){
+      c.certValidade = anterior;
+      alert('O certificado informado vence em '+dados.certValidade.split('-').reverse().join('/')
+            +', ANTES do que já estava no cadastro ('+anterior.split('-').reverse().join('/')+').'
+            +'\nMantive a validade atual. Se a troca for mesmo essa, corrija o campo à mão.');
+    }
+    if(certClean) c.cert = certClean;
+    if(dup && !editandoId) alert('Esta empresa já estava cadastrada — atualizei o cadastro dela em vez de criar outro.');
+    cancelarEdicao();
+  }else{
+    clientes.push(Object.assign({id: seq++, cert: certClean}, dados));
+    limparForm();
+  }
+  renderClientes(); persistir();
+}
+
+function limparForm(){
+  ["f_nome","f_cnpj","f_ie","f_im","f_email","f_tel","f_certval","f_iniciativ",
+   "f_resp","f_respcpf"].forEach(id=>document.getElementById(id).value="");
+  f_mun.value=""; f_uf.value=""; f_regime.value="Simples Nacional";
+  f_pfx.value=""; f_senha.value=""; certResult.innerHTML=""; certPendente=null;
+  rowUnificar.style.display="none"; f_unificar.checked=true;
+  mostrarComplemento(false);
+}
+
+function editarCliente(id){
+  const c = clientes.find(x=>x.id===id); if(!c) return;
+  editandoId = id; certPendente = null;
+  f_nome.value=c.nome; f_cnpj.value=c.cnpj||""; f_regime.value=c.regime||"Simples Nacional";
+  f_ie.value=c.ie||""; f_im.value=c.im||""; f_mun.value=c.mun||""; f_uf.value=c.uf||"";
+  f_email.value=c.email||""; f_tel.value=c.tel||""; f_certval.value=c.certValidade||"";
+  f_iniciativ.value=c.inicioAtividade||"";
+  f_resp.value=c.responsavel||""; f_respcpf.value=c.responsavelCpf?fmtDoc(c.responsavelCpf):"";
+  mostrarComplemento(true);
+  certResult.innerHTML = c.cert
+    ? aviso(`🔒 Certificado atual: <b>${c.cert.titular||c.cert.arquivo}</b>. Para trocar, leia um novo acima.`,'')
+    : '';
+  tituloForm.textContent = "Editando: "+c.nome;
+  btnSalvar.textContent = "Salvar alterações";
+  btnCancelar.style.display = "block";
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function cancelarEdicao(){
+  editandoId = null; limparForm();
+  tituloForm.textContent = "Novo cliente";
+  btnSalvar.textContent = "Salvar cliente";
+  btnCancelar.style.display = "none";
+}
+function excluirCliente(id){
+  const c = clientes.find(x=>x.id===id); if(!c) return;
+  if(!confirm(`Excluir o cliente "${c.nome}"?\n\nIsso remove só o cadastro daqui — os dados dos outros módulos não são apagados.`)) return;
+  clientes.splice(clientes.indexOf(c),1);
+  if(editandoId===id) cancelarEdicao();
+  renderClientes(); persistir();
+}
+
+function acoesDoCliente(c){
+  const a = [];
+  // serviços do Recife (só para clientes do Recife)
+  if(ehRecife(c)){
+    a.push(`<a class="modlink" style="--corm:var(--recife)" href="${URLS.extratoDam}" target="_blank" rel="noopener"
+      title="Extrato de Débitos e Emissão de Guias (DAM) — Por Inscrição Mercantil (Recife em Dia)">🏦 Extrato de Débitos / DAM</a>`);
+  }
+  a.push(`<a class="modlink" style="--corm:var(--nfse)" href="nfse.html">🧾 NFS-e</a>`);
+  return a.join("");
+}
+
+function renderAlertaCert(){
+  const el = document.getElementById('alertaCert'); if(!el) return;
+  const vencidos=[], vencendo=[];
+  clientes.forEach(c=>{ if(!c.cert) return; const d=diasParaVencer(c.certValidade);
+    if(d===null) return; if(d<0) vencidos.push(c); else if(d<=30) vencendo.push(c); });
+  const rotulo = c => `${c.nome}${c.certValidade?' ('+c.certValidade.split('-').reverse().join('/')+')':''}`;
+  let h='';
+  if(vencidos.length) h+=`<div class="banner-cert v">⛔ ${vencidos.length} certificado(s) VENCIDO(s): ${vencidos.map(rotulo).join(' · ')}</div>`;
+  if(vencendo.length) h+=`<div class="banner-cert a">⚠ ${vencendo.length} vencendo em ≤30 dias: ${vencendo.map(rotulo).join(' · ')}</div>`;
+  el.innerHTML=h;
+}
+
+/* ── As colunas de regime ──────────────────────────────────────────────────
+   O regime decide o cálculo inteiro — anexo do Simples, DAS, direito a
+   crédito de PIS/COFINS. Separar a carteira por ele é ver, de relance, de
+   quantos cálculos diferentes o escritório cuida.
+
+   A quinta coluna, `A DEFINIR`, não foi pedida e existe por um motivo: o
+   cadastro admite regime vazio, e a base pública NÃO separa Presumido de
+   Real — ela só sabe dizer "não é optante do Simples". Sem um destino para
+   esses, o cliente sumiria da tela sem dizer por quê, que é exatamente o
+   erro que já fez uma empresa desaparecer de um relatório que fechava certo
+   com o total menor. Ela só aparece quando tem gente dentro. */
+const REGIMES = [
+  { chave:'SIMPLES',   rotulo:'SIMPLES',   cor:'var(--simples)', fundo:'#FDF3DF',
+    casa:['simples nacional','simples'] },
+  { chave:'PRESUMIDO', rotulo:'PRESUMIDO', cor:'var(--mit)',     fundo:'#F0E8FA',
+    casa:['lucro presumido','presumido'] },
+  { chave:'REAL',      rotulo:'REAL',      cor:'var(--nfse)',    fundo:'#E4F1F4',
+    casa:['lucro real','real'] },
+  { chave:'MEI',       rotulo:'MEI',       cor:'var(--ok)',      fundo:'#E5F4EC',
+    casa:['mei'] }
+];
+const A_DEFINIR = { chave:'A_DEFINIR', rotulo:'A DEFINIR', cor:'var(--tinta-suave)',
+                    fundo:'#EEF1F2', casa:[] };
+
+function colunaDoRegime(regime){
+  const r = normalizar(regime);
+  for(const col of REGIMES) if(col.casa.includes(r)) return col;
+  return A_DEFINIR;          // vazio ou desconhecido: NUNCA some da tela
+}
+
+const esc = s => (s||'').replace(/[&<>"]/g,
+  m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+/* Acende no nome o pedaço que casou com a busca.
+   `semAcento` não muda o COMPRIMENTO do texto (um acento precomposto vira
+   base + combinante e o combinante é removido), então o índice achado no
+   texto sem acento vale no original. Quando o comprimento difere — texto já
+   decomposto na origem —, desiste do realce em vez de cortar no lugar
+   errado. */
+const semAcento = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+function realcar(texto, alvo){
+  const t = texto || '';
+  if(!alvo) return esc(t);
+  const n = semAcento(t);
+  if(n.length !== t.length) return esc(t);
+  const i = n.indexOf(alvo);
+  if(i < 0) return esc(t);
+  return esc(t.slice(0,i)) + '<mark>' + esc(t.slice(i, i+alvo.length))
+       + '</mark>' + esc(t.slice(i+alvo.length));
+}
+
+function cartaoCliente(c, alvo, digitos){
+  const tags = [];
+  tags.push(`<span class="tag ${c.regime==='Lucro Presumido'?'lp':(c.regime==='Simples Nacional'||c.regime==='MEI')?'sn':''}">${c.regime||'—'}</span>`);
+  // A base pública contradisse o regime cadastrado: precisa de decisão humana,
+  // então fica visível na lista até alguém resolver.
+  if(c.regimeConflito) tags.push(`<span class="tag venc" title="${esc(c.regimeConflito)}">⚠ regime a confirmar</span>`);
+  if(ehRecife(c)) tags.push('<span class="tag rec">Recife</span>');
+  if(c.cert){
+    const d = diasParaVencer(c.certValidade);
+    let cls='cert', txt='🔒 certificado';
+    if(d!==null && d<0){ cls='venc'; txt='🔒 vencido'; }
+    else if(d!==null && d<=30){ cls='vencendo'; txt='🔒 vence em '+d+'d'; }
+    const val = c.certValidade ? ' · validade '+c.certValidade.split('-').reverse().join('/') : '';
+    tags.push(`<span class="tag ${cls}" title="${esc(c.cert.arquivo)}${val}">${txt}</span>`);
+  }
+  // O documento acende inteiro quando foi ele que casou: quem busca por CNPJ
+  // precisa ver que achou pelo número, e não por semelhança de nome.
+  const docCasou = digitos && soDig(c.cnpj).includes(digitos);
+  const doc = (fmtDoc(c.cnpj)||'—');
+  return `<div class="cli-item">
+    <div class="nome">${realcar(c.nome, alvo)} ${tags.join(" ")}</div>
+    <div class="dados">
+      ${rotuloDoc(c.cnpj)} ${docCasou?'<mark>'+esc(doc)+'</mark>':esc(doc)}${soNum(c.cnpj).length===11?' <span class="tag">pessoa física</span>':''} · IE ${esc(c.ie)||'—'} · IM/CIM ${esc(c.im)||'—'}<br>
+      ${esc(c.mun)||'—'}${c.uf?' / '+esc(c.uf):''}${c.email?' · '+esc(c.email):''}${c.tel?' · '+esc(c.tel):''}
+      ${c.responsavel?'<br>Responsável: '+esc(c.responsavel)+(c.responsavelCpf?' ('+fmtDoc(c.responsavelCpf)+')':''):''}${c.inicioAtividade?' · início '+c.inicioAtividade.split('-').reverse().join('/'):''}
+    </div>
+    <div class="acoes">${acoesDoCliente(c)}
+      <!-- Ver a ficha é LEITURA: fica disponível para quem opera, ao lado das
+           ações de administrador. -->
+      <button class="btn btn-sec btn-mini" onclick="verFicha('${soDig(c.cnpj)}')">🧭 De onde vem</button>
+      <button class="btn btn-sec btn-mini" data-admin onclick="editarCliente(${c.id})">✏️ Editar</button>
+      <button class="btn btn-perigo btn-mini" data-admin onclick="excluirCliente(${c.id})">🗑 Excluir</button>
+    </div>
+  </div>`;
+}
+
+function renderClientes(){
+  // A busca não filtrava NADA. `soDig('monte')` é string vazia, e
+  // `soDig(cnpj).includes('')` é sempre verdadeiro — o segundo teste do OU
+  // aprovava todo mundo, qualquer que fosse o termo digitado. O ramo do CNPJ
+  // só pode valer quando o termo TEM dígito.
+  const termo = (f_busca.value||'').trim();
+  const alvo = normalizar(termo);
+  const digitos = soDig(termo);
+  const buscando = !!(alvo || digitos);
+  const casa = c => {
+    if(!buscando) return true;
+    if(alvo && normalizar(c.nome).includes(alvo)) return true;
+    // acha tanto "04.103.256/0001-85" quanto "04103256" quanto "0001-85"
+    if(digitos && soDig(c.cnpj).includes(digitos)) return true;
+    return false;
+  };
+
+  qtd.textContent = clientes.length;
+  renderAlertaCert();
+  if(!clientes.length){
+    lista.innerHTML = '<div class="vazio">Nenhum cliente cadastrado ainda.</div>';
+    buscaResumo.innerHTML = ''; return;
+  }
+
+  const grupos = REGIMES.concat([A_DEFINIR]).map(col => ({col, todos:[], achados:[]}));
+  const porChave = {}; grupos.forEach(g => porChave[g.col.chave] = g);
+  clientes.forEach(c => {
+    const g = porChave[colunaDoRegime(c.regime).chave];
+    g.todos.push(c);
+    if(casa(c)) g.achados.push(c);
+  });
+  // A coluna "a definir" só existe quando tem gente nela. As quatro pedidas
+  // aparecem sempre, mesmo vazias: uma coluna vazia é uma resposta.
+  const visiveis = grupos.filter(g => g.col.chave !== 'A_DEFINIR' || g.todos.length);
+
+  // ONDE achou — a pergunta que a busca precisa responder agora que a lista
+  // tem colunas.
+  const comAchado = visiveis.filter(g => g.achados.length);
+  buscaResumo.innerHTML = !buscando ? ''
+    : (comAchado.length
+        ? 'Encontrado em ' + comAchado.map(g =>
+            `<b style="color:${g.col.cor}">${g.col.rotulo}</b> (${g.achados.length})`).join(' · ')
+        : '<span class="nada">Nenhum cliente corresponde à busca.</span>');
+
+  lista.innerHTML = `<div class="regimes" style="--n:${visiveis.length}">`
+    + visiveis.map(g => {
+        const mostrar = buscando ? g.achados : g.todos;
+        const apagada = buscando && !g.achados.length;
+        return `<section class="regime${apagada?' apagada':''}"
+                 style="--cr:${g.col.cor};--cf:${g.col.fundo}">
+          <header>
+            <span class="rot">${g.col.rotulo}</span>
+            <span class="cnt">${buscando ? g.achados.length+' de '+g.todos.length : g.todos.length}</span>
+          </header>
+          <div class="pilha">${
+            mostrar.length ? mostrar.map(c => cartaoCliente(c, alvo, digitos)).join('')
+                           : `<div class="nenhum">${buscando ? 'nenhum aqui' : 'nenhum cliente'}</div>`
+          }</div>
+        </section>`;
+      }).join('')
+    + '</div>';
+}
+
+/* init */
+function persistir(){ Fiscale.salvar('clientes', {clientes, seq}); }
+async function iniciar(){
+  const s = await Fiscale.carregar('clientes');
+  if(s){
+    if(s.clientes) Fiscale.repor(clientes, s.clientes);
+    if(s.seq) seq = s.seq;
+  }
+  renderClientes();
+  // Depois de o cadastro estar carregado: só assim dá para saber se o CNPJ
+  // que veio das pendências já existe (editar) ou não (criar).
+  revisarDaNFe();
+}
+iniciar();
+
+// ── Baixar o modelo ───────────────────────────────────────────────────────
+// `location.href` NÃO servia: se a rota falha, o navegador SAI da tela de
+// Clientes e mostra o JSON do erro como se fosse uma página. Buscar o arquivo
+// e só então oferecê-lo deixa a tela no lugar e permite dizer o que houve.
+const NOME_MODELO = 'modelo-empresas-fiscale.csv';
+
+function _statusModelo(texto, classe) {
+  const el = document.getElementById('statusModelo');
+  if (!el) return;
+  if (!texto) { el.hidden = true; el.textContent = ''; return; }
+  el.hidden = false;
+  el.className = classe || 'dica';
+  el.textContent = texto;
+}
+
+async function baixarModelo(btn) {
+  const t0 = btn.dataset.rotulo || btn.textContent;
+  btn.dataset.rotulo = t0;                 // sobrevive a cliques seguidos
+  btn.disabled = true;
+  btn.textContent = 'Preparando modelo…';
+  _statusModelo('Preparando o modelo…');
+  try {
+    const r = await fetch('/api/clientes/modelo', { credentials: 'same-origin' });
+    if (!r.ok) {
+      // 401 tem nome próprio: "não autenticado" não diz ao usuário o que
+      // fazer, e depois de uma sessão expirada é o erro mais provável.
+      let msg = r.status === 401
+        ? 'Sua sessão expirou. Entre de novo e tente outra vez.'
+        : 'O servidor respondeu ' + r.status + '.';
+      try { const j = await r.json(); if (j.erro && r.status !== 401) msg = j.erro; }
+      catch (e) {}
+      _statusModelo('Não consegui baixar o modelo. ' + msg, 'aviso ruim');
+      return;
+    }
+    const blob = await r.blob();
+    if (!blob || !blob.size) {
+      _statusModelo('O Fiscale devolveu um modelo vazio. Avise o suporte.',
+                    'aviso ruim');
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = NOME_MODELO;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // A revogação é ADIADA de propósito: revogar na mesma volta do laço
+    // cancela o download em alguns navegadores, porque o `click()` é
+    // assíncrono e a URL ainda precisa existir quando ele for atendido.
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    btn.textContent = 'Modelo baixado';
+    _statusModelo('Modelo baixado: ' + NOME_MODELO, 'dica');
+    // O rótulo volta sozinho; o recado fica, para quem olhou depois.
+    setTimeout(() => { btn.textContent = btn.dataset.rotulo; }, 2500);
+    return;
+  } catch (e) {
+    _statusModelo('Não consegui baixar o modelo: o Fiscale não respondeu. '
+                  + (e && e.message ? '(' + e.message + ')' : ''), 'aviso ruim');
+  } finally {
+    // O botão SEMPRE volta a funcionar, inclusive depois de erro. Botão que
+    // fica desabilitado após uma falha obriga a recarregar a tela.
+    btn.disabled = false;
+    if (btn.textContent === 'Preparando modelo…') btn.textContent = t0;
+  }
+}
+
+// ── Importar planilha de empresas (Cadastro 1) ────────────────────────────
+// A PRÉVIA É OBRIGATÓRIA. Não existe caminho daqui para gravar sem antes
+// mostrar o que aconteceria: o botão de aplicar só nasce depois que a prévia
+// volta, e ele reenvia a MESMA planilha para o servidor reconciliar de novo.
+let PLANILHA = null;      // {nome, arquivo} — vive só enquanto a tela está aberta
+let TOKEN_PREVIA = null;  // o bilhete da prévia; sem ele, /aplicar recusa
+
+function _arquivoSelecionado() {
+  const inp = document.getElementById('arqPlanilha');
+  const f = inp && inp.files && inp.files[0];
+  if (!f) { alert('Escolha a planilha primeiro.'); return null; }
+  return { nome: f.name, arquivo: f };
+}
+
+function _esc(t) {
+  return String(t === null || t === undefined ? '' : t)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// multipart/form-data: é como um navegador manda arquivo. O campo do arquivo
+// chama-se `arquivo`; os demais campos vão ao lado, como texto.
+async function _enviarPlanilha(rota, extras) {
+  const fd = new FormData();
+  fd.append('arquivo', PLANILHA.arquivo, PLANILHA.nome);
+  Object.entries(extras || {}).forEach(([k, v]) => fd.append(k, String(v)));
+  let resp;
+  try {
+    resp = await fetch(rota, { method: 'POST', body: fd,
+                               credentials: 'same-origin' });
+  } catch (e) {
+    return { erro: 'O Fiscale não respondeu.' };
+  }
+  let d = {};
+  try { d = await resp.json(); } catch (e) {}
+  if (!resp.ok && !d.erro) d.erro = 'O servidor respondeu ' + resp.status + '.';
+  return d;
+}
+
+async function previaImportacao() {
+  const alvo = document.getElementById('previaImport');
+  PLANILHA = _arquivoSelecionado();
+  TOKEN_PREVIA = null;
+  if (!PLANILHA) return;
+  alvo.innerHTML = '<div class="dica">Conferindo a planilha…</div>';
+  const btn = document.getElementById('btnPrevia');
+  btn.disabled = true;
+  const r = await _enviarPlanilha('/api/clientes/importar/previa', {});
+  btn.disabled = false;
+  if (r.erro) {
+    alvo.innerHTML = '<div class="aviso ruim"><b>Não dá para usar esta planilha:</b> '
+      + _esc(r.erro) + '</div>';
+    PLANILHA = null;
+    return;
+  }
+  TOKEN_PREVIA = r.token || null;
+  const s = r.resumo;
+  let h = '<div class="aviso"><b>Nada foi gravado ainda.</b> Isto é o que '
+        + 'aconteceria com o cadastro, a partir de ' + s.linhas + ' linha(s):</div>'
+        + '<table><tr>'
+        + '<th>Novos</th><td><b>' + s.novos + '</b></td>'
+        + '<th>Atualizados</th><td><b>' + s.atualizados + '</b></td></tr><tr>'
+        + '<th>Inalterados</th><td>' + s.inalterados + '</td>'
+        + '<th>Conflitos</th><td><b>' + s.conflitos + '</b></td></tr><tr>'
+        + '<th>Erros</th><td colspan="3"><b>' + s.erros + '</b></td></tr></table>';
+
+  (r.avisos || []).forEach((a) => {
+    h += '<div class="dica">' + _esc(a) + '</div>';
+  });
+  if (r.erros.length) {
+    h += '<div class="aviso ruim"><b>Linhas que não dá para usar</b> — elas são '
+       + 'ignoradas; o resto continua valendo.<br>'
+       + r.erros.slice(0, 12).map((e) =>
+           'linha ' + e.linha + ' · ' + _esc(e.cnpj) + ' — ' + _esc(e.motivo)
+         ).join('<br>')
+       + (r.erros.length > 12 ? '<br>… e mais ' + (r.erros.length - 12) : '')
+       + '</div>';
+  }
+  if (r.conflitos.length) {
+    h += '<div class="aviso"><b>Conflitos</b> — a planilha diz uma coisa e o '
+       + 'cadastro diz outra. <b>Nada disso é alterado</b>: trocar o que já '
+       + 'está escrito é decisão sua.<br>'
+       + r.conflitos.slice(0, 10).map((c) =>
+           '<b>' + _esc(c.razao_social) + '</b>: ' + c.campos.map((x) =>
+             _esc(x.rotulo) + ' — cadastro «' + _esc(x.atual)
+             + '» × planilha «' + _esc(x.planilha) + '»').join('; ')
+         ).join('<br>')
+       + (r.conflitos.length > 10 ? '<br>… e mais ' + (r.conflitos.length - 10) : '')
+       + '</div>';
+  }
+  if (r.novos.length) {
+    h += '<div class="dica"><b>Entram no cadastro:</b> '
+       + r.novos.slice(0, 15).map((n) => _esc(n.razao_social)).join(' · ')
+       + (r.novos.length > 15 ? ' … e mais ' + (r.novos.length - 15) : '') + '</div>';
+  }
+  if (!s.novos && !s.atualizados) {
+    h += '<div class="aviso">Não há nada a gravar: a planilha não traz nenhuma '
+       + 'empresa nova nem preenche campo vazio.</div>';
+  } else {
+    h += '<label style="margin-top:12px;display:block">'
+       + '<input type="checkbox" id="aceitarConflitos"> '
+       + 'Também substituir os valores em conflito pelos da planilha</label>'
+       + '<button class="btn btn-primario" style="margin-top:8px" '
+       + 'onclick="aplicarImportacao()">✔ Gravar ' + s.novos + ' novo(s) e '
+       + s.atualizados + ' atualização(ões)</button>'
+       + '<button class="btn btn-sec btn-mini" style="margin-top:8px;margin-left:8px" '
+       + 'onclick="cancelarImportacao()">Cancelar</button>';
+  }
+  alvo.innerHTML = h;
+}
+
+function cancelarImportacao() {
+  // Cancelar não deixa resíduo: o arquivo e o bilhete somem, e o bilhete no
+  // servidor vence sozinho sem nunca ter sido usado.
+  PLANILHA = null;
+  TOKEN_PREVIA = null;
+  document.getElementById('previaImport').innerHTML =
+    '<div class="dica">Importação cancelada. Nada foi gravado.</div>';
+}
+
+
+async function aplicarImportacao() {
+  if (!PLANILHA || !TOKEN_PREVIA) {
+    alert('Confira a planilha antes de gravar.'); return;
+  }
+  const aceitar = !!(document.getElementById('aceitarConflitos') || {}).checked;
+  // As quebras do texto abaixo são ESCAPADAS, de propósito. Escritas como
+  // quebra de linha de verdade, o literal de aspas simples não fecha, o bloco
+  // inteiro deixa de compilar e NENHUMA função desta tela passa a existir —
+  // foi exatamente o que aconteceu, e o sintoma foi um botão que não fazia
+  // nada e não dizia nada. Erro de sintaxe não falha só onde está: derruba o
+  // arquivo todo.
+  if (!confirm('Gravar as alterações no cadastro de clientes?\n\n'
+      + 'Uma cópia do cadastro atual é guardada antes.')) return;
+  const alvo = document.getElementById('previaImport');
+  alvo.innerHTML = '<div class="dica">Gravando…</div>';
+  // O MESMO arquivo da prévia, mais o bilhete. O servidor confere os dois:
+  // trocar o arquivo entre conferir e gravar invalida o bilhete.
+  const r = await _enviarPlanilha('/api/clientes/importar/aplicar',
+                                  { token: TOKEN_PREVIA,
+                                    aceitar_conflitos: aceitar ? '1' : '0' });
+  if (r.erro) {
+    alvo.innerHTML = '<div class="aviso ruim">' + _esc(r.erro)
+      + (r.precisa_previa ? '<br>Clique em <b>Conferir antes de importar</b> '
+                            + 'e tente de novo.' : '') + '</div>';
+    return;
+  }
+  const a = r.aplicado;
+  alvo.innerHTML = '<div class="aviso bom"><b>✓ Cadastro atualizado.</b><br>'
+    + a.criados + ' empresa(s) criada(s) · ' + a.atualizados
+    + ' atualizada(s) · ' + a.campos + ' campo(s) preenchido(s)'
+    + (a.conflitos_aplicados ? ' · ' + a.conflitos_aplicados
+        + ' conflito(s) substituído(s)' : '')
+    + '<br>O cadastro tem agora ' + r.total + ' empresa(s).'
+    + (r.backup ? '<br>Cópia anterior guardada como <code>' + _esc(r.backup)
+        + '</code>.' : '') + '</div>';
+  PLANILHA = null;
+  TOKEN_PREVIA = null;          // o bilhete serve uma vez só
+  if (typeof carregar === 'function') carregar();
+}
+
+/* ── A FICHA: quem manda em cada dado ─────────────────────────────────────
+   Duas chamadas, e as duas já existiam: `/api/clientes/ficha` (o cadastro e os
+   vínculos) e `/api/clientes/inscricoes` (IE e IM lidas dos XML, que é a ORIGEM
+   delas). A tela não decide nada — mostra as duas colunas e a fonte.
+
+   O rótulo `dono` vem do backend: MESTRE, DERIVADO ou SUGERIDO. Traduzir aqui
+   por conta própria faria a tela discordar da declaração. */
+const DONO_ROT = {MESTRE:'do cadastro', DERIVADO:'de outra fonte',
+                  SUGERIDO:'sugerido por outra fonte'};
+
+function fecharFicha(){
+  document.getElementById('painelFicha').style.display = 'none';
+}
+
+async function verFicha(cnpj){
+  const painel = document.getElementById('painelFicha');
+  const corpo = document.getElementById('fichaCorpo');
+  painel.style.display = 'block';
+  corpo.innerHTML = '<p class="dica">Lendo…</p>';
+  painel.scrollIntoView({block:'nearest'});
+  try{
+    const f = await fetch('/api/clientes/ficha?identidade='+cnpj)
+      .then(r => r.ok ? r.json() : r.json().then(d=>{throw new Error(d.erro||r.status)}));
+    /* IE/IM: a origem é o XML, e quem o lê é o módulo. Falhar aqui não pode
+       esconder a ficha — as colunas de XML ficam vazias e é dito. */
+    let insc = null;
+    try{
+      insc = await fetch('/api/clientes/inscricoes?cnpj='+cnpj).then(r=>r.json());
+    }catch(e){ insc = null; }
+    pintarFicha(f, insc);
+  }catch(e){
+    corpo.innerHTML = '<p class="erro">Não consegui montar a ficha: '+esc(e.message)+'</p>';
+  }
+}
+
+function pintarFicha(f, insc){
+  document.getElementById('fichaEmpresa').textContent =
+    f.nome ? f.nome + ' · ' + f.identidade : f.identidade;
+
+  let h = '<table><thead><tr><th>Campo</th><th>Valor</th><th>Quem manda</th>'
+        + '<th>Fonte</th></tr></thead><tbody>';
+  for(const k of Object.keys(f.campos)){
+    const c = f.campos[k];
+    h += `<tr><td><b>${esc(c.rotulo)}</b></td>
+      <td>${esc(String(c.valor==null?'':c.valor)) || '<span class="dica">—</span>'}</td>
+      <td>${esc(DONO_ROT[c.dono]||c.dono)}${c.editavel_no_cadastro?''
+        :' <span class="tag">não edite aqui</span>'}</td>
+      <td style="font-size:11px">${esc(c.fonte)}</td></tr>`;
+  }
+  h += '</tbody></table>';
+
+  /* Os vínculos com os módulos fiscais — cada um com o caminho de abrir. */
+  const v = f.vinculos || {};
+  const ieXml = insc && insc.ie ? insc.ie : '';
+  const imXml = insc && insc.im ? insc.im : '';
+  h += '<h3 class="sub" style="margin-top:14px">Vínculos com os módulos</h3>'
+    + '<table><tbody>'
+    + linhaVinc('Certificado', v.certificado && v.certificado.tem
+        ? ('presente' + (v.certificado.validade
+            ? ' · vale até ' + v.certificado.validade.split('-').reverse().join('/')
+            : ' · validade não lida'))
+        : 'ausente — esta empresa não captura',
+        v.certificado, 'clientes.html')
+    + linhaVinc('Inscrição Estadual (NF-e)',
+        'cadastro: ' + (v.ie && v.ie.no_cadastro ? esc(v.ie.no_cadastro) : '—')
+        + ' · XML: ' + (ieXml ? esc(ieXml) : '—'), v.ie, 'nfe_documentos.html')
+    + linhaVinc('Inscrição Municipal (NFS-e)',
+        'cadastro: ' + (v.im && v.im.no_cadastro ? esc(v.im.no_cadastro) : '—')
+        + ' · XML: ' + (imXml ? esc(imXml) : '—'), v.im, 'nfse.html')
+    + linhaVinc('Situação fiscal (regularidade)',
+        (v.regularidade && (v.regularidade.rotulo || v.regularidade.status))
+          || 'não consultada', v.regularidade, 'situacao.html')
+    + linhaVinc('Acervo de documentos',
+        (v.acervo && v.acervo.documentos != null)
+          ? v.acervo.documentos + ' documento(s) no índice'
+          : 'não foi possível contar', v.acervo, 'nfe_documentos.html')
+    + linhaVinc('Apuração',
+        (v.apuracao && v.apuracao.configurada) ? 'configurada'
+          : 'sem configuração — o cálculo pode não fechar',
+        v.apuracao, 'classificador.html')
+    + '</tbody></table>';
+
+  /* DIVERGÊNCIAS: o ponto da ficha. Cópia velha aparece; não é corrigida aqui. */
+  const d = f.divergencias || [];
+  if(d.length){
+    h += '<h3 class="sub" style="margin-top:14px">Divergências '
+       + `<span class="tag">${d.length}</span></h3><ul>`
+       + d.map(x => `<li><b>${esc(x.assunto)}</b>: cadastro diz
+           <code>${esc(x.no_cadastro)}</code>, a origem diz
+           <code>${esc(x.na_origem)}</code><br>
+           <span class="dica">quem manda: ${esc(x.fonte_que_manda)} — ${esc(x.o_que_fazer)}</span></li>`).join('')
+       + '</ul>';
+  }else{
+    h += '<p class="dica" style="margin-top:12px">Nenhuma divergência entre o '
+       + 'cadastro e as fontes de origem.</p>';
+  }
+  h += `<p class="dica">${esc(f.regra)}</p>`;
+  document.getElementById('fichaCorpo').innerHTML = h;
+}
+
+function linhaVinc(rotulo, texto, obj, onde){
+  const fonte = (obj && obj.fonte) ? obj.fonte : '';
+  const link = (obj && obj.onde) ? obj.onde : onde;
+  return `<tr><td style="width:210px"><b>${esc(rotulo)}</b></td>
+    <td>${texto}</td>
+    <td style="font-size:11px">${esc(fonte)}</td>
+    <td style="width:90px">${link?`<a href="${esc(link)}">abrir ›</a>`:''}</td></tr>`;
+}
+</script>
+<script src="fiscale-nav.js"></script>
+</body>
+</html>

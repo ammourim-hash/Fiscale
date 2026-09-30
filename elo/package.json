@@ -1,0 +1,75 @@
+{
+  "name": "elo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fiscale Elo — identidade, sessao e RBAC (MVP 1.1)",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d && npm run db:espera && npm run prisma:deploy && npm run db:migrate:test && npm run db:migrate:dev",
+    "db:espera": "node scripts/esperar-banco.mjs",
+    "db:logs": "docker compose logs -f postgres",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "db:migrate:test": "node scripts/migrar-banco.mjs test",
+    "db:migrate:dev": "node scripts/migrar-banco.mjs dev",
+    "prisma:studio": "prisma studio",
+    "admin": "tsx scripts/admin.ts",
+    "chaves:troca": "node scripts/gerar-chaves-troca.mjs",
+    "vapid": "node scripts/gerar-chaves-vapid.mjs",
+    "icones": "node scripts/gerar-icones.mjs",
+    "seed:dev": "tsx scripts/seed-dev.ts",
+    "seed:dev:limpar": "tsx scripts/seed-dev-limpar.ts",
+    "dev:inbound": "tsx scripts/dev-inbound.ts",
+    "storage:limpar": "tsx scripts/storage-limpar.ts",
+    "escalonar": "tsx scripts/escalonamento.ts",
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run build"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "next": "^16.3.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.3",
+    "@types/node": "^26.2.0",
+    "@types/pg": "^8.21.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "dotenv": "^17.4.2",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.0",
+    "jsdom": "^30.0.1",
+    "pg": "^8.23.0",
+    "prisma": "^7.9.1",
+    "tsx": "^4.23.11",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
+  },
+  "allowScripts": {
+    "prisma@7.9.1": true,
+    "@prisma/engines@7.9.1": true,
+    "unrs-resolver@1.12.2": true,
+    "esbuild@0.28.2": true
+  }
+}

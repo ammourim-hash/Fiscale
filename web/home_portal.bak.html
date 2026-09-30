@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10444E">
+<title>Fiscale — Sistema integrado do setor fiscal</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icone.webp">
+<!-- Service worker removido de propósito: causava telas presas em versão antiga
+     após atualizar. O sw.js atual só existe para se autodesativar nos navegadores
+     que ainda o tenham registrado. Não registramos um novo. -->
+<style>
+  :root{
+    --fundo:#EFF2F3;
+    --superficie:#FFFFFF;
+    --tinta:#1B2328;
+    --tinta-suave:#5C6B72;
+    --borda:#C7CDD1;         /* cinza da borda pedida */
+    --petroleo:#10444E;      /* cor institucional */
+    --nfse:#0E7490;
+    --saude:#0F8A5F;
+    --cim:#8A5A0F;
+    --recife:#B3382C;
+    --pag:#4C5FD5;
+    --simples:#B07D10;
+    --mit:#6D28A8;
+    --mei:#C2417E;
+    --raio:22px;
+    --sombra:0 1px 2px rgba(27,35,40,.06), 0 6px 18px rgba(27,35,40,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Segoe UI", Roboto, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    background:var(--fundo);
+    color:var(--tinta);
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  /* ===== Barra superior ===== */
+  header{
+    background:var(--superficie);
+    border-bottom:1px solid var(--borda);
+    position:sticky;top:0;z-index:10;
+  }
+  .barra{
+    max-width:1180px;margin:0 auto;
+    display:flex;align-items:center;gap:16px;
+    padding:14px 20px;
+  }
+  /* Aba HOME — canto superior esquerdo, caps, negrito, borda cinza */
+  .aba-home{
+    font-weight:800;
+    font-size:15px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--tinta);
+    background:var(--superficie);
+    border:2px solid var(--borda);
+    border-radius:12px;
+    padding:10px 22px;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .aba-home[aria-current="page"]{
+    border-color:var(--petroleo);
+    background:#EAF2F3;
+    color:var(--petroleo);
+  }
+  /* ===== Marca Fiscale ===== */
+  .marca{display:flex;align-items:center;gap:11px}
+  .marca .logo{
+    width:40px;height:40px;border-radius:11px;flex:0 0 auto;display:block;
+    box-shadow:0 3px 10px rgba(16,68,78,.28);
+  }
+  .marca .nome{line-height:1.05}
+  .marca .nome b{
+    font-size:21px;font-weight:800;letter-spacing:-.01em;color:var(--petroleo);
+    display:block;
+  }
+  .marca .nome b span{color:var(--saude)} /* o "e" final em destaque */
+  .marca .nome small{font-size:11px;font-weight:600;color:var(--tinta-suave);letter-spacing:.02em}
+
+  .titulo-app{
+    margin-left:auto;
+    font-size:12px;
+    font-weight:600;
+    color:var(--tinta-suave);
+    letter-spacing:.02em;
+    text-align:right;
+  }
+  .titulo-app strong{color:var(--petroleo)}
+  @media (max-width:560px){ .marca .nome small{display:none} .titulo-app{display:none} }
+
+  /* ===== Conteúdo ===== */
+  main{max-width:1180px;margin:0 auto;padding:28px 20px 48px}
+  /* apresentação do símbolo — a marca e o que ela quer dizer */
+  .apresenta{display:flex;align-items:center;gap:26px;background:var(--superficie);
+    border:1px solid var(--borda);border-radius:20px;padding:26px 28px;margin-bottom:26px;
+    box-shadow:0 1px 2px rgba(27,35,40,.05),0 10px 26px rgba(27,35,40,.06)}
+  .apresenta .simbolo{flex:0 0 auto;width:112px;height:112px;border-radius:26px;display:block;
+    box-shadow:0 8px 22px rgba(16,68,78,.22)}
+  .apresenta h1{font-size:30px;letter-spacing:-.02em;margin:0 0 2px;color:var(--petroleo)}
+  .apresenta .lema{font-size:14.5px;font-weight:700;color:var(--tinta);margin:0 0 8px}
+  .apresenta .conta{font-size:13px;line-height:1.6;color:var(--tinta-suave);margin:0;max-width:62ch}
+  .apresenta .conta b{color:var(--tinta)}
+  @media (max-width:700px){
+    .apresenta{flex-direction:column;text-align:center;gap:16px;padding:22px}
+    .apresenta .conta{text-align:left}
+  }
+  .saudacao{margin-bottom:22px}
+  .saudacao h1{font-size:22px;font-weight:700}
+  .saudacao p{font-size:14px;color:var(--tinta-suave);margin-top:4px}
+
+  /* ===== Grade de módulos ===== */
+  .grade{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:18px;
+  }
+  .card{
+    aspect-ratio:1/1;
+    background:var(--superficie);
+    border:1px solid var(--borda);
+    border-radius:var(--raio);
+    box-shadow:var(--sombra);
+    display:flex;flex-direction:column;
+    padding:18px;
+    text-decoration:none;color:inherit;
+    position:relative;overflow:hidden;
+    transition:transform .15s ease, box-shadow .15s ease, border-color .15s;
+  }
+  .card:hover, .card:focus-visible{
+    transform:translateY(-3px);
+    box-shadow:0 4px 8px rgba(27,35,40,.08), 0 14px 28px rgba(27,35,40,.12);
+    border-color:var(--cor);
+    outline:none;
+  }
+  .card:focus-visible{outline:3px solid var(--cor);outline-offset:2px}
+  /* tarja de guia — assinatura visual: lembra a tarja das guias fiscais */
+  .card::before{
+    content:"";
+    position:absolute;top:0;left:0;
+    width:46%;height:6px;
+    background:var(--cor);
+    border-bottom-right-radius:8px;
+  }
+  .icone{
+    width:52px;height:52px;border-radius:14px;
+    background:color-mix(in srgb, var(--cor) 12%, white);
+    color:var(--cor);
+    display:flex;align-items:center;justify-content:center;
+    margin-top:6px;
+  }
+  .icone svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .card h2{
+    margin-top:auto;
+    font-size:16.5px;font-weight:700;line-height:1.25;
+  }
+  .card p{
+    font-size:12.5px;color:var(--tinta-suave);
+    margin-top:5px;line-height:1.35;
+  }
+  .selo{
+    position:absolute;top:14px;right:14px;
+    font-size:10.5px;font-weight:700;letter-spacing:.05em;
+    padding:4px 9px;border-radius:999px;
+  }
+  .selo.on{background:#E5F4EC;color:#0F8A5F}
+  .selo.dev{background:#F1F2F4;color:#7A868D}
+
+  /* Responsivo */
+  @media (max-width:980px){ .grade{grid-template-columns:repeat(3,1fr)} }
+  @media (max-width:700px){
+    .grade{grid-template-columns:repeat(2,1fr);gap:14px}
+    .card{padding:14px}
+    .card h2{font-size:14.5px}
+    .card p{display:none}
+    .titulo-app span{display:none}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .card{transition:none}
+    .card:hover{transform:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="barra">
+    <div class="marca">
+      <img class="logo" src="fiscale-logo.svg" alt="Fiscale" width="40" height="40">
+      <div class="nome">
+        <b>Fiscal<span>e</span></b>
+        <small>Sistema integrado do setor fiscal</small>
+      </div>
+    </div>
+    <div style="flex:1"></div>
+    <span id="quemSou" style="font-size:12.5px;font-weight:700;color:#10444E;margin-left:12px;white-space:nowrap"></span>
+    <button id="btnUsuarios" onclick="location.href='usuarios.html'" style="display:none;font-weight:700;font-size:12px;color:#10444E;background:#EAF2F3;border:1px solid #10444E;border-radius:10px;padding:8px 14px;cursor:pointer;white-space:nowrap">👥 Usuários</button>
+    <button onclick="trocarSenha()" title="Trocar a minha senha"
+      style="font-weight:700;font-size:12px;color:#5C6B72;background:#fff;border:1px solid #C7CDD1;border-radius:10px;padding:8px 14px;cursor:pointer;white-space:nowrap">🔑 Senha</button>
+    <button onclick="fetch('/api/logout',{method:'POST'}).then(()=>location.href='/login.html')"
+      style="font-weight:700;font-size:12px;color:#5C6B72;background:#fff;border:1px solid #C7CDD1;border-radius:10px;padding:8px 14px;cursor:pointer">Sair</button>
+    <button id="btnEncerrar" onclick="encerrar()" title="Fecha o Fiscale de verdade (o servidor)"
+      style="display:none;font-weight:700;font-size:12px;color:#B3382C;background:#fff;border:1px solid #E8B4AE;border-radius:10px;padding:8px 14px;cursor:pointer;white-space:nowrap">⏻ Encerrar</button>
+  </div>
+</header>
+
+<script>
+async function identificar(){
+  try{
+    const q = await fetch('/api/quem').then(r=>r.json());
+    if(q.usuario){
+      document.getElementById('quemSou').textContent = '👤 ' + q.usuario + (q.admin ? ' (admin)' : '');
+      if(q.admin) document.getElementById('btnUsuarios').style.display = 'inline-block';
+      // Encerrar: qualquer usuário, mas só no PC onde o Fiscale roda (encerrar pela
+      // rede derrubaria o servidor de todo mundo).
+      if(q.local) document.getElementById('btnEncerrar').style.display = 'inline-block';
+    }
+  }catch(e){}
+}
+async function encerrar(){
+  if(!confirm("Encerrar o Fiscale?\n\nO sistema sai do ar para TODAS as máquinas da rede. "
+    +"Para usar de novo, abra o atalho Fiscale nesta máquina.")) return;
+  try{
+    const d = await fetch('/api/encerrar',{method:'POST'}).then(r=>r.json());
+    if(d && d.ok===false){ alert(d.erro); return; }
+  }catch(e){}   // o servidor morre no meio da resposta — falhar aqui é o esperado
+  document.body.innerHTML = '<div style="font-family:Segoe UI,Arial,sans-serif;text-align:center;'
+    +'padding:80px 20px;color:#5C6B72"><h2 style="color:#10444E">Fiscale encerrado</h2>'
+    +'<p>Pode fechar esta aba. Para abrir de novo, use o atalho <b>Fiscale</b> na Área de Trabalho.</p></div>';
+}
+async function trocarSenha(){
+  const atual = prompt("Senha ATUAL:"); if(atual===null) return;
+  const nova = prompt("NOVA senha (mínimo 4 caracteres):"); if(nova===null) return;
+  const r = await fetch('/api/senha',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({atual, nova})});
+  const d = await r.json();
+  alert(d.ok ? "Senha alterada com sucesso." : (d.erro||"Não foi possível alterar a senha."));
+}
+identificar();
+</script>
+
+<main>
+  <section class="apresenta">
+    <img class="simbolo" src="fiscale-logo.svg" alt="Símbolo do Fiscale" width="112" height="112">
+    <div class="apresenta-txt">
+      <h1>Fiscale</h1>
+      <p class="lema">Ler o documento. Conferir. Só então declarar.</p>
+      <p class="conta">O <b>F</b> é feito das linhas de uma nota fiscal — é do documento que o sistema parte.
+        O <b>selo</b> é o que ele faz com elas: audita o XML, confere o crédito, classifica o Anexo e
+        aponta o que não fecha, <b>antes</b> de virar guia.</p>
+    </div>
+  </section>
+
+  <div class="saudacao">
+    <h1>Bem-vindo(a) ao Fiscale</h1>
+    <p>Escolha um módulo para começar. Cada módulo é um projeto independente, integrado a este ambiente.</p>
+  </div>
+
+  <nav class="grade" aria-label="Módulos">
+
+    <a class="card" href="clientes.html" style="--cor:var(--petroleo)">
+      <span class="selo on">Disponível</span>
+      <div class="icone"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <h2>Clientes</h2>
+      <p>Cadastro unificado das empresas: CNPJ, IE, IM, regime e certificado — com atalhos para todos os módulos.</p>
+    </a>
+
+    <a class="card" href="nfse.html" style="--cor:var(--nfse)">
+      <span class="selo on">Disponível</span>
+      <div class="icone"><svg viewBox="0 0 24 24"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4"/><path d="M10 12h6M10 16h6"/></svg></div>
+      <h2>NFSE — Portal</h2>
+      <p>Download e soma das notas de serviço por competência (certificado A1).</p>
+    </a>
+
+    <a class="card" href="nfe.html" style="--cor:#B45309">
+      <span class="selo on">Disponível</span>
+      <div class="icone"><svg viewBox="0 0 24 24"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4"/><path d="M10 13h6M10 17h6M10 9h3"/></svg></div>
+      <h2>NF-e</h2>
+      <p>Compras (recebidas) baixadas automáticas pelo certificado; vendas pelo eFisco PE.</p>
+    </a>
+
+    <a class="card" href="plano_de_saude.html" style="--cor:var(--saude)">
+      <span class="selo on">Disponível</span>
+      <div class="icone"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6.3 5.5 5.5 0 0 1 21.5 12C19 16.4 12 21 12 21z"/><path d="M9 12h2l1.2-2.5L14 13l1-1.8h2"/></svg></div>
+      <h2>Plano de saúde</h2>
+      <p>Controle de faturas, vidas e reajustes dos planos das empresas.</p>
+    </a>
+
+    <a class="card" href="cim_recife.html" style="--cor:var(--cim)">
+      <span class="selo on">Disponível</span>
+      <div class="icone"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M9 9v11"/></svg></div>
+      <h2>CIM</h2>
+      <p>Atalho para o Extrato de Débitos / DAM da Prefeitura, com a inscrição já copiada.</p>
+    </a>
+
+    <a class="card" href="classificador.html" style="--cor:var(--mit)">
+      <span class="selo on">Disponível</span>
+      <div class="icone"><svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 15l4-4 3 3 5-6"/><circle cx="19" cy="8" r="1.6"/></svg></div>
+      <h2>Classificador</h2>
+      <p>Lê os XMLs baixados por empresa e sugere o Anexo do Simples (RBT12 e Fator R automáticos).</p>
+    </a>
+
+    <a class="card" href="consulta_optantes.html" style="--cor:var(--simples)">
+      <span class="selo on">Disponível</span>
+      <div class="icone"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M8.5 11l2 2 3.5-3.5"/></svg></div>
+      <h2>Consulta Optantes</h2>
+      <p>Verifica pelo CNPJ se a empresa é optante do Simples Nacional (consulta pública).</p>
+    </a>
+
+    <a class="card" href="cclasstrib.html" style="--cor:#1D4ED8">
+      <span class="selo on">Disponível</span>
+      <div class="icone"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h10"/><circle cx="18" cy="19" r="3"/><path d="M20.5 21.5L23 24"/></svg></div>
+      <h2>CClassTrib · Reforma</h2>
+      <p>Classificação Tributária (IBS/CBS) por código, descrição ou CST — e consulta em lote. Para a Reforma Tributária.</p>
+    </a>
+
+    <a class="card" href="ecac.html" style="--cor:var(--pag)">
+      <span class="selo on">Disponível</span>
+      <div class="icone"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M7 14h5M7 17h8"/></svg></div>
+      <h2>e-CAC</h2>
+      <p>Simples Nacional, DCTFWeb/MIT e Pagamentos por empresa — com o certificado do escritório.</p>
+    </a>
+
+    <a class="card" href="#mei" style="--cor:var(--mei)">
+      <span class="selo dev">Em breve</span>
+      <div class="icone"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></div>
+      <h2>MEI</h2>
+      <p>DAS-MEI, declaração anual e situação cadastral dos MEIs.</p>
+    </a>
+
+  </nav>
+</main>
+
+<script src="fiscale-nav.js"></script>
+</body>
+</html>

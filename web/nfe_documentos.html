@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NF-e · Notas Fiscais Eletrônicas · Fiscale</title>
+<link rel="icon" href="icone.webp">
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   NF-e · Notas Fiscais Eletrônicas
+   Mesma linguagem visual do resto do FISCALE: os tokens abaixo são os mesmos
+   de painel.html e clientes.html. A barra superior vem de fiscale-nav.js.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root{
+  --fundo:#EFF2F3; --superficie:#FFFFFF; --tinta:#1B2328; --tinta-suave:#5C6B72;
+  --borda:#C7CDD1; --petroleo:#10444E; --cor:#B45309; --cor-claro:#FDF3E7;
+  --ok:#0F8A5F; --alerta:#B3382C; --aviso:#B07D10; --info:#1D4ED8;
+  --raio:16px; --sombra:0 1px 2px rgba(27,35,40,.06), 0 6px 18px rgba(27,35,40,.07);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fundo);color:var(--tinta);
+  font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1400px;margin:0 auto;padding:0 16px 64px}
+h1,h2,h3{margin:0;line-height:1.25}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--petroleo)}
+
+/* ── cabeçalho do módulo ────────────────────────────────────────────────── */
+.cabecalho{background:linear-gradient(100deg,#12454F 0%,#0C3038 68%,#0A2A31 100%);
+  color:#EAF2F3;border-radius:22px;padding:22px 24px;margin:0 0 18px;
+  box-shadow:0 2px 8px rgba(10,42,49,.16), 0 20px 46px -18px rgba(10,42,49,.50)}
+.cabecalho h1{font-size:24px;font-weight:800;letter-spacing:.01em}
+.cabecalho .sub{color:#A9C4C8;font-size:14px;margin-top:4px}
+.cabecalho .contexto{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;align-items:center}
+.pilula{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:6px 13px;
+  font-size:13px;font-weight:600}
+.pilula b{font-weight:800}
+
+/* ── cards de resumo ────────────────────────────────────────────────────── */
+.cards{display:grid;gap:12px;margin-bottom:18px;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.card{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio);
+  padding:14px 16px;box-shadow:var(--sombra);position:relative}
+.card .rot{font-size:12.5px;font-weight:700;color:var(--tinta-suave);
+  text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:6px}
+.card .val{font-size:26px;font-weight:800;margin-top:6px;font-variant-numeric:tabular-nums}
+.card .sec{font-size:13px;color:var(--tinta-suave);margin-top:2px;font-variant-numeric:tabular-nums}
+.card.destaque{border-color:var(--cor);background:var(--cor-claro)}
+.abas{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.aba{border:1px solid var(--borda);background:var(--superficie);
+  border-radius:14px;padding:9px 17px;font-size:14px;font-weight:800;
+  cursor:pointer;color:var(--tinta-suave);line-height:1.15;text-align:left}
+.aba small{display:block;font-size:11px;font-weight:600;opacity:.75;
+  margin-top:1px}
+.aba:hover{background:#F2F6F7}
+.aba[aria-pressed="true"]{background:var(--cor);border-color:var(--cor);
+  color:#fff}
+.aba[aria-pressed="true"] small{opacity:.85}
+.barra-saida{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;
+  background:var(--superficie);border:1px solid var(--borda);
+  border-radius:var(--raio);padding:13px 15px;margin-bottom:14px}
+.barra-saida .saida-larga{flex:1 1 100%}
+.resumo-lote{font-size:13px;color:var(--tinta-suave);margin-top:9px}
+.resumo-lote b{color:var(--tinta)}
+.resultado-lote{font-size:13px;margin-top:7px}
+.avancado{margin-top:9px}
+.avancado > summary{cursor:pointer;font-size:12.5px;font-weight:700;
+  color:var(--tinta-suave);width:fit-content}
+.avancado-corpo{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;
+  margin-top:9px;padding-top:11px;border-top:1px solid var(--borda)}
+.marca-opcao{display:flex;align-items:center;gap:6px;font-size:13px;
+  padding-bottom:7px;white-space:nowrap}
+#pastaPrevisao{flex:1 1 100%;font-size:12px;color:var(--tinta-suave);
+  word-break:break-all}
+.pendencias{margin-bottom:14px}
+.card.clicavel{cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.card.clicavel:hover,.card.clicavel:focus-visible{border-color:var(--cor);
+  box-shadow:0 0 0 3px rgba(180,83,9,.14);outline:none}
+.card.clicavel .rot::after{content:" ↗";font-size:11px;opacity:.55}
+.card .aviso-info{position:absolute;top:12px;right:12px;width:18px;height:18px;
+  border-radius:50%;border:1px solid var(--borda);background:#fff;color:var(--tinta-suave);
+  font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;
+  cursor:help}
+
+/* ── filtros ────────────────────────────────────────────────────────────── */
+.painel{background:var(--superficie);border:1px solid var(--borda);
+  border-radius:var(--raio);box-shadow:var(--sombra);margin-bottom:16px}
+.painel > summary{cursor:pointer;padding:14px 16px;font-weight:800;display:flex;
+  align-items:center;gap:9px;list-style:none}
+.painel > summary::-webkit-details-marker{display:none}
+.painel > summary::before{content:"▸";font-size:13px;transition:transform .15s}
+.painel[open] > summary::before{transform:rotate(90deg)}
+.painel .corpo{padding:0 16px 16px}
+.atalhos{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+.chip{border:1px solid var(--borda);background:#fff;border-radius:999px;
+  padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer}
+.chip:hover{border-color:var(--cor);color:var(--cor)}
+.chip[aria-pressed="true"]{background:var(--petroleo);color:#fff;border-color:var(--petroleo)}
+.grade{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.campo{display:flex;flex-direction:column;gap:4px}
+.campo label{font-size:12.5px;font-weight:700;color:var(--tinta-suave)}
+.campo input,.campo select{border:1px solid var(--borda);border-radius:10px;
+  padding:9px 11px;background:#fff;min-width:0}
+.campo input:focus,.campo select:focus{outline:none;border-color:var(--cor);
+  box-shadow:0 0 0 3px rgba(180,83,9,.14)}
+.acoes{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px;align-items:center}
+.btn{border:1px solid var(--borda);background:#fff;border-radius:11px;
+  padding:9px 16px;font-weight:700;cursor:pointer}
+.btn:hover{border-color:var(--cor)}
+.btn.primario{background:var(--petroleo);color:#fff;border-color:var(--petroleo)}
+.btn.primario:hover{background:#0d3740}
+.btn:focus-visible,.chip:focus-visible,tr[tabindex]:focus-visible{outline:3px solid var(--info);
+  outline-offset:2px}
+
+/* ── tabela ─────────────────────────────────────────────────────────────── */
+.quadro{background:var(--superficie);border:1px solid var(--borda);
+  border-radius:var(--raio);box-shadow:var(--sombra);overflow:hidden}
+.menu{position:relative;display:inline-block}
+.menu > .lista{position:absolute;right:0;top:calc(100% + 6px);z-index:40;
+  min-width:270px;background:#fff;border:1px solid var(--borda);
+  border-radius:13px;box-shadow:0 16px 40px rgba(15,42,56,.16);padding:6px;
+  display:none}
+.menu[data-aberto="1"] > .lista{display:block}
+.menu .lista button{display:block;width:100%;text-align:left;border:0;
+  background:none;padding:9px 11px;border-radius:9px;cursor:pointer;
+  font:inherit;font-size:13.5px}
+.menu .lista button:hover{background:#EEF4F6}
+.menu .lista button small{display:block;color:var(--tinta-suave);font-size:11.5px;
+  margin-top:1px;white-space:normal}
+.menu .lista hr{border:0;border-top:1px solid var(--borda);margin:5px 2px}
+.previa{border:1px solid var(--borda);border-radius:13px;padding:13px 15px;
+  margin:0 0 12px;background:#F7FAFB;font-size:13.5px}
+.previa b{font-variant-numeric:tabular-nums}
+.previa ul{margin:7px 0 0;padding-left:19px}
+.quadro .topo{display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--borda)}
+.rolagem{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;
+  color:var(--tinta-suave);padding:10px 12px;border-bottom:1px solid var(--borda);
+  white-space:nowrap;background:#F7F9FA}
+td{padding:10px 12px;border-bottom:1px solid #EDF1F2;vertical-align:middle}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:#F7FAFB}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mono{font-family:ui-monospace,"Cascadia Code",Consolas,monospace;font-size:12.5px}
+
+/* Estado nunca depende só de cor: cada selo tem um símbolo e um texto. */
+.selo{display:inline-flex;align-items:center;gap:5px;border-radius:999px;
+  padding:3px 10px;font-size:12px;font-weight:800;white-space:nowrap;
+  border:1px solid transparent}
+.selo.ok{background:#E7F5EE;color:#0B6B4A;border-color:#B9E2CF}
+.selo.cancel{background:#FBE9E7;color:#8A2B22;border-color:#F0C4BE}
+.selo.neutro{background:#EEF2F4;color:#41525A;border-color:#D6DEE2}
+.selo.aviso{background:#FDF3E0;color:#8A5F0F;border-color:#EBD7A8}
+.selo.info{background:#E9EFFC;color:#1B3A8F;border-color:#C6D4F5}
+.papeis{display:flex;flex-wrap:wrap;gap:4px}
+
+/* ── estados ────────────────────────────────────────────────────────────── */
+.estado{padding:44px 24px;text-align:center;color:var(--tinta-suave)}
+.estado .emoji{font-size:34px;display:block;margin-bottom:10px}
+.estado h3{color:var(--tinta);font-size:17px;margin-bottom:6px}
+.estado.erro{color:#8A2B22}
+.esqueleto{height:14px;border-radius:7px;background:linear-gradient(90deg,#EDF1F2,#F7F9FA,#EDF1F2);
+  background-size:200% 100%;animation:brilho 1.1s linear infinite}
+@keyframes brilho{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.esqueleto{animation:none}}
+
+/* ── paginação ──────────────────────────────────────────────────────────── */
+.paginacao{display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  justify-content:space-between;padding:13px 16px}
+.paginacao .navegar{display:flex;gap:6px;align-items:center}
+
+/* ── detalhe (drawer) ───────────────────────────────────────────────────── */
+.veu{position:fixed;inset:0;background:rgba(12,32,38,.45);z-index:1000;
+  display:none}
+.veu[data-aberto="1"]{display:block}
+.gaveta{position:fixed;top:0;right:0;bottom:0;width:min(760px,100%);
+  background:var(--fundo);z-index:1001;transform:translateX(100%);
+  transition:transform .18s ease-out;overflow-y:auto;box-shadow:-18px 0 46px rgba(10,42,49,.28)}
+.gaveta[data-aberto="1"]{transform:translateX(0)}
+@media (prefers-reduced-motion:reduce){.gaveta{transition:none}}
+.gaveta .barra{position:sticky;top:0;background:var(--petroleo);color:#fff;
+  padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:2}
+.gaveta .barra h2{font-size:17px}
+.gaveta .conteudo{padding:16px 18px 60px;display:flex;flex-direction:column;gap:14px}
+.bloco{background:var(--superficie);border:1px solid var(--borda);
+  border-radius:14px;padding:14px 16px}
+.bloco h3{font-size:13px;text-transform:uppercase;letter-spacing:.04em;
+  color:var(--tinta-suave);margin-bottom:10px}
+.linhas{display:grid;gap:8px 18px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.linha{display:flex;flex-direction:column;gap:1px;min-width:0}
+.linha .r{font-size:12px;color:var(--tinta-suave);font-weight:600}
+.linha .v{font-weight:600;word-break:break-word}
+.vazio{color:var(--tinta-suave)}
+.copiar{border:1px solid var(--borda);background:#fff;border-radius:8px;
+  padding:2px 8px;font-size:11.5px;font-weight:700;cursor:pointer;margin-left:6px}
+.tempo{display:flex;flex-direction:column;gap:0;margin:0;padding:0;list-style:none}
+.tempo li{display:flex;gap:11px;padding:8px 0;border-bottom:1px dashed #E2E8EA}
+.tempo li:last-child{border-bottom:0}
+.tempo .marca{flex:0 0 26px;height:26px;border-radius:50%;background:var(--cor-claro);
+  color:var(--cor);display:flex;align-items:center;justify-content:center;font-size:13px}
+.itens-tab td,.itens-tab th{padding:7px 9px;font-size:13px}
+.detalhe-item{background:#F7F9FA;padding:10px 12px;border-radius:10px;margin-top:6px}
+.detalhe-item h4{font-size:12px;text-transform:uppercase;color:var(--tinta-suave);
+  letter-spacing:.04em;margin:0 0 6px}
+
+/* ── mobile ─────────────────────────────────────────────────────────────── */
+.lista-mobile{display:none}
+@media (max-width:900px){
+  main{padding:0 10px 56px}
+  .cabecalho{border-radius:18px;padding:18px}
+  .cabecalho h1{font-size:20px}
+  .rolagem{display:none}
+  .lista-mobile{display:block}
+  .cartao-nota{border-bottom:1px solid #EDF1F2;padding:13px 14px;cursor:pointer}
+  .cartao-nota:hover{background:#F7FAFB}
+  .cartao-nota .l1{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  .cartao-nota .l1 .n{font-weight:800}
+  .cartao-nota .l1 .v{font-weight:800;font-variant-numeric:tabular-nums}
+  .cartao-nota .l2{color:var(--tinta-suave);font-size:13.5px;margin-top:3px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cartao-nota .l3{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
+  .gaveta{width:100%}
+  .cards{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .card .val{font-size:21px}
+}
+</style>
+</head>
+<body>
+<script src="fiscale-pasta.js"></script>
+<script src="fiscale-nav.js"></script>
+<script src="fiscale.js"></script>
+
+<main>
+  <header class="cabecalho">
+    <h1>NF-e · Notas Fiscais Eletrônicas</h1>
+    <p class="sub">Documentos fiscais, conferência e inteligência tributária</p>
+    <div class="contexto">
+      <span class="pilula">🏢 <b id="ctxEmpresa">selecione uma empresa</b></span>
+      <span class="pilula">📅 <b id="ctxPeriodo">—</b></span>
+      <span class="pilula" id="ctxFonte">📚 acervo indexado</span>
+    </div>
+  </header>
+
+  <section class="cards" id="cards" aria-live="polite" aria-label="Resumo do período"></section>
+
+  <!-- NF-e EMITIDAS — a entrada canônica da emissão própria.
+       Só aparece em `?vista=emitidas`. Tudo aqui vem de `/api/nfe/emitidas`,
+       que é leitura do MESMO acervo: nenhuma captura, nenhuma segunda fonte,
+       nenhum número de demonstração. Vazio aqui é vazio de verdade. -->
+  <section class="painel" id="painelEmitidas" hidden
+           aria-label="NF-e emitidas pela empresa">
+    <div class="corpo" id="corpoEmitidas"></div>
+  </section>
+
+  <details class="painel" id="painelFiltros" open>
+    <summary>Filtros</summary>
+    <div class="corpo">
+      <div class="atalhos" role="group" aria-label="Atalhos de período">
+        <button class="chip" data-atalho="mes_atual" aria-pressed="false">Mês atual</button>
+        <button class="chip" data-atalho="mes_passado" aria-pressed="false">Mês passado</button>
+        <button class="chip" data-atalho="ano_atual" aria-pressed="false">Ano atual</button>
+        <button class="chip" data-atalho="ano_passado" aria-pressed="false">Ano passado</button>
+        <button class="chip" data-atalho="tudo" aria-pressed="true">Tudo</button>
+      </div>
+
+      <div class="grade">
+        <div class="campo">
+          <label for="fEmpresa">Empresa</label>
+          <select id="fEmpresa"></select>
+        </div>
+        <div class="campo">
+          <label for="fCampoData">O período filtra por</label>
+          <select id="fCampoData">
+            <option value="EMISSAO">Data de emissão</option>
+            <option value="ENTRADA">Data de saída / entrada</option>
+            <option value="COMPETENCIA">Competência</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="fDe">Período — de</label>
+          <input type="date" id="fDe">
+        </div>
+        <div class="campo">
+          <label for="fAte">Período — até</label>
+          <input type="date" id="fAte">
+        </div>
+        <div class="campo">
+          <label for="fPapel">Relação da empresa com a NF-e</label>
+          <select id="fPapel">
+            <option value="">Todas</option>
+            <option value="DESTINATARIO">Recebida / Destinatário</option>
+            <option value="EMITENTE">Emitida</option>
+            <option value="TRANSPORTADOR">Transportador</option>
+            <option value="AUTXML">Autorizado no XML</option>
+            <option value="OUTRO">Outro / indeterminado</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="fSituacao">Situação atual</label>
+          <select id="fSituacao">
+            <option value="">Todas</option>
+            <option value="AUTORIZADO">Autorizada</option>
+            <option value="CANCELADO">Cancelada</option>
+            <option value="DENEGADO">Denegada</option>
+            <option value="SEM_PROTOCOLO">Sem protocolo</option>
+            <option value="INDEFINIDA">Indefinida</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="fTexto">Buscar</label>
+          <input id="fTexto" placeholder="número, chave, nome, CNPJ ou produto">
+        </div>
+      </div>
+
+      <details style="margin-top:14px">
+        <summary style="cursor:pointer;font-weight:700;font-size:13.5px;color:var(--tinta-suave)">
+          Filtros fiscais e de identificação</summary>
+        <div class="grade" style="margin-top:12px">
+          <div class="campo"><label for="fNumero">Número</label><input id="fNumero" inputmode="numeric"></div>
+          <div class="campo"><label for="fSerie">Série</label><input id="fSerie" inputmode="numeric"></div>
+          <div class="campo"><label for="fChave">Chave de acesso</label><input id="fChave" inputmode="numeric"></div>
+          <div class="campo"><label for="fEmitente">Emitente (CNPJ ou nome)</label><input id="fEmitente"></div>
+          <div class="campo"><label for="fDest">Destinatário (CNPJ ou nome)</label><input id="fDest"></div>
+          <div class="campo"><label for="fDoc">CNPJ/CPF (qualquer lado)</label><input id="fDoc" inputmode="numeric"></div>
+          <div class="campo"><label for="fUf">UF (código)</label><input id="fUf" inputmode="numeric" maxlength="2"></div>
+          <div class="campo"><label for="fCfop">CFOP</label><input id="fCfop" inputmode="numeric"></div>
+          <div class="campo"><label for="fNcm">NCM</label><input id="fNcm" inputmode="numeric"></div>
+          <div class="campo"><label for="fCest">CEST</label><input id="fCest" inputmode="numeric"></div>
+          <div class="campo"><label for="fCst">CST do ICMS</label><input id="fCst" inputmode="numeric"></div>
+          <div class="campo"><label for="fCsosn">CSOSN</label><input id="fCsosn" inputmode="numeric"></div>
+          <div class="campo"><label for="fOrigem">Origem da mercadoria</label><input id="fOrigem" maxlength="1"></div>
+          <div class="campo"><label for="fPisCst">CST do PIS</label><input id="fPisCst" inputmode="numeric"></div>
+          <div class="campo"><label for="fCofinsCst">CST da Cofins</label><input id="fCofinsCst" inputmode="numeric"></div>
+          <div class="campo"><label for="fIpiCst">CST do IPI</label><input id="fIpiCst" inputmode="numeric"></div>
+          <div class="campo">
+            <label for="fConteudo">Conteúdo do XML</label>
+            <select id="fConteudo">
+              <option value="">Todos</option>
+              <option value="COMPLETO">XML completo</option>
+              <option value="RESUMO">Somente resumo</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="fReforma">Reforma Tributária</label>
+            <select id="fReforma">
+              <option value="">Todos</option>
+              <option value="1">Com IBS/CBS/IS</option>
+              <option value="0">Sem</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="fEvento">Eventos</label>
+            <select id="fEvento">
+              <option value="">Todos</option>
+              <option value="1">Com evento</option>
+              <option value="0">Sem evento</option>
+            </select>
+          </div>
+        </div>
+      </details>
+
+      <div class="acoes">
+        <button class="btn primario" id="btnAplicar">Aplicar filtros</button>
+        <button class="btn" id="btnLimpar">Limpar</button>
+        <span id="dicaPeriodo" style="font-size:12.5px;color:var(--tinta-suave)"></span>
+      </div>
+    </div>
+  </details>
+
+  <!-- A saída fica AQUI, colada nos filtros, e não dentro de um menu.
+       O fluxo do dia é um só: empresa/período/filtros → escolher pasta →
+       baixar. Obrigar a abrir um painel para configurar organização antes de
+       cada exportação transformava três cliques em sete. -->
+
+  <div id="pendenciasCadastro" class="pendencias" hidden></div>
+
+  <div class="barra-saida" id="barraSaida">
+    <div class="campo" style="flex:3 1 320px;margin:0">
+      <label for="pastaDestino">Pasta de saída dos arquivos</label>
+      <input id="pastaDestino" class="mono" spellcheck="false"
+             placeholder="Escolha a pasta onde os XMLs serão gravados"
+             style="width:100%">
+    </div>
+    <button class="btn" type="button" id="btnEscolherPasta">📁 Escolher pasta</button>
+    <button class="btn primario" type="button" id="btnBaixarLote">⬇ Baixar XMLs em lote</button>
+    <div class="saida-larga">
+      <div id="resumoLote" class="resumo-lote"></div>
+      <div id="pastaResultado" class="resultado-lote"></div>
+      <details class="avancado" id="avancadoSaida">
+        <summary>Configurações avançadas</summary>
+        <div class="avancado-corpo">
+          <div class="campo" style="margin:0">
+            <label for="pastaOrg">Organização das subpastas</label>
+            <select id="pastaOrg"></select>
+          </div>
+          <label class="marca-opcao">
+            <input type="checkbox" id="pastaRelatorio"> Gerar relatório da exportação
+          </label>
+          <div class="campo" style="margin:0">
+            <label for="fCanceladasExp">Canceladas</label>
+            <select id="fCanceladasExp">
+              <option value="TODOS">Todos os documentos</option>
+              <option value="SOMENTE_VALIDAS">Somente situação atual válida</option>
+              <option value="SOMENTE_CANCELADAS">Somente as canceladas</option>
+            </select>
+          </div>
+          <div class="mono" id="pastaPrevisao"></div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- CT-e: caminho de dados próprio. Ele NÃO está no acervo indexado —
+       vem do leitor de pasta (`nfe.py:carregar_cte`), e a rota tem forma
+       diferente. Fingir que é a mesma listagem daria uma tela que mente
+       sobre filtro, paginação e exportação. -->
+  <!-- IMPORTAR XML — veio da caixa de entrada, que saiu com as outras telas
+       do `nfe.html`. O endpoint separa emitidas de recebidas lendo o próprio
+       documento: não existe "modo saída" para escolher, e é por isso que a
+       função pôde vir para cá sem inventar parâmetro nenhum. -->
+  <details class="painel" id="painelImportar">
+    <summary style="cursor:pointer;padding:14px 16px;font-weight:800;color:var(--petroleo)">
+      ⬆ Importar XML — notas de saída (emitidas) e de entrada</summary>
+    <div style="padding:0 16px 16px">
+      <div id="impDrop" onclick="document.getElementById('impInput').click()"
+        ondragover="event.preventDefault();this.style.borderColor='#0E7490'"
+        ondragleave="this.style.borderColor=''"
+        ondrop="impSoltar(event)"
+        style="border:2px dashed var(--borda);border-radius:14px;padding:22px;text-align:center;
+               cursor:pointer;font-size:13px;color:var(--tinta-suave);line-height:1.6">
+        <b style="color:var(--tinta);display:block;margin-bottom:4px">Solte aqui os XML, ou clique para escolher</b>
+        NF-e e NFC-e da <b>empresa selecionada acima</b>. O sistema lê cada documento e
+        separa sozinho o que é <b>saída</b> do que é <b>entrada</b>.
+        <input id="impInput" type="file" accept=".xml,text/xml" multiple hidden
+               onchange="impEscolher(event)">
+      </div>
+      <div id="impStatus" style="margin-top:10px;font-size:13px"></div>
+    </div>
+  </details>
+
+  <section class="quadro" id="painelNfe">
+    <div class="topo">
+      <strong id="tituloLista">Documentos</strong>
+      <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+        <label for="fTamanho" style="font-size:12.5px;color:var(--tinta-suave);font-weight:700">Por página</label>
+        <select id="fTamanho" style="border:1px solid var(--borda);border-radius:9px;padding:6px 9px">
+          <option>25</option><option selected>50</option><option>100</option>
+        </select>
+        <!-- Um botão só, com o que cabe dentro. Quatro botões grandes lado a
+             lado disputariam a atenção e nenhum diria o que faz. -->
+        <div class="menu" id="menuExportar">
+          <button class="btn primario" id="btnExportar" aria-haspopup="true"
+                  aria-expanded="false">Exportar ▾</button>
+          <div class="lista" role="menu">
+            <!-- "Baixar XMLs em lote" saiu daqui: virou botão próprio, junto
+                 dos filtros. O que sobra neste menu é o que o navegador
+                 baixa — outra coisa, e menos frequente. A política de
+                 canceladas mudou-se para as configurações avançadas, ao lado
+                 do resto da saída. -->
+            <button data-exportar="planos">Baixar XMLs em ZIP
+              <small>o navegador baixa um ZIP com os XML na raiz</small></button>
+            <button data-exportar="xmls">XMLs + relatório
+              <small>ZIP com <code>XML/&lt;chave&gt;.xml</code> + RELATORIO.csv</small></button>
+            <button data-exportar="relatorio">Somente o relatório (CSV)
+              <small>a conferência sem baixar arquivo nenhum</small></button>
+            <hr>
+            <button data-exportar="danfes">Baixar DANFEs do resultado
+              <small>PDF por documento; até 300 por pacote</small></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="previaExportacao" hidden class="previa"></div>
+
+    <div id="area" aria-live="polite">
+      <div class="estado"><span class="emoji">⏳</span><h3>Carregando…</h3></div>
+    </div>
+
+    <div class="paginacao" id="paginacao" hidden>
+      <span id="infoPagina" style="font-size:13px;color:var(--tinta-suave)"></span>
+      <div class="navegar">
+        <button class="btn" id="btnAnterior">‹ Anterior</button>
+        <button class="btn" id="btnProxima">Próxima ›</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="veu" id="veu"></div>
+<aside class="gaveta" id="gaveta" role="dialog" aria-modal="true"
+       aria-labelledby="gavetaTitulo" tabindex="-1">
+  <div class="barra">
+    <h2 id="gavetaTitulo">Documento</h2>
+    <button class="btn" id="btnFechar" style="background:rgba(255,255,255,.14);
+      color:#fff;border-color:rgba(255,255,255,.25)">Fechar</button>
+  </div>
+  <div class="conteudo" id="gavetaCorpo"></div>
+</aside>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   A tela lê SÓ a API. Nada aqui abre banco, conhece pasta ou monta caminho de
+   arquivo — o navegador diz QUAL documento quer, e o servidor resolve onde
+   ele está (ver `/api/nfe/xml`).
+   ═══════════════════════════════════════════════════════════════════════════ */
+const BRL = v => (v==null||v==='') ? '—'
+  : Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const NUM = v => (v==null||v==='') ? '—' : Number(v).toLocaleString('pt-BR');
+const DATA = v => {
+  if(!v) return '—';
+  const d = String(v).slice(0,10).split('-');
+  return d.length===3 ? `${d[2]}/${d[1]}/${d[0]}` : v;
+};
+/* Ausência é `—`, nunca zero: `0` afirma que o documento informou zero. */
+const OU = v => (v==null || v==='') ? '<span class="vazio">—</span>' : esc(v);
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>(
+  {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function doc(v){
+  const d = String(v||'').replace(/\D/g,'');
+  if(d.length===14) return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12)}`;
+  if(d.length===11) return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
+  return d || '—';
+}
+const UFS = {11:'RO',12:'AC',13:'AM',14:'RR',15:'PA',16:'AP',17:'TO',21:'MA',22:'PI',
+  23:'CE',24:'RN',25:'PB',26:'PE',27:'AL',28:'SE',29:'BA',31:'MG',32:'ES',33:'RJ',
+  35:'SP',41:'PR',42:'SC',43:'RS',50:'MS',51:'MT',52:'GO',53:'DF'};
+const uf = c => UFS[Number(c)] || (c||'—');
+
+const ROTULO_PAPEL = {DESTINATARIO:'Recebida', EMITENTE:'Emitida',
+  TRANSPORTADOR:'Transporte', AUTXML:'Autorizado', OUTRO:'Indeterminado'};
+
+let empresas = [], estado = {pagina:1, especie:'NFE55', vista:''}, ultimo = null;
+
+/* ── estado na URL: recarregar a página não perde a pesquisa ─────────────── */
+const CAMPOS = ['fEmpresa','fCampoData','fDe','fAte','fPapel','fSituacao','fTexto','fNumero',
+  'fSerie','fChave','fEmitente','fDest','fDoc','fUf','fCfop','fNcm','fCest',
+  'fCst','fCsosn','fOrigem','fPisCst','fCofinsCst','fIpiCst','fConteudo',
+  'fReforma','fEvento','fTamanho','fCanceladasExp'];
+
+function paraURL(){
+  const p = new URLSearchParams();
+  CAMPOS.forEach(id=>{ const v=(document.getElementById(id).value||'').trim();
+    if(v) p.set(id, v); });
+  if(estado.pagina>1) p.set('pagina', estado.pagina);
+  /* A vista faz parte do endereço: sem isto, recarregar ou paginar dentro de
+     Emitidas cairia de volta na lista geral sem o usuário ter pedido. */
+  if(estado.vista) p.set('vista', estado.vista);
+  history.replaceState(null,'', p.toString() ? '?'+p : location.pathname);
+}
+function daURL(){
+  const p = new URLSearchParams(location.search);
+  CAMPOS.forEach(id=>{ if(p.has(id)) document.getElementById(id).value = p.get(id); });
+  estado.pagina = Number(p.get('pagina')||1);
+}
+
+function query(extra){
+  const g = id => (document.getElementById(id).value||'').trim();
+  const p = new URLSearchParams({id:g('fEmpresa')});
+  /* NF-e e NFC-e são o MESMO acervo; o que as separa é o modelo da chave
+     (55 e 65). O backend já filtra por `especie`, então a aba não precisa de
+     rota nova nem de segunda listagem. */
+  if(estado.especie === 'NFE55' || estado.especie === 'NFCE65')
+    p.set('especie', estado.especie);
+  const mapa = {campo_data:'fCampoData', data_ini:'fDe', data_fim:'fAte', papel:'fPapel',
+    situacao_atual:'fSituacao', texto:'fTexto', numero:'fNumero', serie:'fSerie',
+    chave:'fChave', emitente:'fEmitente', destinatario:'fDest', documento:'fDoc',
+    uf:'fUf', cfop:'fCfop', ncm:'fNcm', cest:'fCest', icms_cst:'fCst',
+    icms_csosn:'fCsosn', origem:'fOrigem', pis_cst:'fPisCst',
+    cofins_cst:'fCofinsCst', ipi_cst:'fIpiCst', conteudo:'fConteudo',
+    com_reforma:'fReforma', com_evento:'fEvento'};
+  for(const [chave,campo] of Object.entries(mapa)){ const v=g(campo); if(v) p.set(chave,v); }
+  Object.entries(extra||{}).forEach(([k,v])=>p.set(k,v));
+  return p.toString();
+}
+
+/* `opcoes` só existe para o POST de "salvar em pasta". O tratamento de erro
+   fica um só: a mensagem do backend (`detail`) é escrita para o usuário e é
+   ela que precisa chegar à tela. */
+async function pedir(rota, opcoes){
+  const o = opcoes || {};
+  const r = await fetch(rota, o.corpo === undefined ? undefined : {
+    method: o.metodo || 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(o.corpo)});
+  if(!r.ok){
+    let m = `Erro ${r.status}`;
+    try{ const j = await r.json(); m = j.detail || m; }catch(e){}
+    throw new Error(m);
+  }
+  return r.json();
+}
+
+/* ── período ────────────────────────────────────────────────────────────── */
+function atalho(qual){
+  const hoje = new Date(), a = hoje.getFullYear(), m = hoje.getMonth();
+  const iso = d => d.toISOString().slice(0,10);
+  let de='', ate='';
+  if(qual==='mes_atual'){ de=iso(new Date(a,m,1)); ate=iso(new Date(a,m+1,0)); }
+  if(qual==='mes_passado'){ de=iso(new Date(a,m-1,1)); ate=iso(new Date(a,m,0)); }
+  if(qual==='ano_atual'){ de=`${a}-01-01`; ate=`${a}-12-31`; }
+  if(qual==='ano_passado'){ de=`${a-1}-01-01`; ate=`${a-1}-12-31`; }
+  document.getElementById('fDe').value = de;
+  document.getElementById('fAte').value = ate;
+  document.querySelectorAll('[data-atalho]').forEach(b=>
+    b.setAttribute('aria-pressed', String(b.dataset.atalho===qual)));
+  estado.pagina = 1;
+  carregar();
+}
+
+function textoPeriodo(){
+  const de = document.getElementById('fDe').value, ate = document.getElementById('fAte').value;
+  if(!de && !ate) return 'todo o acervo';
+  if(de && ate) return `${DATA(de)} a ${DATA(ate)}`;
+  return de ? `a partir de ${DATA(de)}` : `até ${DATA(ate)}`;
+}
+
+/* ── cards ──────────────────────────────────────────────────────────────── */
+function desenharCards(r){
+  const c = (rot, val, sec, cls, dica) =>
+    `<article class="card ${cls||''}">
+       ${dica?`<span class="aviso-info" title="${esc(dica)}" tabindex="0" role="note"
+                aria-label="${esc(dica)}">i</span>`:''}
+       <div class="rot">${rot}</div>
+       <div class="val">${val}</div>
+       <div class="sec">${sec||'&nbsp;'}</div>
+     </article>`;
+  const a = r.advertencias || {};
+  document.getElementById('cards').innerHTML =
+    c('📥 NF-e recebidas', NUM(r.recebidas.quantidade),
+      BRL(r.recebidas.valor), 'destaque', a.recebidas) +
+    c('📤 NF-e emitidas', NUM(r.emitidas.quantidade), BRL(r.emitidas.valor)) +
+    c('🚚 Transportes', NUM(r.transportes.quantidade),
+      BRL(r.transportes.valor), '', a.transportes) +
+    c('🚫 Canceladas', NUM(r.canceladas.quantidade), 'pela situação atual') +
+    c('🌱 Com Reforma', NUM(r.com_reforma.quantidade),
+      'IBS/CBS/IS no XML', '', a.com_reforma) +
+    c('📄 Só resumo', NUM(r.somente_resumo.quantidade), 'sem XML completo',
+      'clicavel', 'O Fiscale conhece estas NF-e pela Distribuição DF-e, mas o '
+      + 'XML completo não está no acervo. Clique para ver só elas.');
+  const cardResumo = document.querySelector('#cards .card.clicavel');
+  if(cardResumo){
+    cardResumo.tabIndex = 0;
+    cardResumo.setAttribute('role','button');
+    cardResumo.onclick = verSomenteResumo;
+    cardResumo.onkeydown = ev=>{
+      if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); verSomenteResumo(); }
+    };
+  }
+}
+
+/* ── lista ──────────────────────────────────────────────────────────────── */
+function seloSituacao(n){
+  if(n.cancelada) return '<span class="selo cancel">🚫 Cancelada</span>';
+  if(n.situacao_atual==='DENEGADO') return '<span class="selo cancel">⛔ Denegada</span>';
+  if(n.situacao_atual==='AUTORIZADO') return '<span class="selo ok">✓ Autorizada</span>';
+  if(n.situacao_atual==='SEM_PROTOCOLO') return '<span class="selo aviso">⚠ Sem protocolo</span>';
+  return `<span class="selo neutro">• ${esc(n.situacao_atual||'—')}</span>`;
+}
+function selosPapel(n){
+  const ps = (n.papeis && n.papeis.length) ? n.papeis : [n.papel];
+  return `<span class="papeis">${ps.map(p=>
+    `<span class="selo ${p==='DESTINATARIO'?'info':'neutro'}">${esc(ROTULO_PAPEL[p]||p)}</span>`
+  ).join('')}</span>`;
+}
+const contraparte = n => n.papel==='EMITENTE'
+  ? (n.dest_nome || doc(n.dest_cnpj) || '—')
+  : (n.emit_nome || doc(n.emit_cnpj) || '—');
+
+function desenharLista(d){
+  const notas = d.notas || [];
+  const area = document.getElementById('area');
+  if(!notas.length){ return vazio(d); }
+
+  const linhas = notas.map((n,i)=>`
+    <tr tabindex="0" data-i="${i}">
+      <td>${seloSituacao(n)}</td>
+      <td class="num">${DATA(n.data)}</td>
+      <td class="num">${esc(n.numero||'—')}</td>
+      <td class="num">${esc(n.serie||'—')}</td>
+      <td title="${esc(contraparte(n))}">${esc(contraparte(n))}</td>
+      <td>${selosPapel(n)}</td>
+      <td class="num">${BRL(n.valor)}</td>
+      <td>${esc(uf(n.uf))}</td>
+      <td>${n.completa
+            ? '<span class="selo ok">XML: completo</span>'
+            : `<span class="selo aviso" tabindex="0" title="O FISCALE conhece esta NF-e pela Distribuição DF-e, mas o XML completo não está disponível no acervo.">XML: somente resumo</span>`}</td>
+      <td class="num">${n.eventos||'—'}</td>
+      <td><button class="btn" style="padding:5px 11px;font-size:12.5px"
+            data-ver="${i}">Ver</button></td>
+    </tr>`).join('');
+
+  const cartoes = notas.map((n,i)=>`
+    <div class="cartao-nota" tabindex="0" data-i="${i}">
+      <div class="l1"><span class="n">Nº ${esc(n.numero||'—')}</span>
+        <span class="v">${BRL(n.valor)}</span></div>
+      <div class="l2">${esc(contraparte(n))}</div>
+      <div class="l3">${seloSituacao(n)} ${selosPapel(n)}
+        <span style="color:var(--tinta-suave);font-size:12.5px">${DATA(n.data)}</span></div>
+    </div>`).join('');
+
+  area.innerHTML =
+    `<div class="rolagem"><table>
+       <thead><tr>
+         <th>Situação</th><th>Emissão</th><th>Número</th><th>Série</th>
+         <th>Emitente / Destinatário</th><th>Relação</th><th class="num">Valor</th>
+         <th>UF</th><th>XML</th><th>Ev.</th><th></th>
+       </tr></thead><tbody>${linhas}</tbody>
+     </table></div>
+     <div class="lista-mobile">${cartoes}</div>`;
+
+  area.querySelectorAll('[data-i]').forEach(el=>{
+    el.addEventListener('click', ()=> abrir(notas[el.dataset.i]));
+    el.addEventListener('keydown', ev=>{
+      if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); abrir(notas[el.dataset.i]); }
+    });
+  });
+}
+
+function vazio(d){
+  const temFiltro = CAMPOS.slice(1).some(id=>(document.getElementById(id).value||'').trim());
+  const area = document.getElementById('area');
+  if(!d.sincronizado){
+    area.innerHTML = `<div class="estado"><span class="emoji">📭</span>
+      <h3>Esta empresa ainda não tem documentos no acervo</h3>
+      <p>Nada foi capturado nem importado para ela até agora.<br>
+         Isso é diferente de “o período está vazio”.</p></div>`;
+    return;
+  }
+  area.innerHTML = temFiltro
+    ? `<div class="estado"><span class="emoji">🔍</span>
+        <h3>Nenhum documento com estes filtros</h3>
+        <p>A empresa tem documentos no acervo — só não neste recorte.</p>
+        <p><button class="btn" onclick="limpar()">Limpar filtros</button></p></div>`
+    : `<div class="estado"><span class="emoji">📄</span>
+        <h3>Nenhum documento neste período</h3>
+        <p>Experimente ampliar o intervalo de datas.</p></div>`;
+}
+
+/* ── detalhe ────────────────────────────────────────────────────────────── */
+const TIPO_EVENTO = {'110110':'Carta de Correção','110111':'Cancelamento',
+  '110112':'Cancelamento por substituição','110140':'EPEC',
+  '210200':'Confirmação da Operação','210210':'Ciência da Operação',
+  '210220':'Desconhecimento da Operação','210240':'Operação não Realizada',
+  '610600':'Registro de Passagem','610614':'Registro de Passagem (MDF-e)',
+  '510630':'Passagem Automático (MDF-e)'};
+/* Eventos com efeito fiscal aparecem sempre; os de trânsito ficam recolhidos —
+   98% dos eventos do acervo são passagem, e mostrá-los junto afoga o resto. */
+const EVENTO_FISCAL = new Set(['110110','110111','110112','110140',
+  '210200','210210','210220','210240']);
+
+function linha(rot, val){
+  return `<div class="linha"><span class="r">${esc(rot)}</span>
+          <span class="v">${val}</span></div>`;
+}
+
+function blocoTributo(titulo, d, campos){
+  if(!d || !d.presente) return '';
+  const linhas = campos.filter(([k])=>d[k]!=null && d[k]!=='')
+                       .map(([k,r])=>linha(r, esc(d[k]))).join('');
+  return linhas ? `<div class="detalhe-item"><h4>${titulo}</h4>
+                   <div class="linhas">${linhas}</div></div>` : '';
+}
+
+function desenharItem(it, i){
+  const icms = blocoTributo('ICMS', it.icms, [['origem','Origem'],
+    ['icms_cst','CST'],['icms_csosn','CSOSN'],['icms_base','Base'],
+    ['icms_aliquota','Alíquota'],['icms_valor','Valor'],['icms_reducao','Redução'],
+    ['icms_base_st','Base ST'],['icms_valor_st','Valor ST'],['icms_fcp','FCP'],
+    ['icms_diferido','Diferido'],['icms_desonerado','Desonerado']]);
+  const pis = blocoTributo('PIS', it.pis, [['pis_cst','CST'],['pis_base','Base'],
+    ['pis_aliquota','Alíquota'],['pis_valor','Valor'],
+    ['pis_quantidade','Base por quantidade'],['pis_valor_unidade','R$ por unidade']]);
+  const cof = blocoTributo('COFINS', it.cofins, [['cofins_cst','CST'],
+    ['cofins_base','Base'],['cofins_aliquota','Alíquota'],['cofins_valor','Valor'],
+    ['cofins_quantidade','Base por quantidade'],['cofins_valor_unidade','R$ por unidade']]);
+  const ipi = blocoTributo('IPI', it.ipi, [['ipi_cst','CST'],['ipi_base','Base'],
+    ['ipi_aliquota','Alíquota'],['ipi_valor','Valor']]);
+  const ref = blocoTributo('Reforma Tributária', it.reforma,
+    [['reforma_cst','CST'],['reforma_classificacao','cClassTrib'],
+     ['reforma_base','Base'],['ibs_uf_aliquota','IBS UF (alíq.)'],
+     ['ibs_uf_valor','IBS UF'],['ibs_mun_aliquota','IBS Mun. (alíq.)'],
+     ['ibs_mun_valor','IBS Município'],['ibs_valor','IBS total'],
+     ['cbs_aliquota','CBS (alíq.)'],['cbs_valor','CBS'],
+     ['is_cst','IS — CST'],['is_base','IS — base'],['is_aliquota','IS — alíq.'],
+     ['is_valor','IS — valor']]);
+  const corpo = icms+pis+cof+ipi+ref;
+  return `
+    <tr class="itens-tab" tabindex="0" data-item="${i}">
+      <td class="num">${it.numero??'—'}</td>
+      <td>${OU(it.descricao)}<div style="font-size:11.5px;color:var(--tinta-suave)">
+        ${OU(it.codigo)}</div></td>
+      <td class="mono">${OU(it.ncm)}</td>
+      <td class="mono">${OU(it.cest)}</td>
+      <td class="mono">${OU(it.cfop)}</td>
+      <td class="num">${OU(it.quantidade)} ${esc(it.unidade||'')}</td>
+      <td class="num">${it.valor_unitario?BRL(it.valor_unitario):'—'}</td>
+      <td class="num">${it.desconto?BRL(it.desconto):'—'}</td>
+      <td class="num">${it.valor_produto?BRL(it.valor_produto):'—'}</td>
+    </tr>
+    <tr><td colspan="9" style="padding:0 9px 9px">
+      ${corpo || '<div class="detalhe-item"><span class="vazio">Sem tributos informados neste item.</span></div>'}
+    </td></tr>`;
+}
+
+async function abrir(n){
+  const veu = document.getElementById('veu'), g = document.getElementById('gaveta');
+  veu.dataset.aberto = g.dataset.aberto = '1';
+  g.focus();
+  document.getElementById('gavetaTitulo').textContent =
+    `NF-e nº ${n.numero||'—'} · série ${n.serie||'—'}`;
+  const corpo = document.getElementById('gavetaCorpo');
+  corpo.innerHTML = `<div class="bloco"><div class="esqueleto" style="height:70px"></div></div>`;
+
+  let d;
+  try{
+    d = await pedir(`/api/nfe/documento?id=${encodeURIComponent(
+      document.getElementById('fEmpresa').value)}&chave=${encodeURIComponent(n.chave)}`);
+  }catch(e){
+    corpo.innerHTML = `<div class="bloco estado erro"><span class="emoji">⚠️</span>
+      <h3>Não consegui abrir este documento</h3><p>${esc(e.message)}</p></div>`;
+    return;
+  }
+
+  const doc0 = d.documento, itens = d.itens||[], eventos = d.eventos||[];
+  /* Só XML completo vira DANFE. Resumo não tem itens nem tributos, e um PDF
+     com metade dos campos em branco pareceria completo. */
+  const completo = doc0.conteudo === 'COMPLETO';
+  const fiscais = eventos.filter(e=>EVENTO_FISCAL.has(e.tp_evento));
+  const transito = eventos.filter(e=>!EVENTO_FISCAL.has(e.tp_evento));
+
+  /* Situação: a atual manda, e a original NUNCA some quando as duas diferem. */
+  const mudou = doc0.situacao && doc0.situacao_atual &&
+                doc0.situacao !== doc0.situacao_atual;
+  const blocoSituacao = mudou
+    ? `<div class="bloco" style="border-color:#F0C4BE;background:#FEF7F6">
+         <h3>Situação</h3>
+         <div class="linhas">
+           ${linha('Documento original', `<span class="selo neutro">${esc(doc0.situacao)}</span>`)}
+           ${linha('Situação atual', `<span class="selo cancel">${esc(doc0.situacao_atual)}</span>`)}
+         </div>
+         <p style="margin:9px 0 0;font-size:13px;color:var(--tinta-suave)">
+           O XML autorizado continua íntegro. A situação de hoje vem dos
+           eventos válidos registrados para esta chave.</p>
+       </div>`
+    : `<div class="bloco"><h3>Situação</h3>
+         <div class="linhas">${linha('Situação atual',
+           seloSituacao({...doc0, cancelada: doc0.situacao_atual==='CANCELADO'}))}</div></div>`;
+
+  const linhaEvento = e => `
+    <li><span class="marca">${EVENTO_FISCAL.has(e.tp_evento)?'⚖️':'🚚'}</span>
+      <div><b>${esc(TIPO_EVENTO[e.tp_evento]||('Evento '+e.tp_evento))}</b>
+        <div style="font-size:12.5px;color:var(--tinta-suave)">
+          ${DATA(e.dh_evento)} · seq. ${esc(e.sequencia||'—')}
+          ${e.protocolo?` · protocolo ${esc(e.protocolo)}`:''}
+          ${e.orgao?` · órgão ${esc(e.orgao)}`:''}</div>
+        ${e.justificativa?`<div style="font-size:12.5px;margin-top:2px">${esc(e.justificativa)}</div>`:''}
+      </div></li>`;
+
+  corpo.innerHTML = `
+    ${blocoSituacao}
+
+    <div class="bloco"><h3>Documento</h3><div class="linhas">
+      ${linha('Chave de acesso', `<span class="mono">${esc(doc0.chave||'—')}</span>
+        <button class="copiar" data-copiar="${esc(doc0.chave||'')}">copiar</button>`)}
+      ${linha('Número', OU(doc0.numero))}
+      ${linha('Série', OU(doc0.serie))}
+      ${linha('Modelo', doc0.especie==='NFCE65'?'65 — NFC-e':'55 — NF-e')}
+      ${linha('Emissão', DATA(doc0.dh_emissao))}
+      ${linha('Saída / Entrada', doc0.dh_saida_entrada
+          ? DATA(doc0.dh_saida_entrada)
+          : '<span class="vazio">—</span> <span style="font-size:12px;color:var(--tinta-suave)">o documento não informou</span>')}
+      ${linha('Competência', DATA(doc0.competencia))}
+      ${linha('Conteúdo', doc0.conteudo==='COMPLETO'
+          ? '<span class="selo ok">XML completo</span>'
+          : '<span class="selo aviso">somente resumo</span>')}
+      ${linha('Contábil', doc0.id_documento && empresaCnpj()
+          ? `<a href="contabil.html?empresa=${encodeURIComponent(empresaCnpj())}&aba=visao&documento=${encodeURIComponent(doc0.id_documento)}" target="_blank" rel="noopener">Ver impacto contábil</a>`
+          : '<span class="vazio">—</span>')}
+    </div></div>
+
+    <div class="bloco"><h3>Partes</h3><div class="linhas">
+      ${linha('Emitente', esc(doc0.emitente_nome||'—'))}
+      ${linha('CNPJ/CPF do emitente', doc(doc0.emitente))}
+      ${linha('Destinatário', esc(doc0.contraparte_nome||'—'))}
+      ${linha('CNPJ/CPF do destinatário', doc(doc0.contraparte))}
+    </div></div>
+
+    <div class="bloco"><h3>Relação desta empresa com o documento</h3>
+      <div class="linhas">
+        ${linha('Papel principal', `<span class="selo info">${esc(ROTULO_PAPEL[doc0.papel]||doc0.papel)}</span>`)}
+        ${linha('Todos os papéis', (doc0.papeis||[]).map(p=>
+          `<span class="selo neutro">${esc(ROTULO_PAPEL[p]||p)}</span>`).join(' ') || '—')}
+      </div>
+      ${doc0.papel==='TRANSPORTADOR' ? `<p style="margin:9px 0 0;font-size:13px;
+        color:var(--tinta-suave)">A empresa aparece apenas como transportadora.
+        <b>Este documento não é compra nem receita dela.</b></p>`:''}
+      ${doc0.conteudo==='RESUMO' ? `<p style="margin:9px 0 0;font-size:13px;
+        color:var(--tinta-suave)">O resumo da distribuição não nomeia
+        destinatário nem transportador, então o papel fica indeterminado até o
+        XML completo chegar.</p>`:''}
+    </div>
+
+    <div class="bloco"><h3>Valores</h3><div class="linhas">
+      ${linha('Valor total do documento', `<b>${BRL(doc0.valor_total)}</b>`)}
+      ${linha('Itens', String(itens.length||'—'))}
+    </div></div>
+
+    ${itens.length ? `<div class="bloco"><h3>Itens</h3>
+      <div class="rolagem" style="display:block"><table><thead><tr>
+        <th>#</th><th>Descrição</th><th>NCM</th><th>CEST</th><th>CFOP</th>
+        <th class="num">Qtd.</th><th class="num">Unitário</th>
+        <th class="num">Desconto</th><th class="num">Valor</th>
+      </tr></thead><tbody>${itens.map(desenharItem).join('')}</tbody></table></div>
+      <p style="margin:9px 0 0;font-size:12.5px;color:var(--tinta-suave)">
+        Campo em branco significa que o documento <b>não informou</b> o dado —
+        não que ele seja zero.</p></div>`
+      : `<div class="bloco"><h3>Itens</h3>
+         <p class="vazio">Este documento é um resumo: a distribuição não
+         entrega os itens antes do XML completo.</p></div>`}
+
+    ${d.tem_reforma ? `<div class="bloco" style="border-color:#B9E2CF">
+      <h3>🌱 Reforma Tributária</h3>
+      <span class="selo ok">IBS/CBS informado no XML</span>
+      <p style="margin:9px 0 0;font-size:13px;color:var(--tinta-suave)">
+        Estes valores são <b>informados pelo documento</b>. O FISCALE não
+        calcula IBS, CBS nem Imposto Seletivo — os números por item aparecem
+        na tabela acima.</p></div>` : ''}
+
+    <div class="bloco"><h3>Eventos</h3>
+      ${eventos.length ? `
+        <ul class="tempo">
+          <li><span class="marca">📄</span><div><b>NF-e autorizada</b>
+            <div style="font-size:12.5px;color:var(--tinta-suave)">${DATA(doc0.dh_emissao)}</div></div></li>
+          ${fiscais.map(linhaEvento).join('')}
+        </ul>
+        ${transito.length ? `<details style="margin-top:9px">
+          <summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--tinta-suave)">
+            Ver todos os eventos (${transito.length} de trânsito)</summary>
+          <ul class="tempo" style="margin-top:8px">${transito.map(linhaEvento).join('')}</ul>
+        </details>`:''}`
+      : '<p class="vazio">Nenhum evento registrado para esta chave.</p>'}
+    </div>
+
+    <div class="bloco"><h3>Arquivos</h3>
+      <div class="acoes" style="margin:0">
+        <button class="btn" id="btnVerXml">Visualizar XML</button>
+        <button class="btn" id="btnBaixarXml">Baixar XML original</button>
+        ${completo
+          ? `<button class="btn primario" id="btnDanfe">Visualizar DANFE</button>
+             <button class="btn" id="btnBaixarDanfe">Baixar DANFE (PDF)</button>`
+          : `<span class="selo aviso" title="O FISCALE conhece esta NF-e pela Distribuição DF-e, mas o XML completo não está disponível no acervo.">
+               DANFE indisponível — XML completo necessário</span>
+             <button class="btn" id="btnBuscarCompleto" disabled
+                     title="Ainda não disponível nesta versão">
+               Buscar XML completo</button>`}
+      </div>
+      ${completo ? '' : `<p style="margin:9px 0 0;font-size:12.5px;
+        color:var(--tinta-suave);border-left:3px solid var(--borda);padding-left:9px">
+        <b>Por que só resumo?</b> A Distribuição DF-e entrega primeiro um
+        <span class="mono">resNFe</span> — chave, emitente, valor e situação.
+        O XML completo só chega depois, e para esta chave ele ainda não chegou.
+        O FISCALE <b>não constrói</b> um XML de NF-e a partir do resumo: o que
+        você veria seria invenção, não documento.
+        <br><b>Buscar XML completo</b> está previsto, mas não faz nada nesta
+        versão — ele consultaria a SEFAZ, e essa consulta não foi ligada.</p>`}
+      <p style="margin:9px 0 0;font-size:12.5px;color:var(--tinta-suave)">
+        O XML servido é o <b>arquivo original do acervo</b>, byte a byte — nunca
+        reconstruído a partir do índice. O DANFE é <b>representação auxiliar</b>
+        gerada a partir dele: pode ser apagado e refeito, e não substitui o XML.</p>
+      <div id="visorDanfe" hidden style="margin-top:11px">
+        <iframe title="DANFE" style="width:100%;height:min(70vh,760px);
+          border:1px solid var(--borda);border-radius:11px;background:#fff"></iframe>
+        <p style="margin:7px 0 0;font-size:12.5px;color:var(--tinta-suave)">
+          Use os controles do visualizador para ampliar, reduzir e imprimir.
+          <a href="#" id="linkDanfeAba">Abrir em outra aba</a> se o visualizador
+          não aparecer.</p>
+      </div>
+    </div>`;
+
+  const url = `/api/nfe/xml?id=${encodeURIComponent(
+    document.getElementById('fEmpresa').value)}&chave=${encodeURIComponent(doc0.chave)}`;
+  corpo.querySelector('#btnVerXml').onclick = ()=> window.open(url,'_blank','noopener');
+  corpo.querySelector('#btnBaixarXml').onclick = ()=> window.open(url+'&baixar=1','_blank','noopener');
+
+  /* DANFE. No celular o `iframe` de PDF é irregular entre navegadores, então
+     lá o botão abre em outra aba — que é o que o sistema operacional sabe
+     fazer bem. */
+  if(completo){
+    const uD = `/api/nfe/danfe?id=${encodeURIComponent(
+      document.getElementById('fEmpresa').value)}&chave=${encodeURIComponent(doc0.chave)}`;
+    const visor = corpo.querySelector('#visorDanfe');
+    corpo.querySelector('#linkDanfeAba').href = uD;
+    corpo.querySelector('#btnDanfe').onclick = async ()=>{
+      const b = corpo.querySelector('#btnDanfe');
+      b.disabled = true; b.textContent = 'Gerando…';
+      try{
+        const r = await fetch(uD);
+        if(!r.ok){
+          let m = `Erro ${r.status}`;
+          try{ m = (await r.json()).detail || m; }catch(e){}
+          throw new Error(m);
+        }
+        if(window.matchMedia('(max-width:900px)').matches){
+          window.open(uD,'_blank','noopener');
+        }else{
+          visor.hidden = false;
+          visor.querySelector('iframe').src = uD;
+          visor.scrollIntoView({behavior:'smooth', block:'nearest'});
+        }
+        b.textContent = 'Visualizar DANFE';
+      }catch(e){
+        b.insertAdjacentHTML('afterend',
+          `<span class="selo cancel">${esc(e.message)}</span>`);
+        b.textContent = 'Visualizar DANFE';
+      }
+      b.disabled = false;
+    };
+    corpo.querySelector('#btnBaixarDanfe').onclick =
+      ()=> window.open(uD+'&baixar=1','_blank','noopener');
+  }
+  corpo.querySelectorAll('[data-copiar]').forEach(b=> b.onclick = async ()=>{
+    try{ await navigator.clipboard.writeText(b.dataset.copiar);
+      b.textContent='copiado'; setTimeout(()=>b.textContent='copiar',1400);
+    }catch(e){ b.textContent='—'; }
+  });
+}
+
+function fechar(){
+  document.getElementById('veu').dataset.aberto = '0';
+  document.getElementById('gaveta').dataset.aberto = '0';
+}
+
+/* ── carga ──────────────────────────────────────────────────────────────── */
+async function carregar(){
+  const id = document.getElementById('fEmpresa').value;
+  if(!id) return;
+  paraURL();
+  document.getElementById('ctxPeriodo').textContent = textoPeriodo();
+  const emp = empresas.find(e=>e.id===id);
+  document.getElementById('ctxEmpresa').textContent = emp ? emp.nome : '—';
+
+  const area = document.getElementById('area');
+  area.innerHTML = `<div style="padding:18px">
+    ${'<div class="esqueleto" style="margin:10px 0"></div>'.repeat(6)}</div>`;
+
+  const tamanho = document.getElementById('fTamanho').value || 50;
+  try{
+    const [lista, resumo] = await Promise.all([
+      pedir('/api/nfe/notas?'+query({pagina:estado.pagina, tamanho})),
+      pedir('/api/nfe/resumo?'+query({})),
+    ]);
+    ultimo = lista;
+    desenharCards(resumo);
+    desenharLista(lista);
+    /* A área de Emitidas é um SEGUNDO pedido, não um segundo acervo: o mesmo
+       filtro da tela, com o papel fixado no backend. Falhar aqui não pode
+       derrubar a lista — por isso não entra no `Promise.all` acima. */
+    if(estado.vista === 'emitidas') carregarEmitidas();
+
+    const p = lista.pagina;
+    document.getElementById('tituloLista') .textContent =
+      `${NUM(p.total)} documento${p.total===1?'':'s'}`;
+    document.getElementById('paginacao').hidden = p.total===0;
+    document.getElementById('infoPagina').textContent =
+      `Página ${p.pagina} de ${Math.max(p.paginas,1)} · mostrando ${p.nesta_pagina}`;
+    document.getElementById('btnAnterior').disabled = p.pagina<=1;
+    document.getElementById('btnProxima').disabled = p.pagina>=p.paginas;
+    /* O resumo do lote é por FILTRO, e `previaDoLote` guarda em cache por
+       consulta — paginar não replaneja 6 mil documentos. */
+    atualizarResumoLote();
+  }catch(e){
+    document.getElementById('cards').innerHTML = '';
+    area.innerHTML = `<div class="estado erro"><span class="emoji">⚠️</span>
+      <h3>Não consegui carregar os documentos</h3>
+      <p>${esc(e.message)}</p>
+      <p><button class="btn" onclick="carregar()">Tentar de novo</button></p></div>`;
+    document.getElementById('paginacao').hidden = true;
+  }
+}
+
+/* ── exportação ──────────────────────────────────────────────────────────
+   Tudo aqui reusa `query()`, o MESMO montador de filtros da listagem. Não
+   existe segunda pesquisa: o ZIP é feito do resultado que está na tela. */
+function queryExportacao(extra){
+  return query(Object.assign(
+    {canceladas: document.getElementById('fCanceladasExp').value || 'TODOS'},
+    extra||{}));
+}
+
+const ROTULO_MOTIVO = {
+  XML_COMPLETO_INDISPONIVEL: 'somente resumo — o XML completo nunca chegou',
+  ARQUIVO_AUSENTE_NO_ACERVO: 'arquivo ausente no acervo',
+  EXCLUIDO_POR_SITUACAO: 'fora pela política de canceladas escolhida',
+};
+
+/* A prévia existe para o erro caro não acontecer: baixar um lote sem saber
+   que ele mistura frete de terceiro com compra, ou que sete documentos são
+   só resumo. */
+async function previa(){
+  const caixa = document.getElementById('previaExportacao');
+  caixa.hidden = false;
+  caixa.innerHTML = '<div class="esqueleto" style="height:44px"></div>';
+  let r;
+  try{
+    r = await pedir('/api/nfe/exportar/previa?'+queryExportacao());
+  }catch(e){
+    caixa.innerHTML = `<b>Não consegui montar a prévia.</b> ${esc(e.message)}`;
+    return null;
+  }
+  const motivos = Object.entries(r.por_motivo||{});
+  caixa.innerHTML = `
+    <div><b>${NUM(r.documentos_no_resultado)}</b> documento${r.documentos_no_resultado===1?'':'s'} encontrado${r.documentos_no_resultado===1?'':'s'}
+      · <b>${NUM(r.xmls_no_zip)}</b> XML completo${r.xmls_no_zip===1?'':'s'}
+      ${r.nao_incluidos ? `· <b>${NUM(r.nao_incluidos)}</b> fora do pacote` : ''}</div>
+    <div style="margin-top:5px">O ZIP terá <b>${NUM(r.xmls_no_zip)}</b> XML.</div>
+    ${motivos.length ? `<ul>${motivos.map(([m,n])=>
+        `<li><b>${NUM(n)}</b> — ${esc(ROTULO_MOTIVO[m]||m)}
+          <span class="mono" style="font-size:11.5px">${esc(m)}</span>
+          ${m==='XML_COMPLETO_INDISPONIVEL'
+            ? ` · <a href="#" data-ver-resumo="1">ver ${NUM(n)} documento${n===1?'':'s'}</a>`
+            : ''}</li>`).join('')}
+       </ul>` : ''}
+    <div style="margin-top:7px;font-size:12.5px;color:var(--tinta-suave)">
+      ${esc(r.aviso_de_papel||'')}</div>
+    ${r.confere ? '' : `<div class="selo cancel" style="margin-top:7px">
+      A conta não fechou — não baixe este pacote e avise.</div>`}`;
+  caixa.querySelectorAll('[data-ver-resumo]').forEach(a=>
+    a.onclick = ev=>{ ev.preventDefault(); verSomenteResumo(); });
+  return r;
+}
+
+async function exportar(qual){
+  const r = await previa();
+  if(!r) return;
+  if(qual!=='relatorio' && !r.xmls_no_zip){
+    document.getElementById('previaExportacao').insertAdjacentHTML('beforeend',
+      '<div class="selo aviso" style="margin-top:7px">Nenhum XML completo ' +
+      'no resultado: não há o que empacotar.</div>');
+    return;
+  }
+  const rotas = {xmls:'/api/nfe/exportar/xmls',
+                 planos:'/api/nfe/exportar/xmls-planos',
+                 relatorio:'/api/nfe/exportar/relatorio',
+                 danfes:'/api/nfe/exportar/danfes'};
+  if(qual==='danfes' && r.xmls_no_zip > r.limite_danfe_em_lote){
+    document.getElementById('previaExportacao').insertAdjacentHTML('beforeend',
+      `<div class="selo aviso" style="margin-top:7px">São ${NUM(r.xmls_no_zip)}
+       documentos e o teto de DANFE em lote é ${NUM(r.limite_danfe_em_lote)}.
+       Estreite o período ou o filtro.</div>`);
+    return;
+  }
+  /* O download é uma navegação comum: o navegador cuida da barra de progresso
+     e do arquivo grande melhor do que qualquer indicador nosso. */
+  window.location.assign(rotas[qual]+'?'+queryExportacao());
+}
+
+/* ── Importação de XML ────────────────────────────────────────────────────
+   Mesma rota que a caixa de entrada usava (`/api/nfe/importar`). A empresa é
+   a que já está escolhida no filtro: pedir de novo aqui criaria a chance de
+   importar para uma e listar outra.
+
+   O relatório mostra as SAÍDAS primeiro porque é o que se veio importar —
+   mas mostra as entradas também, senão um lote misturado pareceria ter
+   perdido metade dos arquivos. */
+function impStatusMsg(html, cor){
+  const el = document.getElementById('impStatus');
+  el.innerHTML = html;
+  el.style.color = cor || 'var(--tinta-suave)';
+}
+function impSoltar(ev){
+  ev.preventDefault();
+  ev.currentTarget.style.borderColor = '';
+  impImportar([...ev.dataTransfer.files].filter(f=>/\.xml$/i.test(f.name)));
+}
+function impEscolher(ev){ impImportar([...ev.target.files]); ev.target.value = ''; }
+function impLer(f){
+  return new Promise(res=>{
+    const r = new FileReader();
+    r.onload = ()=> res({nome:f.name, xml:r.result});
+    r.onerror = ()=> res(null);
+    r.readAsText(f);
+  });
+}
+async function impImportar(files){
+  const id = document.getElementById('fEmpresa').value;
+  if(!id){ impStatusMsg('Escolha a empresa antes de importar.', 'var(--erro,#B3382C)'); return; }
+  if(!files.length){ impStatusMsg('Solte arquivos <b>.xml</b>.', 'var(--erro,#B3382C)'); return; }
+  impStatusMsg(`⏳ Lendo ${files.length} arquivo(s)…`);
+  const arquivos = (await Promise.all(files.map(impLer))).filter(Boolean);
+  try{
+    const r = await pedir('/api/nfe/importar', {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({id, arquivos})});
+    const ok = [];
+    if(r.venda)     ok.push(`<b>${r.venda}</b> NF-e de saída`);
+    if(r.nfce)      ok.push(`<b>${r.nfce}</b> NFC-e`);
+    if(r.compra)    ok.push(`<b>${r.compra}</b> de entrada`);
+    if(r.repetidos) ok.push(`${r.repetidos} já existia(m)`);
+    const av = [];
+    // Um XML recusado que some sem explicação vira "o sistema comeu minha nota".
+    if(r.nfse) av.push(`${r.nfse} são <b>NFS-e</b> — use o módulo NFS-e`);
+    if(r.outros_emitentes && r.outros_emitentes.length)
+      av.push('nota(s) de <b>outro emitente</b> — confira se escolheu a empresa certa');
+    if(r.invalidos) av.push(`${r.invalidos} não é XML de nota fiscal`);
+    let msg = ok.length ? '✓ Importado: ' + ok.join(' · ') : '⚠ Nenhuma NF-e/NFC-e reconhecida.';
+    if(av.length) msg += '<br><span style="color:var(--tinta-suave)">' + av.join(' · ') + '</span>';
+    impStatusMsg(msg, ok.length ? 'var(--ok,#0F8A5F)' : 'var(--erro,#B3382C)');
+    if(ok.length){ estado.pagina = 1; carregar(); }   // a lista já mostra o que entrou
+  }catch(e){ impStatusMsg(esc(e.message), 'var(--erro,#B3382C)'); }
+}
+
+/* ── A espécie do módulo ──────────────────────────────────────────────────
+   NF-e e NFC-e são o MESMO acervo e a MESMA consulta: muda só o modelo da
+   chave (55 e 65), e o backend já filtra por ele.
+
+   Não há mais abas. Quem escolhe é o submenu de "Documentos Fiscais" na
+   barra, e a escolha chega aqui por `?especie=`. Dois controles para a mesma
+   decisão acabariam discordando um do outro — e a tela mostraria uma coisa
+   dizendo outra no título.
+
+   CT-e e NFS-e não moram mais aqui: o submenu manda cada um ao seu módulo. */
+const ROTULO_ESPECIE = {NFE55:'NF-e', NFCE65:'NFC-e'};
+const SUB_ESPECIE = {
+  NFE55:  'Modelo 55 — mercadorias, do acervo capturado da SEFAZ',
+  NFCE65: 'Modelo 65 — cupom fiscal eletrônico, do mesmo acervo'
+};
+
+function definirEspecie(especie){
+  if(!ROTULO_ESPECIE[especie]) return;
+  estado.especie = especie;
+  estado.pagina = 1;
+  previaCache.chave = null;
+  // Sem abas, o título é o único lugar que sobrou para dizer o que está na
+  // tela. Deixá-lo fixo em "NF-e" faria a lista de NFC-e passar por NF-e.
+  document.querySelector('h1').textContent =
+    ROTULO_ESPECIE[especie] + ' · Notas Fiscais Eletrônicas';
+  document.querySelector('p.sub').textContent = SUB_ESPECIE[especie];
+  if(estado.vista === 'emitidas') rotularEmitidas();
+}
+
+/* ── NF-e EMITIDAS ────────────────────────────────────────────────────────
+   A emissão própria como entrada canônica. Não é aba nem acervo novo: é a
+   MESMA consulta com o papel fixado em EMITENTE — fixado no backend, porque
+   uma rota chamada "emitidas" que aceitasse `papel=DESTINATARIO` devolveria
+   compra com nome de venda.
+
+   O `<select>` de papel fica travado nesta vista. Dois controles para a mesma
+   decisão acabam discordando, e a tela mostraria uma coisa dizendo outra. */
+function rotularEmitidas(){
+  document.querySelector('h1').textContent =
+    ROTULO_ESPECIE[estado.especie] + ' Emitidas · emissão própria';
+  document.querySelector('p.sub').textContent =
+    'O que a empresa emitiu, lido do acervo — a distribuição da SEFAZ não traz '
+    + 'emissão própria; ela entra por XML, sempre pelo portão único.';
+}
+
+function definirVista(vista){
+  estado.vista = (vista === 'emitidas') ? 'emitidas' : '';
+  const emit = estado.vista === 'emitidas';
+  document.getElementById('painelEmitidas').hidden = !emit;
+  const papel = document.getElementById('fPapel');
+  if(emit){
+    papel.value = 'EMITENTE';
+    papel.disabled = true;
+    papel.title = 'Fixado nesta área: aqui só há o que a empresa emitiu.';
+    rotularEmitidas();
+  }else{
+    papel.disabled = false;
+    papel.title = '';
+  }
+}
+
+async function carregarEmitidas(){
+  const alvo = document.getElementById('corpoEmitidas');
+  alvo.innerHTML = '<div class="esqueleto" style="margin:10px 0"></div>';
+  try{
+    const d = await pedir('/api/nfe/emitidas?'+query({}));
+    pintarEmitidas(d);
+  }catch(e){
+    alvo.innerHTML = `<div class="estado erro"><span class="emoji">⚠️</span>
+      <h3>Não consegui ler as emitidas</h3><p>${esc(e.message)}</p></div>`;
+  }
+}
+
+function pintarEmitidas(d){
+  const r = d.resumo || {}, en = d.entrada || {};
+  const num = n => NUM(n || 0);
+  const cartao = (rot, val, sec, cls) =>
+    `<article class="card ${cls||''}"><div class="rot">${rot}</div>
+       <div class="val">${val}</div><div class="sec">${sec||'&nbsp;'}</div></article>`;
+
+  /* Os três estados, lado a lado. `encontrados = processados + com_erro`
+     sempre — se algum dia não fechar, é defeito, e a tela precisa deixar ver. */
+  let html = '<section class="cards">'
+    + cartao('🧾 Encontradas', num(r.encontrados), 'no índice, como emitente', 'destaque')
+    + cartao('✅ Processadas', num(r.processados), 'lidas por inteiro')
+    + cartao('⚠️ Com erro', num(r.com_erro),
+             r.com_erro ? 'em quarentena — com motivo gravado' : 'nenhuma')
+    + '</section>';
+
+  /* Estado vazio: distinguir "não emitiu" de "nunca capturou" é o ponto. Dizer
+     "nada encontrado" a quem não tem acervo manda a pessoa procurar o erro no
+     lugar errado. */
+  if(!r.encontrados){
+    html += r.tem_acervo
+      ? `<div class="estado"><span class="emoji">📭</span>
+          <h3>Nenhuma NF-e emitida por esta empresa no filtro atual</h3>
+          <p>O acervo tem ${num(r.total_no_acervo)} documento(s), mas nenhum em
+             que ela seja a emitente. Isso é o esperado quando a empresa só
+             recebe: a Distribuição DF-e entrega o que ela <b>não</b> gerou.</p>
+          <p>Para trazer emissão própria, aponte a pasta do emissor em
+             <b>Caixa de entrada</b> — os XML entram pelo portão único.</p></div>`
+      : `<div class="estado"><span class="emoji">📚</span>
+          <h3>Esta empresa ainda não tem acervo</h3>
+          <p>Nada foi capturado nem importado para ela. Não é ausência de
+             emissão: é ausência de dado.</p></div>`;
+  }else{
+    const linha = (rot, val) =>
+      `<div><span style="color:var(--suave)">${rot}</span> <b>${val}</b></div>`;
+    const esp = Object.entries(r.por_especie || {})
+      .map(([k, v]) => `${k === 'NFCE65' ? 'NFC-e 65' : 'NF-e 55'}: ${num(v)}`)
+      .join(' · ') || '—';
+    const sit = Object.entries(r.por_situacao || {})
+      .map(([k, v]) => `${k.toLowerCase()}: ${num(v)}`).join(' · ') || '—';
+    html += `<div class="grade" style="margin-top:12px">
+      ${linha('Por espécie', esc(esp))}
+      ${linha('Por situação atual', esc(sit))}
+      ${linha('Chaves distintas', num(r.chaves_distintas))}
+      ${linha('Sem chave (resumo)', num(r.sem_chave))}
+    </div>`;
+    /* Duplicidade é defeito, não estatística: `id_documento` é chave primária,
+       então duas linhas com a mesma chave são dois ids para a mesma NF-e. */
+    if(r.duplicidade_no_indice)
+      html += `<div class="estado erro" style="margin-top:10px">
+        <span class="emoji">⚠️</span><h3>${num(r.duplicidade_no_indice)}
+        linha(s) repetem uma chave já presente</h3>
+        <p>A deduplicação é por <b>${esc(r.identificador_de_deduplicacao)}</b> e
+           acontece no portão. Divergir aqui indica defeito a investigar — nada
+           foi alterado por esta tela.</p></div>`;
+  }
+
+  /* De onde a emissão própria entra. Só leitura: processar é o botão da caixa
+     de entrada, não um efeito de abrir esta área. */
+  const u = en.ultimo || null;
+  html += `<div class="grade" style="margin-top:14px">
+    ${'<div><span style="color:var(--suave)">Entra por</span> <b>'
+      + esc((en.fontes || []).join(', ') || '—') + '</b></div>'}
+    <div><span style="color:var(--suave)">Pasta vigiada</span>
+      <b>${esc(en.pasta || 'não configurada')}</b></div>
+    <div><span style="color:var(--suave)">Automática</span>
+      <b>${en.automatica ? 'sim' : 'não'}</b></div>
+    <div><span style="color:var(--suave)">Último processamento</span>
+      <b>${u ? esc(String(u.quando || u.em || '—')) : 'nunca'}</b></div>
+  </div>
+  <p class="sub" style="margin-top:8px">${esc(r.apenas_conferencia || '')}</p>`;
+
+  document.getElementById('corpoEmitidas').innerHTML = html;
+}
+
+/* ── Baixar XMLs em lote ──────────────────────────────────────────────────
+   O fluxo do dia inteiro: empresa/período/filtros → escolher pasta → baixar.
+   Não é download: grava no disco do computador que roda o Fiscale. */
+let prefPasta = null;
+let previaCache = {chave:null, dados:null};
+
+/* Um filtro só manda na tela. O card e o resumo do lote não têm seleção
+   própria: ambos aplicam o MESMO campo que o usuário aplicaria à mão. */
+function verSomenteResumo(){
+  document.getElementById('fConteudo').value = 'RESUMO';
+  estado.pagina = 1;
+  carregar();
+  document.getElementById('area').scrollIntoView({block:'start'});
+}
+
+async function carregarPrefPasta(){
+  if(prefPasta) return prefPasta;
+  try{ prefPasta = await pedir('/api/nfe/exportar/pasta-config'); }
+  catch(e){ prefPasta = {pasta:'', organizacao:'UNICA', com_relatorio:false,
+                         padrao:'', organizacoes:[]}; }
+  return prefPasta;
+}
+
+async function prepararSaida(){
+  const pref = await carregarPrefPasta();
+  const campo = document.getElementById('pastaDestino');
+  if(!campo.value) campo.value = pref.pasta || '';
+  const selOrg = document.getElementById('pastaOrg');
+  selOrg.innerHTML = (pref.organizacoes||[]).map(o=>
+    `<option value="${esc(o.valor)}">${esc(o.rotulo)}</option>`).join('');
+  selOrg.value = pref.organizacao || 'UNICA';
+  document.getElementById('pastaRelatorio').checked = pref.com_relatorio === true;
+  atualizarPrevisaoPasta();
+}
+
+function sanitizarComoServidor(nome){
+  /* Espelha `ingestao.sanitizar` só para a PRÉVIA do caminho. Quem manda
+     continua sendo o servidor — isto aqui nunca decide onde grava. */
+  return (nome || 'EMPRESA').replace(/[\\\/:*?"<>|]+/g, '-')
+                            .replace(/\s+/g, ' ').trim().slice(0, 80) || 'EMPRESA';
+}
+
+function empresaEscolhida(){
+  const sel = document.getElementById('fEmpresa');
+  const op = sel.options[sel.selectedIndex];
+  return op ? op.textContent.trim() : '';
+}
+
+/* O CNPJ da empresa aberta — é como o Contábil a identifica. */
+function empresaCnpj(){
+  const sel = document.getElementById('fEmpresa');
+  const op = sel.options[sel.selectedIndex];
+  return (op && op.dataset.cnpj) || '';
+}
+
+/* Só aparece quando o usuário PEDE subpasta. No padrão, o caminho escolhido
+   já é o destino e repetir isso na tela seria ruído. */
+function atualizarPrevisaoPasta(){
+  const base = document.getElementById('pastaDestino').value.trim();
+  const org = document.getElementById('pastaOrg').value;
+  const alvo = document.getElementById('pastaPrevisao');
+  if(!base || !org || org === 'UNICA'){ alvo.textContent = ''; return; }
+  const sep = base.indexOf('/') >= 0 && base.indexOf('\\') < 0 ? '/' : '\\';
+  const fim = base.replace(/[\\\/]+$/, '');
+  const emp = sanitizarComoServidor(empresaEscolhida());
+  alvo.textContent = 'Os XMLs vão para: ' + (org === 'EMPRESA'
+    ? fim + sep + emp + sep
+    : fim + sep + emp + sep + 'ANO' + sep + 'MES' + sep + 'PAPEL' + sep);
+}
+
+/* A prévia é por FILTRO, não por página: paginar não muda o lote. O cache
+   evita repetir um planejamento de 6 mil documentos a cada troca de página. */
+async function previaDoLote(){
+  const chave = queryExportacao();
+  if(previaCache.chave === chave) return previaCache.dados;
+  let r = null;
+  try{ r = await pedir('/api/nfe/exportar/previa?' + chave); }
+  catch(e){ r = null; }
+  previaCache = {chave: chave, dados: r};
+  return r;
+}
+
+async function atualizarResumoLote(){
+  const caixa = document.getElementById('resumoLote');
+  const botao = document.getElementById('btnBaixarLote');
+  const r = await previaDoLote();
+  if(!r){
+    caixa.textContent = '';
+    botao.textContent = '⬇ Baixar XMLs em lote';
+    botao.disabled = false;
+    return;
+  }
+  const resumo = (r.por_motivo||{}).XML_COMPLETO_INDISPONIVEL || 0;
+  caixa.innerHTML =
+    `<b>${NUM(r.documentos_no_resultado)}</b> documento${r.documentos_no_resultado===1?'':'s'}
+     · <b>${NUM(r.xmls_no_zip)}</b> XML completo${r.xmls_no_zip===1?'':'s'}
+     ${resumo ? `· <b>${NUM(resumo)}</b> somente resumo
+        <a href="#" id="verResumosLote">Ver ${NUM(resumo)} documento${resumo===1?'':'s'}</a>`
+       : ''}
+     ${r.confere ? '' : ' <span class="selo cancel">a conta não fechou — avise</span>'}`;
+  const lk = caixa.querySelector('#verResumosLote');
+  if(lk) lk.onclick = ev=>{ ev.preventDefault(); verSomenteResumo(); };
+  botao.textContent = r.xmls_no_zip
+    ? `⬇ Baixar ${NUM(r.xmls_no_zip)} XML${r.xmls_no_zip===1?'':'s'} em lote`
+    : '⬇ Baixar XMLs em lote';
+  botao.disabled = !r.xmls_no_zip;
+  botao.title = r.xmls_no_zip ? '' : 'Nenhum XML completo no resultado atual.';
+}
+
+async function baixarLote(){
+  const saida = document.getElementById('pastaResultado');
+  const campo = document.getElementById('pastaDestino');
+  const pasta = campo.value.trim();
+  if(!pasta){
+    saida.innerHTML = '<span class="selo aviso">Escolha a pasta de saída primeiro.</span>';
+    campo.focus();
+    return;
+  }
+  const botao = document.getElementById('btnBaixarLote');
+  const rotulo = botao.textContent;
+  botao.disabled = true; botao.textContent = 'Gravando…';
+  saida.innerHTML = '<div class="esqueleto" style="height:22px"></div>';
+  let r;
+  try{
+    r = await pedir('/api/nfe/exportar/pasta', {corpo:{
+      id: document.getElementById('fEmpresa').value,
+      pasta: pasta,
+      organizacao: document.getElementById('pastaOrg').value,
+      com_relatorio: document.getElementById('pastaRelatorio').checked,
+      filtro: Object.fromEntries(new URLSearchParams(queryExportacao()))}});
+  }catch(e){
+    saida.innerHTML = `<span class="selo cancel">${esc(e.message)}</span>`;
+    return;
+  }finally{
+    botao.disabled = false; botao.textContent = rotulo;
+  }
+  /* A pasta só vira preferência DEPOIS de a gravação dar certo: caminho que
+     falhou não merece ser lembrado. */
+  try{
+    await pedir('/api/nfe/exportar/pasta-config', {corpo:{
+      pasta: r.pasta,
+      organizacao: document.getElementById('pastaOrg').value,
+      com_relatorio: document.getElementById('pastaRelatorio').checked}});
+    prefPasta = null;
+  }catch(e){ /* a gravação valeu; a preferência é conveniência */ }
+
+  const resumo = (r.por_motivo||{}).XML_COMPLETO_INDISPONIVEL || 0;
+  saida.innerHTML = `
+    <span class="selo ok">${NUM(r.xmls_escritos)} XML gravados</span>
+    ${r.ja_existiam_iguais ? `<span class="selo neutro" style="margin-left:6px"
+       title="Mesmo nome e mesmo conteúdo, conferido por SHA-256.">
+       ${NUM(r.ja_existiam_iguais)} já estavam lá</span>` : ''}
+    ${r.conflitos ? `<span class="selo cancel" style="margin-left:6px"
+       title="Mesmo nome, conteúdo diferente. Nada foi sobrescrito.">
+       ${NUM(r.conflitos)} não sobrescritos — confira</span>` : ''}
+    ${resumo ? `<span class="selo aviso" style="margin-left:6px">${NUM(resumo)}
+       sem XML completo — <a href="#" id="verResumosPos">ver</a></span>` : ''}
+    <button class="btn" type="button" id="btnAbrirPasta"
+            style="margin-left:8px;padding:2px 10px;font-size:12px">Abrir pasta</button>
+    <div class="mono" style="margin-top:5px;font-size:12px;word-break:break-all;
+         color:var(--tinta-suave)">${esc(r.pasta)}
+      <span title="Salvar em pasta grava no disco do computador onde o Fiscale
+                   roda, não no aparelho de quem clicou.">ⓘ</span></div>`;
+  const lk = saida.querySelector('#verResumosPos');
+  if(lk) lk.onclick = ev=>{ ev.preventDefault(); verSomenteResumo(); };
+  saida.querySelector('#btnAbrirPasta').onclick = ()=>
+    pedir('/api/abrir-pasta', {corpo:{caminho:r.pasta}})
+      .catch(e=> alert(e.message));
+}
+
+/* Campos com padrão próprio. Zerá-los junto com os filtros deixaria o
+   seletor de data em branco e a consulta sem campo — e o usuário não pediu
+   para mudar como o período é interpretado, só para limpar a pesquisa. */
+const PADROES = {fTamanho:'50', fCampoData:'EMISSAO', fCanceladasExp:'TODOS'};
+
+function limpar(){
+  CAMPOS.slice(1).forEach(id=>{
+    const el = document.getElementById(id);
+    el.value = (id in PADROES) ? PADROES[id] : '';
+  });
+  document.querySelectorAll('[data-atalho]').forEach(b=>
+    b.setAttribute('aria-pressed', String(b.dataset.atalho==='tudo')));
+  estado.pagina = 1;
+  carregar();
+}
+
+/* NF-e é circulação de mercadoria, e quem participa dela tem Inscrição
+   Estadual. O seletor mostra só empresa com IE cadastrada — mas as outras
+   NÃO somem caladas: aparecem aqui, com o motivo e com quantos documentos
+   têm guardados. Nada é apagado; elas saem da lista de trabalho, não do
+   sistema. */
+const MOTIVO_PENDENCIA = {
+  SEM_INSCRICAO_ESTADUAL: 'sem Inscrição Estadual no cadastro',
+  SEM_CADASTRO_DE_CLIENTE: 'ainda não cadastrada em Clientes',
+  EMPRESA_INATIVA: 'marcada como inativa',
+};
+
+function desenharPendencias(r){
+  const caixa = document.getElementById('pendenciasCadastro');
+  const fora = (r.pendencias||[]).filter(p=> p.documentos_no_acervo > 0);
+  if(!fora.length){ caixa.hidden = true; caixa.innerHTML = ''; return; }
+  caixa.hidden = false;
+  caixa.innerHTML = `
+    <div class="previa" style="border-color:#F0C4BE;background:#FEF7F6">
+      <b>${NUM(fora.length)} empresa${fora.length===1?'':'s'} com documentos no
+        acervo não aparece${fora.length===1?'':'m'} no seletor</b>
+      <div style="margin-top:5px;font-size:13px;color:var(--tinta-suave)">
+        Falta a Inscrição Estadual no cadastro. <b>Nada foi apagado</b> — os
+        XMLs, o índice e o checkpoint continuam intactos. Cadastre a IE e a
+        empresa volta sozinha.</div>
+      <div style="margin-top:9px" data-admin>
+        <a class="btn" href="nfe_pendencias.html"
+           style="text-decoration:none">Ver pendências cadastrais</a>
+      </div>
+      <div data-operador style="margin-top:7px;font-size:12.5px;
+           color:var(--tinta-suave)">A correção do cadastro é feita pelo
+        administrador do Fiscale.</div>
+      <ul style="margin:9px 0 0;padding-left:19px;font-size:13px">
+        ${fora.map(p=>`<li><b>${esc(p.nome)}</b> —
+           ${NUM(p.documentos_no_acervo)} documento${p.documentos_no_acervo===1?'':'s'}
+           · ${esc(MOTIVO_PENDENCIA[p.motivo]||p.motivo)}
+           <span data-ie-sugerida="${esc(p.cnpj||'')}"
+                 style="color:var(--tinta-suave)"></span></li>`).join('')}
+      </ul>
+    </div>`;
+  /* A IE costuma estar nos XML da própria empresa. Mostrar o número achado
+     transforma a pendência em uma digitação de dez segundos, em vez de uma
+     caça ao documento. */
+  caixa.querySelectorAll('[data-ie-sugerida]').forEach(async el=>{
+    const cnpj = el.getAttribute('data-ie-sugerida');
+    if(!cnpj) return;
+    try{
+      const r2 = await pedir('/api/nfe/empresas/ie-sugerida?cnpj='
+                             + encodeURIComponent(cnpj));
+      if(r2 && r2.ie_sugerida)
+        el.innerHTML = ` · IE encontrada nos XMLs: <b class="mono">${esc(r2.ie_sugerida)}</b>`;
+    }catch(e){}
+  });
+}
+
+async function iniciar(){
+  let r;
+  try{
+    r = await pedir('/api/nfe/empresas');
+    empresas = r.operacionais || [];
+  }catch(e){
+    document.getElementById('area').innerHTML =
+      `<div class="estado erro"><span class="emoji">⚠️</span>
+       <h3>Não consegui listar as empresas</h3><p>${esc(e.message)}</p></div>`;
+    return;
+  }
+  desenharPendencias(r);
+  const sel = document.getElementById('fEmpresa');
+  /* `data-cnpj`: o seletor guarda o id da conta, e o Contábil (outra
+     aplicação) identifica a empresa pelo CNPJ. Sem ele, o link "Ver impacto
+     contábil" teria de adivinhar a empresa. */
+  sel.innerHTML = empresas.map(e=>
+    `<option value="${esc(e.id)}" data-cnpj="${esc(e.cnpj||'')}">${esc(e.apelido||e.nome)}</option>`).join('');
+  daURL();
+  if(!sel.value && empresas.length) sel.value = empresas[0].id;
+  if(!empresas.length){
+    document.getElementById('area').innerHTML =
+      `<div class="estado"><span class="emoji">🧾</span>
+       <h3>Nenhuma empresa com Inscrição Estadual cadastrada</h3>
+       <p>O módulo NF-e mostra empresas que têm IE. Cadastre a Inscrição
+          Estadual em <a href="clientes.html">Clientes</a> — os documentos já
+          capturados continuam guardados e reaparecem junto com a empresa.</p></div>`;
+    document.getElementById('btnBaixarLote').disabled = true;
+    return;
+  }
+
+  sel.onchange = ()=>{
+    estado.pagina=1; previaCache.chave=null; atualizarPrevisaoPasta();
+    carregar();
+  };
+  document.getElementById('fTamanho').onchange = ()=>{ estado.pagina=1; carregar(); };
+  document.getElementById('btnAplicar').onclick = ()=>{
+    estado.pagina=1; previaCache.chave=null;
+    carregar();
+  };
+  document.getElementById('btnLimpar').onclick = limpar;
+  document.getElementById('btnAnterior').onclick = ()=>{ estado.pagina--; carregar(); };
+  document.getElementById('btnProxima').onclick = ()=>{ estado.pagina++; carregar(); };
+  document.querySelectorAll('[data-atalho]').forEach(b=>
+    b.onclick = ()=> atalho(b.dataset.atalho));
+  document.getElementById('fTexto').addEventListener('keydown', ev=>{
+    if(ev.key==='Enter'){ estado.pagina=1; carregar(); }
+  });
+  const menu = document.getElementById('menuExportar');
+  document.getElementById('btnExportar').onclick = ev=>{
+    ev.stopPropagation();
+    const abre = menu.dataset.aberto !== '1';
+    menu.dataset.aberto = abre ? '1' : '0';
+    ev.currentTarget.setAttribute('aria-expanded', String(abre));
+    if(abre) previa();
+  };
+  menu.querySelectorAll('[data-exportar]').forEach(b=> b.onclick = ()=>{
+    menu.dataset.aberto = '0';
+    document.getElementById('btnExportar').setAttribute('aria-expanded','false');
+    exportar(b.dataset.exportar);
+  });
+  document.getElementById('fCanceladasExp').onchange = ()=>{
+    previaCache.chave = null;               // a política mudou: o lote mudou
+    atualizarResumoLote();
+    if(!document.getElementById('previaExportacao').hidden) previa();
+  };
+  document.getElementById('pastaOrg').onchange = atualizarPrevisaoPasta;
+  document.getElementById('pastaDestino').oninput = atualizarPrevisaoPasta;
+  document.getElementById('btnBaixarLote').onclick = baixarLote;
+  prepararSaida();
+  /* O MESMO seletor que o módulo NFS-e usa. Ele lista pastas pelo servidor e
+     navega na tela — funciona igual pela rede, que era o defeito da janela
+     nativa antiga. */
+  document.getElementById('btnEscolherPasta').onclick = async ()=>{
+    const campo = document.getElementById('pastaDestino');
+    const escolhida = await FiscalePasta.escolher({
+      inicial: campo.value.trim(),
+      titulo: 'Pasta de saída dos XMLs'});
+    if(escolhida){ campo.value = escolhida; atualizarPrevisaoPasta(); }
+  };
+  document.addEventListener('click', ev=>{
+    if(!menu.contains(ev.target)){
+      menu.dataset.aberto = '0';
+      document.getElementById('btnExportar').setAttribute('aria-expanded','false');
+    }
+  });
+
+  const dica = ()=>{
+    const q = document.getElementById('fCampoData').value || 'EMISSAO';
+    const rot = {EMISSAO:'Emissão', ENTRADA:'Período', COMPETENCIA:'Competência'}[q];
+    document.getElementById('fDe').previousElementSibling.textContent = rot+' — de';
+    document.getElementById('fAte').previousElementSibling.textContent = rot+' — até';
+    document.getElementById('dicaPeriodo').innerHTML = q==='ENTRADA'
+      ? 'O período filtra pela <b>data de saída/entrada</b> (<code>dhSaiEnt</code>). '
+        + 'Ela é campo opcional da NF-e: documento que não a informou fica de '
+        + 'fora — inclusive todo documento que só existe como resumo.'
+      : (q==='COMPETENCIA'
+         ? 'O período filtra pela <b>competência</b>, que é o mês da emissão.'
+         : 'O período filtra pela <b>data de emissão</b>.');
+  };
+  document.getElementById('fCampoData').onchange = ()=>{
+    dica(); estado.pagina=1; carregar();
+  };
+  dica();
+
+  document.getElementById('btnFechar').onclick = fechar;
+  document.getElementById('veu').onclick = fechar;
+  document.addEventListener('keydown', ev=>{ if(ev.key==='Escape') fechar(); });
+
+  /* A espécie chega pelo submenu de "Documentos Fiscais" na barra. Sem ela,
+     a tela abre em NF-e, que é o caso comum. */
+  const pURL = new URLSearchParams(location.search);
+  definirEspecie(pURL.get('especie') || 'NFE55');
+  /* `?vista=emitidas` abre a área de emissão própria. Vem da URL, e não de um
+     botão, para que o item de menu possa apontar direto para ela. */
+  definirVista(pURL.get('vista') || '');
+  carregar();
+}
+iniciar();
+</script>
+</body>
+</html>

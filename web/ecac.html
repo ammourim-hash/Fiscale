@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#2A4D8F">
+<title>e-CAC — Simples · DCTFWeb/MIT · Pagamentos · Fiscale</title>
+<style>
+  :root{
+    --fundo:#EFF2F3; --superficie:#FFFFFF; --tinta:#1B2328; --tinta-suave:#5C6B72;
+    --borda:#C7CDD1; --petroleo:#10444E; --ecac:#2A4D8F; --ecac-claro:#E7EDF7;
+    --ok:#0F8A5F; --alerta:#B3382C; --simples:#B07D10; --mit:#6D28A8;
+    --raio:16px; --sombra:0 1px 2px rgba(27,35,40,.06), 0 6px 18px rgba(27,35,40,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Roboto,-apple-system,Arial,sans-serif;background:var(--fundo);color:var(--tinta);-webkit-tap-highlight-color:transparent}
+  header{background:var(--superficie);border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:20}
+  .barra{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:12px 20px}
+  .voltar{font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta);
+          background:var(--superficie);border:2px solid var(--borda);border-radius:11px;padding:9px 16px;cursor:pointer}
+  .voltar:hover{border-color:var(--petroleo);color:var(--petroleo)}
+  .modulo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+  .modulo .ponto{width:12px;height:12px;border-radius:4px;background:var(--ecac)}
+
+  main{max-width:1100px;margin:0 auto;padding:20px}
+  .painel{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra);margin-bottom:16px}
+  .painel h2{font-size:14px;padding:14px 16px;border-bottom:1px solid var(--borda);display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .painel .corpo{padding:16px}
+  label{display:block;font-size:12px;font-weight:600;color:var(--tinta-suave);margin:0 0 5px}
+  .campo{margin-bottom:12px}
+  .linha{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}.linha>*{flex:1;min-width:120px}
+  input,select{width:100%;font-size:14px;padding:9px 11px;border:1px solid var(--borda);border-radius:9px;background:#fff;color:var(--tinta)}
+  input:focus,select:focus{outline:none;border-color:var(--ecac);box-shadow:0 0 0 3px rgba(42,77,143,.15)}
+  .btn{font-size:13.5px;font-weight:700;padding:10px 14px;border-radius:10px;border:none;cursor:pointer}
+  .btn-primario{background:var(--ecac);color:#fff}.btn-primario:hover{background:#20396b}
+  .btn-sec{background:#fff;border:1px solid var(--borda);color:var(--tinta)}.btn-sec:hover{border-color:var(--ecac);color:var(--ecac)}
+  .btn-mini{padding:7px 11px;font-size:12.5px}.btn-full{width:100%}
+  .aviso{font-size:11.5px;color:var(--tinta-suave);line-height:1.45;margin-top:10px;background:#F7F9FA;border:1px solid var(--borda);border-radius:10px;padding:10px 12px}
+  .aviso b{color:var(--tinta)}
+  .vazio{color:var(--tinta-suave);font-size:13px;padding:16px}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--ecac-claro);color:var(--ecac)}
+  .tag.lp{background:#F0E8FA;color:var(--mit)}
+  .tag.sn{background:#FDF3DF;color:var(--simples)}
+  .tag.cert{background:#E5F4EC;color:var(--ok)}
+  .tag.off{background:#FBE9E7;color:var(--alerta)}
+
+  .servico{border:1px solid var(--borda);border-radius:14px;padding:14px;margin-bottom:12px}
+  .servico .cab{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .servico .cab .ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 auto}
+  .servico .cab .ic.dc{background:#F0E8FA;color:var(--mit)}
+  .servico .cab .ic.sn{background:#FDF3DF;color:var(--simples)}
+  .servico .cab b{font-size:14.5px}
+  .servico .cab span{font-size:12px;color:var(--tinta-suave);display:block}
+  .acoes{display:flex;flex-wrap:wrap;gap:8px}
+  .arqs{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+  .chip{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:6px 11px;border-radius:999px;border:1px solid var(--borda);background:#fff;cursor:pointer}
+  .chip:hover{border-color:var(--ecac);color:var(--ecac)}
+  .chip .x{color:var(--tinta-suave);font-weight:700}
+  .drop{border:2px dashed var(--borda);border-radius:12px;padding:16px;text-align:center;color:var(--tinta-suave);background:#FAFBFB;cursor:pointer;margin-top:10px;font-size:12.5px}
+  .drop:hover,.drop.hover{border-color:var(--ecac);background:var(--ecac-claro);color:var(--ecac)}
+  .drop b{display:block;color:var(--tinta);font-size:13.5px}
+  iframe.visor{width:100%;height:520px;border:none;border-radius:0 0 16px 16px;background:#f5f5f5}
+  .emp-info{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .emp-info .av{width:40px;height:40px;border-radius:11px;background:var(--ecac-claro);color:var(--ecac);display:flex;align-items:center;justify-content:center;font-weight:800;flex:0 0 auto}
+  .emp-info .nome{font-weight:800;font-size:15px}
+  .emp-info .sub{font-size:12.5px;color:var(--tinta-suave)}
+  .copiado{font-size:12px;color:var(--ok);font-weight:700;opacity:0;transition:.2s}
+  .copiado.on{opacity:1}
+</style>
+</head>
+<body>
+<script src="fiscale.js"></script>
+<header>
+  <div class="barra">
+    <button class="voltar" onclick="location.href='home_portal.html'">◄ Home</button>
+    <div class="modulo"><span class="ponto"></span> e-CAC — Simples Nacional · DCTFWeb/MIT · Pagamentos</div>
+  </div>
+</header>
+
+<main>
+  <!-- Certificado único do escritório (procurador) -->
+  <div class="painel">
+    <h2>Certificado do escritório (procurador) <span id="certTag" class="tag off">nenhum</span></h2>
+    <div class="corpo">
+      <div class="linha">
+        <div class="campo" style="margin:0"><label>Nome do escritório / procurador</label><input id="p_nome" placeholder="Ex.: MONTE ASSESSORIA E CONSULTORIA LTDA"></div>
+        <div class="campo" style="flex:0 0 200px;margin:0"><label>CNPJ do procurador</label><input id="p_doc" placeholder="00.000.000/0000-00"></div>
+      </div>
+      <div class="linha" style="margin-top:10px">
+        <div class="campo" style="margin:0"><label>Certificado A1 (.pfx) — opcional</label><input id="p_pfx" type="file" accept=".pfx,.p12"></div>
+        <div class="campo" style="flex:0 0 200px;margin:0"><label>Senha (só p/ ler o CNPJ)</label><input id="p_senha" type="password" placeholder="••••••"></div>
+        <div style="flex:0 0 auto"><button class="btn btn-primario" onclick="salvarCert()">Salvar certificado</button></div>
+      </div>
+      <div class="aviso">É <b>um único certificado</b> para todas as empresas (o da <b>MONTE ASSESSORIA</b>). No e-CAC
+        você entra com ele e, pela <b>procuração</b>, troca o perfil para a empresa-cliente. O login em si é feito
+        no navegador (o Fiscale não digita a senha do certificado). Aqui ele fica registrado como referência.</div>
+    </div>
+  </div>
+
+  <!-- Empresa -->
+  <div class="painel">
+    <h2>Empresa</h2>
+    <div class="corpo">
+      <div class="campo" style="margin:0"><label>Selecione a empresa (do módulo Clientes)</label>
+        <select id="sel_emp" onchange="renderEmpresa()"><option value="">— selecione —</option></select></div>
+      <div id="emp_detalhe" style="margin-top:14px"></div>
+    </div>
+  </div>
+
+  <!-- Visor de PDF -->
+  <div class="painel" id="visorWrap" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px">
+      <span id="visorTitulo" style="font-size:13px;font-weight:600"></span>
+      <button class="btn btn-sec btn-mini" onclick="fecharVisor()">✕ Fechar</button>
+    </div>
+    <iframe id="visor" class="visor" title="Documento e-CAC"></iframe>
+  </div>
+</main>
+
+<script>
+const ECAC   = "https://cav.receita.fazenda.gov.br/autenticacao/login";        // e-CAC (DCTFWeb / MIT)
+const SIMPLES= "https://www8.receita.fazenda.gov.br/SimplesNacional/";          // Simples Nacional (PGDAS-D / DAS)
+
+const ANO = new Date().getFullYear();
+let empresas = [];                 // do módulo Clientes
+let cert = null;                   // {nome, doc, arquivo}
+const docs = [];                   // {empresaId, servico, comp, arquivo, url, em}
+let alvo = null;                   // {empresaId, servico, comp, desc} aguardando importação
+let seqDoc = 1;                    // id incremental de cada PDF arquivado
+
+const soDig = s => (s||'').replace(/\D/g,'');
+const empById = id => empresas.find(x=>String(x.id)===String(id));
+async function copiar(t){ try{ await navigator.clipboard.writeText(t); return true;}catch(e){return false;} }
+
+/* quais serviços do e-CAC valem para o regime da empresa */
+function servicosDoRegime(regime){
+  const r=(regime||'').toLowerCase();
+  if(r.includes('presumido')||r.includes('real')) return ['dctfweb'];
+  if(r.includes('simples')||r.includes('mei'))    return ['simples'];
+  return ['dctfweb','simples'];
+}
+
+/* ===== certificado ===== */
+async function salvarCert(){
+  const nome=p_nome.value.trim();
+  if(!nome){ alert('Informe o nome do escritório/procurador.'); return; }
+  let arquivo='(não anexado)';
+  const f=p_pfx.files[0];
+  if(f){
+    const res=await Fiscale.enviarArquivo(f,'cert',{senha:p_senha.value||''});
+    arquivo=res.arquivo||f.name;
+    if(res.cnpj && !p_doc.value.trim()) p_doc.value=res.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5');
+    if(res.titular && !nome) p_nome.value=res.titular;
+    p_senha.value='';
+  }
+  cert={nome:p_nome.value.trim(), doc:p_doc.value.trim(), arquivo};
+  renderCert(); persistir();
+}
+function renderCert(){
+  if(cert){ certTag.className='tag cert'; certTag.textContent='🔒 '+cert.nome; }
+  else { certTag.className='tag off'; certTag.textContent='nenhum'; }
+}
+
+/* ===== empresa + serviços ===== */
+function preencherSelect(){
+  sel_emp.innerHTML='<option value="">— selecione —</option>'+
+    empresas.map(c=>`<option value="${c.id}">${c.nome} — ${c.regime||'regime?'}</option>`).join('');
+}
+function renderEmpresa(){
+  const c=empById(sel_emp.value);
+  if(!c){ emp_detalhe.innerHTML=''; return; }
+  const servs=servicosDoRegime(c.regime);
+  const badgeReg = /presumido|real/i.test(c.regime||'')
+    ? `<span class="tag lp">${c.regime} · sujeita a DCTFWeb/MIT</span>`
+    : /simples|mei/i.test(c.regime||'')
+      ? `<span class="tag sn">${c.regime} · recolhe via DAS</span>`
+      : `<span class="tag">${c.regime||'regime não informado'}</span>`;
+  emp_detalhe.innerHTML=`
+    <div class="emp-info">
+      <div class="av">${(c.nome||'?').charAt(0).toUpperCase()}</div>
+      <div><div class="nome">${c.nome}</div>
+        <div class="sub">CNPJ ${c.cnpj||'—'} · ${badgeReg}</div></div>
+    </div>
+    ${!cert?`<div class="aviso" style="border-color:#E7C3C0;background:#FBEeee">⚠️ Cadastre o <b>certificado do escritório</b> acima para usar como procurador no e-CAC.</div>`:''}
+    ${servs.map(s=>cardServico(c,s)).join('')}`;
+}
+
+function cardServico(c, servico){
+  const isSN = servico==='simples';
+  const meta = isSN
+    ? {ic:'sn', emoji:'📊', titulo:'Simples Nacional (PGDAS-D e Defis)', sub:'Consultar declaração, PGDAS-D e emitir DAS — por ano'}
+    : {ic:'dc', emoji:'📄', titulo:'DCTFWeb / MIT (e-CAC)', sub:'Declaração e Módulo de Inclusão de Tributos — gera DARF'};
+  const perLabel = isSN ? 'Ano (AAAA)' : 'Competência (MM/AAAA)';
+  const perPh    = isSN ? String(ANO) : `${String(new Date().getMonth()+1).padStart(2,'0')}/${ANO}`;
+  const abrirLbl = isSN ? '↗ Abrir PGDAS-D e Defis (portal)' : '↗ Abrir DCTFWeb no e-CAC';
+  const arquivadas = docs.filter(d=>d.empresaId==c.id && d.servico===servico)
+    .sort((a,b)=>chaveOrd(b.comp).localeCompare(chaveOrd(a.comp)));
+  const cid=`${c.id}_${servico}`;
+  return `<div class="servico">
+    <div class="cab"><div class="ic ${meta.ic}">${meta.emoji}</div>
+      <div><b>${meta.titulo}</b><span>${meta.sub}</span></div></div>
+    <div class="linha" style="margin-bottom:10px">
+      <div class="campo" style="flex:0 0 130px;margin:0"><label>${perLabel}</label>
+        <input id="comp_${cid}" placeholder="${perPh}"></div>
+      <div class="campo" style="margin:0"><label>Descrição (opcional)</label>
+        <input id="desc_${cid}" placeholder="${isSN?'ex.: Defis, PGDAS 03, DAS 03':'ex.: DCTFWeb, DARF'}"></div>
+    </div>
+    <div class="acoes">
+      <button class="btn btn-primario btn-mini" onclick="abrirPortal('${c.id}','${servico}')">${abrirLbl}</button>
+      <button class="btn btn-sec btn-mini" onclick="pesquisar('${c.id}','${servico}')">🔎 Pesquisar ${isSN?'ano':'período'}</button>
+      <button class="btn btn-sec btn-mini" onclick="prepararImport('${c.id}','${servico}')">⬇ Arquivar PDF</button>
+      <span class="copiado" id="cop_${cid}">✓ CNPJ copiado</span>
+    </div>
+    <div id="res_${cid}"></div>
+    <div class="drop" id="drop_${cid}" onclick="document.getElementById('file_${cid}').click()"
+         ondragover="event.preventDefault();this.classList.add('hover')"
+         ondragleave="this.classList.remove('hover')" ondrop="soltar(event,'${c.id}','${servico}')">
+      <b>Solte aqui o PDF (declaração, DAS, DARF, comprovante)</b>
+      Informe ${isSN?'o ano':'a competência'} acima; fica arquivado por empresa/serviço/${isSN?'ano':'período'}.
+      <input id="file_${cid}" type="file" accept="application/pdf" hidden onchange="soltarInput(event,'${c.id}','${servico}')">
+    </div>
+    ${arquivadas.length?`<div class="arqs">${arquivadas.map(d=>
+      `<span class="chip" onclick="abrirDoc('${d.url}','${c.nome} · ${meta.titulo} · ${d.comp}${d.desc?' · '+d.desc:''}')">📄 ${d.comp}${d.desc?' · '+d.desc:''}
+        <span class="x" onclick="event.stopPropagation();excluirDoc(${d.id})">✕</span></span>`).join('')}</div>`:''}
+  </div>`;
+}
+
+// normaliza o período conforme o serviço: Simples usa ANO (AAAA); DCTFWeb usa MM/AAAA
+function normPeriodo(servico, val){
+  val=(val||'').trim();
+  if(servico==='simples'){
+    if(/^\d{4}$/.test(val)) return val;                                   // AAAA
+    const m=val.match(/^(\d{1,2})[\/\-](\d{4})$/); return m ? m[2] : null; // aceita MM/AAAA e guarda o ano
+  }
+  const m=val.match(/^(\d{1,2})[\/\-](\d{4})$/); if(!m) return null;
+  return String(parseInt(m[1])).padStart(2,'0')+'/'+m[2];
+}
+// chave p/ ordenar (ano '2026' -> '202699'; competência '03/2026' -> '202603')
+function chaveOrd(comp){
+  if(/^\d{4}$/.test(comp)) return comp+'99';
+  const m=comp.match(/^(\d{2})\/(\d{4})$/); return m ? m[2]+m[1] : comp;
+}
+async function abrirPortal(id, servico){
+  const c=empById(id); if(!c) return;
+  if(c.cnpj){ await copiar(soDig(c.cnpj));
+    const s=document.getElementById(`cop_${id}_${servico}`); if(s){s.classList.add('on');setTimeout(()=>s.classList.remove('on'),2500);} }
+  const url = servico==='dctfweb' ? ECAC : SIMPLES;
+  window.open(url,'_blank','noopener');
+  const dica = servico==='dctfweb'
+    ? 'No e-CAC: entre com o certificado da MONTE → <b>Alterar perfil</b> (cole o CNPJ, procuração) → <b>Declarações e Demonstrativos → DCTFWeb → MIT</b>. Dá para gerar o DARF e consultar outras competências.'
+    : 'No portal: acesse com o certificado da MONTE (procuração) → aba <b>Simples Nacional</b> → <b>PGDAS-D e Defis 2018</b> (declaração/apuração) ou <b>Consulta de Declaração do Simples Nacional</b> para visualizar o ano; <b>Emissão de DAS Avulso</b> para o DAS.';
+  document.getElementById(`res_${id}_${servico}`).innerHTML=`<div class="aviso"><b>CNPJ copiado</b> (Ctrl+V para trocar o perfil). ${dica}</div>`;
+}
+function pesquisar(id, servico){
+  const c=empById(id);
+  const per=normPeriodo(servico, document.getElementById(`comp_${id}_${servico}`).value);
+  const res=document.getElementById(`res_${id}_${servico}`);
+  const oQue = servico==='simples' ? 'o ano (AAAA)' : 'a competência (MM/AAAA)';
+  if(!per){ res.innerHTML=`<div class="aviso" style="border-color:#E7C3C0">Informe ${oQue}.</div>`; return; }
+  const achados=docs.filter(x=>x.empresaId==id && x.servico===servico && x.comp===per);
+  if(achados.length){
+    res.innerHTML=`<div class="aviso" style="background:#EAF6F0;border-color:#BFE3D2"><b>✓ ${achados.length} arquivo(s) de ${per}</b> — clique para abrir:
+      <div class="arqs" style="margin-top:8px">${achados.map(d=>
+        `<span class="chip" onclick="abrirDoc('${d.url}','${c.nome} · ${per}${d.desc?' · '+d.desc:''}')">📄 ${d.desc||d.comp}</span>`).join('')}</div></div>`;
+  } else {
+    const botao = servico==='simples' ? 'Abrir PGDAS-D e Defis' : 'Abrir DCTFWeb';
+    res.innerHTML=`<div class="aviso">Nada arquivado para <b>${per}</b>. Clique em <b>${botao}</b>, baixe o PDF e depois <b>Arquivar PDF</b>.</div>`;
+  }
+}
+function _periodoEDesc(id, servico){
+  const per=normPeriodo(servico, document.getElementById(`comp_${id}_${servico}`).value);
+  const desc=(document.getElementById(`desc_${id}_${servico}`).value||'').trim();
+  return {per, desc};
+}
+function prepararImport(id, servico){
+  const {per, desc}=_periodoEDesc(id, servico);
+  if(!per){ alert(servico==='simples'?'Informe o ano (AAAA) antes de arquivar.':'Informe a competência (MM/AAAA) antes de arquivar.'); return; }
+  alvo={empresaId:id, servico, comp:per, desc};
+  document.getElementById(`file_${id}_${servico}`).click();
+}
+function soltar(ev,id,servico){ ev.preventDefault(); ev.currentTarget.classList.remove('hover');
+  const {per, desc}=_periodoEDesc(id, servico);
+  if(!per){ alert(servico==='simples'?'Informe o ano (AAAA) antes de soltar o PDF.':'Informe a competência (MM/AAAA) antes de soltar o PDF.'); return; }
+  alvo={empresaId:id, servico, comp:per, desc};
+  const f=ev.dataTransfer.files[0]; if(f) arquivar(f);
+}
+function soltarInput(ev,id,servico){
+  const {per, desc}=_periodoEDesc(id, servico);
+  if(!per){ alert(servico==='simples'?'Informe o ano (AAAA).':'Informe a competência (MM/AAAA).'); return; }
+  alvo={empresaId:id, servico, comp:per, desc};
+  const f=ev.target.files[0]; if(f) arquivar(f);
+}
+async function arquivar(f){
+  if(f.type!=='application/pdf'){ alert('Envie um PDF.'); return; }
+  if(!alvo){ alert('Escolha empresa, serviço e período.'); return; }
+  const c=empById(alvo.empresaId);
+  const nome=`ecac_${alvo.empresaId}_${alvo.servico}_${alvo.comp.replace('/','-')}_${f.name}`.replace(/[^\w.\-]+/g,'_');
+  const res=await Fiscale.enviarArquivo(new File([f],nome,{type:'application/pdf'}),'pdf');
+  if(res&&res.url){
+    // vários PDFs por período (ex.: Defis + PGDAS de cada mês) — não substitui
+    docs.push({id:seqDoc++, empresaId:alvo.empresaId, servico:alvo.servico, comp:alvo.comp,
+      desc:alvo.desc||'', arquivo:res.arquivo, url:res.url, em:new Date().toLocaleDateString('pt-BR')});
+    persistir(); renderEmpresa();
+    abrirDoc(res.url, `${c.nome} · ${alvo.comp}${alvo.desc?' · '+alvo.desc:''}`);
+    alvo=null;
+  } else alert('Não foi possível salvar o PDF no servidor.');
+}
+function excluirDoc(docId){
+  const d=docs.find(x=>x.id===docId); if(!d) return;
+  if(!confirm(`Remover o PDF arquivado de ${d.comp}${d.desc?' · '+d.desc:''}?`)) return;
+  const i=docs.indexOf(d);
+  if(i>=0){ docs.splice(i,1); persistir(); renderEmpresa(); }
+}
+function abrirDoc(url, titulo){ visor.src=url; visorTitulo.textContent=titulo; visorWrap.style.display='block'; visorWrap.scrollIntoView({behavior:'smooth'}); }
+function fecharVisor(){ visor.src='about:blank'; visorWrap.style.display='none'; }
+
+/* ===== init ===== */
+function persistir(){ Fiscale.salvar('ecac', {cert, docs, seqDoc}); }
+async function iniciar(){
+  const s=await Fiscale.carregar('ecac');
+  if(s){ if(s.cert) cert=s.cert; if(s.docs) Fiscale.repor(docs, s.docs);
+    // garante seqDoc acima do maior id já salvo (compatível com dados antigos sem id)
+    seqDoc = Math.max(1, ...docs.map(d=>(+d.id||0)+1), s.seqDoc||1);
+    docs.forEach(d=>{ if(!d.id) d.id=seqDoc++; }); }
+  const cm=await Fiscale.carregar('clientes');
+  if(cm && cm.clientes) empresas=cm.clientes;
+  // pré-preenche o nome do certificado com a MONTE, se existir nos clientes
+  if(!cert){ const monte=empresas.find(c=>/monte assessoria/i.test(c.nome||'')); if(monte){ p_nome.value=monte.nome; p_doc.value=monte.cnpj||''; } }
+  renderCert(); preencherSelect();
+  const qc=new URLSearchParams(location.search).get('cliente');
+  if(qc && empresas.some(x=>String(x.id)===qc)){ sel_emp.value=qc; renderEmpresa(); }
+}
+iniciar();
+</script>
+<script src="fiscale-nav.js"></script>
+</body>
+</html>

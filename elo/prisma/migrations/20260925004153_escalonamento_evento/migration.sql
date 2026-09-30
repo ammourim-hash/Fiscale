@@ -1,0 +1,13 @@
+-- Escalonamento: a coordenacao e avisada do atendimento que nao andou.
+--
+-- Um valor novo no enum do historico, aditivo, sem backfill. Conversa
+-- antiga nao vira ESCALATED retroativamente: ninguem foi avisado dela.
+--
+-- O evento NAO e so registro — e a trava de idempotencia. A varredura
+-- pula toda conversa que ja tem ESCALATED, entao rodar duas vezes no
+-- mesmo minuto nao avisa duas vezes. Guardar isso numa coluna daria o
+-- mesmo efeito e perderia a linha do tempo.
+--
+-- `ADD VALUE` nao pode ser USADO na mesma transacao em que e criado: a
+-- aplicacao passa a grava-lo depois, ja com a migration aplicada.
+ALTER TYPE "conversation_event_type" ADD VALUE IF NOT EXISTS 'ESCALATED';

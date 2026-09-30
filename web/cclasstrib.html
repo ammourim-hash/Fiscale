@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1D4ED8">
+<title>CClassTrib — Reforma Tributária · Fiscale</title>
+<style>
+  :root{
+    --fundo:#EFF2F3; --superficie:#FFFFFF; --tinta:#1B2328; --tinta-suave:#5C6B72;
+    --borda:#C7CDD1; --petroleo:#10444E; --cor:#1D4ED8; --cor-claro:#E7EEFE;
+    --ok:#0F8A5F; --alerta:#B3382C; --ambr:#B45309;
+    --raio:16px; --sombra:0 1px 2px rgba(27,35,40,.06), 0 6px 18px rgba(27,35,40,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Roboto,-apple-system,Arial,sans-serif;background:var(--fundo);color:var(--tinta);-webkit-tap-highlight-color:transparent}
+  header{background:var(--superficie);border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:20}
+  .barra{max-width:1060px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:12px 20px}
+  .voltar{font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta);
+          background:var(--superficie);border:2px solid var(--borda);border-radius:11px;padding:9px 16px;cursor:pointer}
+  .voltar:hover{border-color:var(--petroleo);color:var(--petroleo)}
+  .modulo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+  .modulo .ponto{width:12px;height:12px;border-radius:4px;background:var(--cor)}
+  main{max-width:1060px;margin:0 auto;padding:20px}
+  .painel{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra);margin-bottom:16px}
+  .painel h2{font-size:14px;padding:14px 16px;border-bottom:1px solid var(--borda);display:flex;justify-content:space-between;align-items:center}
+  .painel .corpo{padding:16px}
+  label{display:block;font-size:12px;font-weight:600;color:var(--tinta-suave);margin:0 0 5px}
+  input,select,textarea{width:100%;font-size:14px;padding:10px 12px;border:1px solid var(--borda);border-radius:9px;background:#fff;color:var(--tinta);font-family:inherit}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cor);box-shadow:0 0 0 3px rgba(29,78,216,.15)}
+  .btn{font-size:13.5px;font-weight:700;padding:10px 15px;border-radius:10px;border:none;cursor:pointer;white-space:nowrap}
+  .btn-primario{background:var(--cor);color:#fff}.btn-primario:hover{background:#1740a8}
+  .btn-sec{background:#fff;border:1px solid var(--borda);color:var(--tinta)}.btn-sec:hover{border-color:var(--cor);color:var(--cor)}
+  .btn-mini{padding:6px 10px;font-size:12px}
+  .abas{display:flex;gap:4px;border-bottom:1px solid var(--borda);margin-bottom:14px}
+  .aba{border:none;background:transparent;font-size:13.5px;font-weight:600;color:var(--tinta-suave);padding:10px 15px;cursor:pointer;border-bottom:3px solid transparent}
+  .aba:hover{color:var(--tinta)} .aba.on{color:var(--cor);border-bottom-color:var(--cor)}
+  .tab{display:none}.tab.on{display:block}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+  .chip{font-size:12px;font-weight:600;padding:6px 11px;border-radius:999px;border:1px solid var(--borda);background:#fff;cursor:pointer;color:var(--tinta-suave)}
+  .chip:hover{border-color:var(--cor);color:var(--cor)} .chip.on{background:var(--cor-claro);border-color:var(--cor);color:var(--cor)}
+  .aviso{font-size:11.5px;color:var(--tinta-suave);line-height:1.45;margin-top:12px;background:#F7F9FA;border:1px solid var(--borda);border-radius:10px;padding:10px 12px}
+  .aviso b{color:var(--tinta)}
+  .alerta{background:#FFF7ED;border-color:#FED7AA;color:#9a3412}
+  .vazio{color:var(--tinta-suave);font-size:13px;padding:20px;text-align:center}
+  .res{border:1px solid var(--borda);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start}
+  .res .cod{flex:0 0 auto;text-align:center}
+  .res .cod .cc{font-size:19px;font-weight:800;color:var(--cor);letter-spacing:.02em;font-variant-numeric:tabular-nums}
+  .res .cod .cst{font-size:11px;color:var(--tinta-suave);margin-top:2px}
+  .res .info{flex:1;min-width:0}
+  .res .desc{font-size:14px;font-weight:600;line-height:1.35}
+  .res .tags{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px}
+  .tg{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--cor-claro);color:var(--cor)}
+  .tg.red{background:#FEF3E7;color:#9a3412}
+  .tg.zero{background:#E8F5EF;color:#0b5c40}
+  .res .acao{flex:0 0 auto}
+  .copiado{font-size:11px;color:var(--ok);font-weight:700}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-size:10px;letter-spacing:.03em;color:var(--tinta-suave);text-transform:uppercase;padding:7px 8px;border-bottom:1px solid var(--borda)}
+  td{padding:7px 8px;border-bottom:1px solid #EDF1F2;vertical-align:top}
+  .tot{font-size:12px;color:var(--tinta-suave)}
+  code{background:#F0F2F3;border-radius:5px;padding:1px 5px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <div class="barra">
+    <button class="voltar" onclick="location.href='home_portal.html'">◄ Home</button>
+    <div class="modulo"><span class="ponto"></span> CClassTrib — Reforma Tributária (IBS/CBS)</div>
+  </div>
+</header>
+
+<main>
+  <div class="painel">
+    <h2>Classificação Tributária dos itens para a Reforma <span class="tot" id="fonteTag"></span></h2>
+    <div class="corpo">
+      <div class="abas">
+        <button class="aba on" onclick="irAba('busca',this)">🏷 cClassTrib (CST)</button>
+        <button class="aba" onclick="irAba('ncm',this)">📦 Consulta NCM</button>
+        <button class="aba" onclick="irAba('lote',this)">📋 Consulta em lote</button>
+      </div>
+
+      <!-- BUSCA -->
+      <section id="tab-busca" class="tab on">
+        <input id="q" placeholder="Digite o código cClassTrib (ex.: 000001) ou palavras da descrição (ex.: cesta básica, saúde, exportação)…"
+               oninput="filtrar()" autofocus>
+        <div class="chips" id="chipsCst"></div>
+        <div class="tot" id="contador" style="margin-top:12px"></div>
+        <div id="lista" style="margin-top:8px"></div>
+      </section>
+
+      <!-- LOTE -->
+      <section id="tab-lote" class="tab">
+        <label>Cole os códigos cClassTrib (um por linha, ou separados por ; , espaço) — ou importe um arquivo CSV/planilha salva como CSV</label>
+        <textarea id="loteTxt" rows="5" placeholder="000001&#10;200003&#10;410004"></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn btn-primario" onclick="rodarLote()">✓ Consultar em lote</button>
+          <button class="btn btn-sec" onclick="loteCsv.click()">📎 Importar planilha (CSV/Excel)</button>
+          <input id="loteCsv" type="file" accept=".csv,.txt,text/csv,.xlsx" hidden onchange="lerCsvLote(event)">
+          <button class="btn btn-sec" onclick="baixarLoteCsv()">⬇ Exportar CSV</button>
+        </div>
+        <div id="loteStatus" class="tot" style="margin-top:8px"></div>
+        <div id="loteRes" style="margin-top:12px"></div>
+        <div class="aviso">O CSV pode ter os códigos cClassTrib em qualquer coluna — o sistema pega os que baterem
+          com a tabela. Excel: <b>Salvar como → CSV</b>. O resultado sai pronto no botão <b>Exportar CSV</b>.</div>
+      </section>
+
+      <!-- CONSULTA NCM -->
+      <section id="tab-ncm" class="tab">
+        <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+          <div style="flex:1;min-width:220px"><label>NCM (código) ou descrição do produto/serviço</label>
+            <input id="qncm" placeholder="Ex.: 3004.90.99  ·  ou 'medicamento', 'cadeira', 'terapia respiratória'…"
+                   onkeydown="if(event.key==='Enter')buscarNcm()"></div>
+          <div style="flex:0 0 auto"><button class="btn btn-primario" onclick="buscarNcm()">🔎 Consultar NCM</button></div>
+        </div>
+        <div id="ncmStatus" class="tot" style="margin-top:10px"></div>
+        <div id="ncmRes" style="margin-top:6px"></div>
+        <div id="ncmRecentes" style="margin-top:14px"></div>
+        <div class="aviso">A descrição do NCM vem dos <b>dados públicos da NCM</b> (via BrasilAPI). <b>O NCM não define o
+          cClassTrib</b> — o código de classificação depende da <b>operação</b> (venda, exportação, cesta básica…).
+          Encontre o NCM aqui e escolha o <b>cClassTrib</b> na aba <b>cClassTrib (CST)</b>.</div>
+      </section>
+
+      <div class="aviso alerta">⚠ <b>Reforma Tributária:</b> a partir de <b>01/08/2026</b> a NF-e/NFC-e passa a exigir os campos
+        de <b>IBS/CBS</b> — cada item precisa do <b>CST</b> e do <b>cClassTrib</b> corretos, senão a nota é rejeitada.</div>
+      <div class="aviso">Tabela de referência <b>cClassTrib × CST</b> do <b>Informe Técnico NF-e 2025.002</b> (LC 214/2025).
+        É um <b>apoio para conferência</b> — confirme sempre na versão oficial mais recente publicada no Portal Nacional da NF-e,
+        pois a Receita ainda atualiza a tabela. O <b>NCM</b> não define sozinho o cClassTrib (depende da operação); por isso a
+        busca é por <b>código, descrição e CST</b>.</div>
+      <div class="painel" style="margin:14px 0 0">
+        <h2>⚖ Base legal</h2>
+        <div class="corpo" style="display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn btn-sec btn-mini" href="https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm" target="_blank" rel="noopener">LC 214/2025 (Planalto) ↗</a>
+          <a class="btn btn-sec btn-mini" href="https://www.gov.br/nfe/pt-br/documentos/documentos-tecnicos" target="_blank" rel="noopener">Informe Técnico NF-e 2025.002 ↗</a>
+          <a class="btn btn-sec btn-mini" href="https://www.nfe.fazenda.gov.br/portal/principal.aspx" target="_blank" rel="noopener">Portal Nacional da NF-e ↗</a>
+          <span class="tot" style="align-self:center">Nas descrições, os "art. NNN" são clicáveis e abrem o artigo na LC 214/2025.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+async function copiar(t){ try{ await navigator.clipboard.writeText(t); return true;}catch(e){return false;} }
+function irAba(id,btn){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('tab-'+id).classList.add('on');
+  document.querySelectorAll('.aba').forEach(a=>a.classList.remove('on')); btn.classList.add('on'); }
+
+/* Categoria (modalidade) pelo grupo do CST */
+const CAT = {
+  '000':'Tributação integral', '010':'Regra própria', '011':'Redução de alíquota',
+  '200':'Alíquota zero / reduzida', '210':'Redutor social (imóveis)', '220':'Regime específico (imóveis)',
+  '221':'Regime específico (imóveis)', '400':'Isenção', '410':'Imunidade / não incidência',
+  '510':'Diferimento', '550':'Suspensão', '620':'Monofásica (combustíveis)',
+  '800':'Transferência de crédito', '810':'Ajuste / crédito presumido', '820':'Regime específico'
+};
+function categoria(cst){ return CAT[cst] || 'Outros'; }
+/* extrai a redução/benefício da descrição para um selo */
+function beneficio(desc){
+  const d=desc.toLowerCase();
+  let m=d.match(/redu[çc][ãa]o\s*(\d{1,3})%/) || d.match(/reduzida\s*(\d{1,3})%/);
+  if(m) return {txt:'Redução '+m[1]+'%', cls:'red'};
+  if(d.includes('alíquota zero')||d.includes('aliquota zero')) return {txt:'Alíquota zero', cls:'zero'};
+  if(d.includes('isenção')||d.includes('isencao')) return {txt:'Isenção', cls:'zero'};
+  if(d.includes('imunidade')||d.includes('não incid')||d.includes('nao incid')) return {txt:'Não incide', cls:'zero'};
+  if(d.includes('alíquota fixa')||d.includes('aliquota fixa')) return {txt:'Alíquota fixa', cls:''};
+  if(d.includes('diferimento')) return {txt:'Diferimento', cls:''};
+  if(d.includes('suspensão')||d.includes('suspensao')) return {txt:'Suspensão', cls:''};
+  return null;
+}
+
+/* ── Tabela cClassTrib × CST (IT NF-e 2025.002 / LC 214/2025) ── */
+const TAB = [
+["000","000001","Situações tributadas integralmente pelo IBS e CBS"],
+["000","000002","Exploração de via (art. 11, LC nº 214/2025)"],
+["000","000003","Regime automotivo - projetos incentivados (art. 311, LC nº 214/2025)"],
+["000","000004","Regime automotivo - projetos incentivados (art. 312, LC nº 214/2025)"],
+["010","010001","Operações do FGTS não realizadas pela Caixa Econômica Federal"],
+["011","011001","Planos de assistência funerária (redução 60%)"],
+["011","011002","Planos de assistência à saúde (redução 60%)"],
+["011","011003","Intermediação de planos de assistência à saúde (redução 60%)"],
+["011","011004","Concursos e prognósticos"],
+["011","011005","Planos de assistência à saúde de animais domésticos (redução 30%)"],
+["200","200001","Aquisições em zonas de processamento de exportação (alíquota zero)"],
+["200","200002","Fornecimento a produtor rural e transportador autônomo (alíquota zero)"],
+["200","200003","Vendas de produtos da Cesta Básica Nacional (alíquota zero)"],
+["200","200004","Venda de dispositivos médicos - Anexo XII (alíquota zero)"],
+["200","200005","Dispositivos médicos para administração pública (alíquota zero)"],
+["200","200006","Emergência de saúde pública reconhecida (alíquota zero)"],
+["200","200007","Dispositivos de acessibilidade para PcD - Anexo XIV (alíquota zero)"],
+["200","200008","Dispositivos de acessibilidade para administração pública (alíquota zero)"],
+["200","200009","Medicamentos - Anexo XIV (alíquota zero)"],
+["200","200010","Medicamentos para administração pública (alíquota zero)"],
+["200","200011","Composições nutricionais para administração pública (alíquota zero)"],
+["200","200012","Emergência em saúde - medicamentos (alíquota zero)"],
+["200","200013","Produtos de higiene menstrual (alíquota zero)"],
+["200","200014","Produtos hortícolas, frutas e ovos não cozidos (alíquota zero)"],
+["200","200015","Automóveis para motoristas profissionais e PcD (alíquota zero)"],
+["200","200016","Pesquisa e desenvolvimento por ICT (alíquota zero)"],
+["200","200017","Operações do FGTS (alíquota zero)"],
+["200","200018","Operações de resseguro e retrocessão (alíquota zero)"],
+["200","200019","Importação de serviços financeiros (alíquota zero)"],
+["200","200020","Sociedades cooperativas optantes por regime específico (alíquota zero)"],
+["200","200021","Transporte público ferroviário e hidroviário urbano (alíquota zero)"],
+["200","200022","Bens para Zona Franca de Manaus (alíquota zero)"],
+["200","200023","Indústrias incentivadas em ZFM (alíquota zero)"],
+["200","200024","Bens para Áreas de Livre Comércio (alíquota zero)"],
+["200","200025","Serviços Prouni (alíquota zero CBS, 60% reduzido IBS)"],
+["200","200026","Locação em zonas reabilitadas (alíquota reduzida 80%)"],
+["200","200027","Locação de imóveis (alíquota reduzida 70%)"],
+["200","200028","Serviços de educação - Anexo II (alíquota reduzida 60%)"],
+["200","200029","Serviços de saúde humana - Anexo III (alíquota reduzida 60%)"],
+["200","200030","Dispositivos médicos - Anexo IV (alíquota reduzida 60%)"],
+["200","200031","Dispositivos de acessibilidade - Anexo V (alíquota reduzida 60%)"],
+["200","200032","Medicamentos registrados Anvisa (alíquota reduzida 60%)"],
+["200","200033","Composições nutricionais especiais (alíquota reduzida 60%)"],
+["200","200034","Alimentos para consumo humano - Anexo VII (alíquota reduzida 60%)"],
+["200","200035","Produtos de higiene e limpeza - Anexo VIII (alíquota reduzida 60%)"],
+["200","200036","Produtos agropecuários in natura (alíquota reduzida 60%)"],
+["200","200037","Serviços ambientais de conservação (alíquota reduzida 60%)"],
+["200","200038","Insumos agropecuários - Anexo IX (alíquota reduzida 60%)"],
+["200","200039","Serviços para produções artísticas/culturais - Anexo X (alíquota reduzida 60%)"],
+["200","200040","Serviços de comunicação institucional (alíquota reduzida 60%)"],
+["200","200041","Atividades desportivas (alíquota reduzida 60%)"],
+["200","200042","Serviço de educação desportiva (alíquota reduzida 60%)"],
+["200","200043","Serviços de soberania, segurança e segurança cibernética (alíquota reduzida 60%)"],
+["200","200044","Operações de segurança da informação com sócio brasileiro (alíquota reduzida 60%)"],
+["200","200045","Projetos de reabilitação urbana (alíquota reduzida 60%)"],
+["200","200046","Operações com bens imóveis (alíquota reduzida 50%)"],
+["200","200047","Bares e Restaurantes (alíquota reduzida 40%)"],
+["200","200048","Hotelaria e Parques de Diversão (alíquota reduzida 40%)"],
+["200","200049","Transporte coletivo rodoviário, ferroviário e hidroviário (alíquota reduzida 40%)"],
+["200","200050","Transporte aéreo regional coletivo (alíquota reduzida 40%)"],
+["200","200051","Agências de Turismo (alíquota reduzida 40%)"],
+["200","200052","Profissões intelectuais científicas e artísticas (alíquota reduzida 30%)"],
+["210","210001","Redutor social - bem imóvel residencial novo (redução 50%)"],
+["210","210002","Redutor social - lote residencial (redução 50%)"],
+["210","210003","Redutor social - locação de imóvel residencial (redução 70%)"],
+["220","220001","Incorporação imobiliária - regime especial (alíquota fixa)"],
+["220","220002","Incorporação imobiliária - regime especial (alíquota fixa)"],
+["220","220003","Alienação por parcelamento do solo (alíquota fixa)"],
+["221","221001","Locação/cessão de bem imóvel com alíquota sobre receita bruta"],
+["400","400001","Transporte público coletivo rodoviário e metroviário urbano (isenção)"],
+["410","410001","Fornecimento de bonificações"],
+["410","410002","Transferências entre estabelecimentos do mesmo contribuinte"],
+["410","410003","Doações"],
+["410","410004","Exportações de bens e serviços"],
+["410","410005","Fornecimentos pela União, Estados, DF e Municípios"],
+["410","410006","Fornecimentos por entidades religiosas"],
+["410","410007","Fornecimentos por partidos políticos e entidades sindicais"],
+["410","410008","Fornecimentos de livros, jornais e periódicos"],
+["410","410009","Fonogramas e videofonogramas musicais brasileiros"],
+["410","410010","Serviço de comunicação de radiodifusão"],
+["410","410011","Fornecimento de ouro como ativo financeiro"],
+["410","410012","Condomínio edilício não optante pelo regime regular"],
+["410","410013","Exportações de combustíveis"],
+["410","410014","Fornecimento de produtor rural não contribuinte"],
+["410","410015","Fornecimento por transportador autônomo não contribuinte"],
+["410","410016","Fornecimento/aquisição de resíduos sólidos"],
+["410","410017","Aquisição de bem móvel com crédito presumido"],
+["410","410018","Operações de fundos garantidores de políticas públicas"],
+["410","410019","Exclusão da gorjeta na base de cálculo"],
+["410","410020","Exclusão de intermediação na base de cálculo"],
+["510","510001","Operações com energia elétrica (diferimento)"],
+["510","510002","Insumos agropecuários para produtor rural (diferimento)"],
+["550","550001","Exportações de bens materiais (suspensão)"],
+["550","550002","Regime de Trânsito (suspensão)"],
+["550","550003","Regimes de Depósito (suspensão)"],
+["550","550004","Regimes de Depósito (suspensão)"],
+["550","550005","Regimes de Depósito (suspensão)"],
+["550","550006","Regimes de Permanência Temporária (suspensão)"],
+["550","550007","Regimes de Aperfeiçoamento (suspensão)"],
+["550","550008","Repetro-Temporário (suspensão)"],
+["550","550009","GNL-Temporário (suspensão)"],
+["550","550010","Repetro-Permanente (suspensão)"],
+["550","550011","Repetro-Industrialização (suspensão)"],
+["550","550012","Repetro-Nacional (suspensão)"],
+["550","550013","Repetro-Entreposto (suspensão)"],
+["550","550014","Zona de Processamento de Exportação (suspensão)"],
+["550","550015","Reporto (suspensão)"],
+["550","550016","Reidi (suspensão)"],
+["550","550017","Renaval (suspensão)"],
+["550","550018","Desoneração de aquisição de bens de capital (suspensão)"],
+["550","550019","Importação por indústria incentivada em ZFM (suspensão)"],
+["550","550020","Áreas de livre comércio (suspensão)"],
+["620","620001","Tributação monofásica sobre combustíveis"],
+["620","620002","Tributação monofásica com retenção sobre combustíveis"],
+["620","620003","Tributação monofásica com tributos retidos sobre combustíveis"],
+["620","620004","Tributação monofásica sobre mistura de EAC com gasolina A"],
+["620","620005","Tributação monofásica sobre combustíveis cobrada anteriormente"],
+["800","800001","Fusão, cisão ou incorporação"],
+["800","800002","Transferência de crédito de associado para cooperativa"],
+["810","810001","Crédito presumido da Zona Franca de Manaus"],
+["820","820001","Fornecimento de planos de assistência à saúde"],
+["820","820002","Fornecimento de planos de assistência funerária"],
+["820","820003","Fornecimento de planos de assistência à saúde de animais domésticos"],
+["820","820004","Prestação de serviços de concursos de prognósticos"],
+["820","820005","Alienação de bens imóveis"],
+];
+const ITENS = TAB.map(([cst,cc,desc])=>({cst,cc,desc,cat:categoria(cst)}));
+let filtroCst = '';
+
+const _DIACRIT = new RegExp('[\\u0300-\\u036f]', 'g');
+function normal(s){ return (s||'').toLowerCase().normalize('NFD').replace(_DIACRIT,''); }
+
+function montarChips(){
+  const cont={};
+  ITENS.forEach(i=>cont[i.cst]=(cont[i.cst]||0)+1);
+  const csts=Object.keys(cont).sort();
+  $('#chipsCst').innerHTML='<span class="chip'+(filtroCst===''?' on':'')+'" onclick="setCst(\'\')">Todos ('+ITENS.length+')</span>'+
+    csts.map(c=>`<span class="chip${filtroCst===c?' on':''}" onclick="setCst('${c}')" title="${categoria(c)}">CST ${c} · ${cont[c]}</span>`).join('');
+}
+function setCst(c){ filtroCst=c; montarChips(); filtrar(); }
+
+/* Base legal: transforma "art. 311" na descrição num link para a LC 214/2025 no
+   Planalto (âncora #art311, confirmada no HTML oficial). */
+const LC214 = 'https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm';
+function linkArt(desc){
+  return (desc||'').replace(/\bart(?:s)?\.?\s*(\d{1,4})/gi,
+    (m,n)=>`<a href="${LC214}#art${n}" target="_blank" rel="noopener" style="color:var(--cor);font-weight:600">${m}</a>`);
+}
+function cartao(i){
+  const b=beneficio(i.desc);
+  return `<div class="res">
+    <div class="cod"><div class="cc">${i.cc}</div><div class="cst">CST ${i.cst}</div></div>
+    <div class="info"><div class="desc">${linkArt(i.desc)}</div>
+      <div class="tags"><span class="tg">${i.cat}</span>${b?`<span class="tg ${b.cls}">${b.txt}</span>`:''}
+        <a class="tg" href="${LC214}" target="_blank" rel="noopener" style="background:#EEF1F4;color:#5C6B72;text-decoration:none" title="Abrir a LC 214/2025 no Planalto">⚖ base legal</a></div></div>
+    <div class="acao"><button class="btn btn-sec btn-mini" onclick="copiarCod('${i.cc}',this)">⧉ copiar</button></div>
+  </div>`;
+}
+async function copiarCod(cc,el){ await copiar(cc); const t=el.textContent; el.innerHTML='<span class="copiado">✓ copiado</span>'; setTimeout(()=>el.textContent=t,1500); }
+
+function filtrar(){
+  const termo=normal($('#q').value.trim());
+  let r=ITENS;
+  if(filtroCst) r=r.filter(i=>i.cst===filtroCst);
+  if(termo){
+    const palavras=termo.split(/\s+/);
+    r=r.filter(i=>{ const alvo=normal(i.cc+' '+i.desc+' '+i.cat+' cst'+i.cst);
+      return palavras.every(p=>alvo.includes(p)); });
+  }
+  $('#contador').textContent = `${r.length} de ${ITENS.length} classificação(ões)`;
+  $('#lista').innerHTML = r.length ? r.map(cartao).join('')
+    : '<div class="vazio">Nada encontrado. Tente outra palavra, o código, ou limpe o filtro de CST.</div>';
+}
+
+/* ── Lote ── */
+function parseLote(){
+  return ($('#loteTxt').value||'').split(/[\s;,]+/).map(s=>s.replace(/\D/g,'')).filter(s=>s.length>=4);
+}
+function aplicarCodigos(nomeArq, toksBrutos){
+  // recebe tokens de 4–6 dígitos (de qualquer coluna) e prefere os da tabela
+  const validos=new Set(ITENS.map(i=>i.cc));
+  const cods=(toksBrutos||[]).filter(t=>t.length>=4 && t.length<=6).map(t=>t.padStart(6,'0'));
+  const daTabela=[...new Set(cods.filter(c=>validos.has(c)))];
+  const usar = daTabela.length ? daTabela : [...new Set(cods)];
+  $('#loteTxt').value=usar.join('\n');
+  $('#loteStatus').textContent=`📎 ${nomeArq}: ${usar.length} código(s) lido(s)`+(daTabela.length?` (${daTabela.length} da tabela)`:'');
+  rodarLote();
+}
+function lerCsvLote(ev){
+  const f=ev.target.files[0]; ev.target.value=''; if(!f) return;
+  const ehXlsx=/\.xlsx$/i.test(f.name);
+  if(ehXlsx){
+    // .xlsx é um .zip de XMLs — o backend lê com a biblioteca padrão do Python
+    $('#loteStatus').textContent=`⏳ Lendo ${f.name}…`;
+    const r=new FileReader();
+    r.onload=async()=>{
+      try{
+        const resp=await fetch('/api/xlsx-codigos',{method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({b64:String(r.result)})});
+        const d=await resp.json();
+        if(!d.ok){ $('#loteStatus').textContent='⚠ '+(d.erro||'não consegui ler a planilha'); return; }
+        aplicarCodigos(f.name, d.codigos);
+      }catch(e){ $('#loteStatus').textContent='⚠ falha ao ler a planilha'; }
+    };
+    r.readAsDataURL(f);   // vira data:...;base64,XXXX
+    return;
+  }
+  const r=new FileReader();
+  r.onload=()=>aplicarCodigos(f.name,(r.result||'').split(/[^\d]+/));
+  r.readAsText(f);
+}
+let loteAtual=[];
+function rodarLote(){
+  const cods=parseLote();
+  const idx={}; ITENS.forEach(i=>idx[i.cc]=i);
+  loteAtual=cods.map(c=>{ const c6=c.padStart(6,'0'); const i=idx[c6];
+    return i?{cc:c6,cst:i.cst,desc:i.desc,cat:i.cat}:{cc:c6,cst:'—',desc:'⚠ Código não encontrado na tabela',cat:'—'}; });
+  const achou=loteAtual.filter(x=>x.cst!=='—').length;
+  $('#loteRes').innerHTML = loteAtual.length
+    ? `<div class="tot" style="margin-bottom:6px">${achou} de ${loteAtual.length} encontrado(s)</div>`
+      +'<div style="overflow-x:auto"><table><thead><tr><th>cClassTrib</th><th>CST</th><th>Modalidade</th><th>Descrição</th></tr></thead><tbody>'
+      +loteAtual.map(x=>`<tr><td><code>${x.cc}</code></td><td>${x.cst}</td><td>${x.cat}</td><td>${linkArt(x.desc)}</td></tr>`).join('')
+      +'</tbody></table></div>'
+    : '<div class="vazio">Cole os códigos cClassTrib acima (um por linha) ou importe um CSV.</div>';
+}
+function baixarLoteCsv(){
+  if(!loteAtual.length){ rodarLote(); if(!loteAtual.length) return; }
+  const linhas=[['cClassTrib','CST','Modalidade','Descricao'],
+    ...loteAtual.map(x=>[x.cc,x.cst,x.cat,x.desc])];
+  const csv=linhas.map(l=>l.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(';')).join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'}));
+  a.download='cclasstrib_lote.csv'; a.click();
+}
+
+/* ── Consulta NCM (descrição pela BrasilAPI via /api/ncm) + histórico local ── */
+function histNcm(){ try{ return JSON.parse(localStorage.getItem('ncm_recentes')||'[]'); }catch(e){ return []; } }
+function addHist(cod,desc){
+  let h=histNcm().filter(x=>x.cod!==cod);
+  h.unshift({cod,desc,em:new Date().toLocaleDateString('pt-BR')});
+  localStorage.setItem('ncm_recentes', JSON.stringify(h.slice(0,12)));
+  renderRecentes();
+}
+function renderRecentes(){
+  const h=histNcm();
+  $('#ncmRecentes').innerHTML = h.length
+    ? '<label>Consultas recentes</label><div style="overflow-x:auto"><table><thead><tr><th>NCM</th><th>Descrição</th><th>Data</th></tr></thead><tbody>'
+      +h.map(x=>`<tr><td><code>${x.cod}</code></td><td>${x.desc}</td><td class="tot">${x.em}</td></tr>`).join('')
+      +'</tbody></table></div>' : '';
+}
+async function buscarNcm(){
+  const termo=$('#qncm').value.trim();
+  if(termo.length<2){ $('#ncmStatus').textContent='Digite um código NCM ou uma descrição.'; return; }
+  $('#ncmStatus').textContent='⏳ Consultando…'; $('#ncmRes').innerHTML='';
+  try{
+    const r=await fetch('/api/ncm?q='+encodeURIComponent(termo)).then(x=>x.json());
+    if(!r.ok){ $('#ncmStatus').textContent=r.erro||'Não encontrado.'; return; }
+    const its=r.itens||[];
+    $('#ncmStatus').textContent = `${its.length} NCM(s) encontrado(s)`;
+    $('#ncmRes').innerHTML = its.length ? its.map(i=>`<div class="res">
+        <div class="cod"><div class="cc" style="font-size:16px">${i.codigo}</div><div class="cst">NCM</div></div>
+        <div class="info"><div class="desc">${i.descricao||'—'}</div>
+          <div class="tags"><span class="tg" style="background:#F0F2F3;color:#5C6B72">cClassTrib: escolha pela operação →</span></div></div>
+        <div class="acao"><button class="btn btn-sec btn-mini" onclick="copiarNcm('${i.codigo}','${(i.descricao||'').replace(/'/g,'')}',this)">⧉ copiar</button></div>
+      </div>`).join('')
+      : '<div class="vazio">Nenhum NCM para esse termo. Tente outra palavra ou o código.</div>';
+    if(its.length) addHist(its[0].codigo, its[0].descricao||'');
+  }catch(e){ $('#ncmStatus').textContent='Falha ao consultar: '+e.message; }
+}
+async function copiarNcm(cod,desc,el){ await copiar(cod); const t=el.textContent; el.innerHTML='<span class="copiado">✓ copiado</span>'; setTimeout(()=>el.textContent=t,1500); addHist(cod,desc); }
+
+$('#fonteTag').textContent = ITENS.length+' classificações · IT NF-e 2025.002';
+montarChips(); filtrar(); renderRecentes();
+</script>
+<script src="fiscale-nav.js"></script>
+</body>
+</html>

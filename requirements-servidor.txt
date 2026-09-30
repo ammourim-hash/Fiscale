@@ -1,0 +1,27 @@
+# Dependências do SERVIDOR PRINCIPAL (fiscale_server.py)
+#
+# ATENÇÃO — são DUAS instalações de Python diferentes:
+#
+#   1. Python do SISTEMA  -> roda o fiscale_server.py
+#      C:\Users\<voce>\AppData\Local\Programs\Python\Python312\python.exe
+#      Usa ESTE arquivo.
+#
+#   2. venv do módulo NFS-e -> roda o backend das notas
+#      nfse\.venv\  — usa nfse\requirements.txt
+#
+# Confundir as duas foi o que quebrou a instalação em outra máquina:
+# fiscale_elo.py precisa de `cryptography`, que existia só na venv.
+# O import é protegido por try/except, então o Fiscale ABRE mesmo sem ela —
+# o botão Elo é que fica sem funcionar, em silêncio. Difícil de diagnosticar.
+#
+# Instalar com:
+#   "<caminho do python do sistema>" -m pip install -r requirements-servidor.txt
+
+# Ed25519 para o token de troca do Elo (fiscale_elo.py) e leitura de
+# certificado .pfx na tela de cadastro (fiscale_server.py).
+cryptography>=44.0.0
+
+# Ícone na bandeja do Windows. Opcional: sem ele o Fiscale roda,
+# só não aparece o ícone ao lado do relógio.
+pystray>=0.19.5
+pillow>=10.0.0

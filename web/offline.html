@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0C333B">
+<title>FISCALE — sem conexão</title>
+<!-- Guardada pelo service worker: é a ÚNICA tela que abre sem servidor. Não
+     carrega nada de fora e não fala de pessoa, empresa nem documento. -->
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+    font-family:"Segoe UI",Roboto,-apple-system,Arial,sans-serif;
+    background:linear-gradient(180deg,#0F3F48,#08242A);color:#E6F0F1}
+  .cartao{max-width:460px;background:#fff;color:#1B2328;border-radius:18px;padding:34px 32px;text-align:center;
+    box-shadow:0 30px 70px -20px rgba(0,0,0,.6)}
+  svg{width:64px;height:64px}
+  h1{font-size:22px;color:#10444E;margin:16px 0 8px}
+  p{font-size:14px;line-height:1.6;color:#5C6B72;margin-bottom:10px}
+  button{margin-top:12px;font:inherit;font-weight:800;letter-spacing:.05em;border:0;border-radius:11px;
+    padding:12px 26px;color:#fff;cursor:pointer;background:linear-gradient(180deg,#136B72,#0E5760)}
+</style>
+</head>
+<body>
+  <div class="cartao">
+    <!-- Símbolo embutido: sem servidor, nenhuma imagem de fora carrega — e o
+         service worker só atende navegação, não imagem (visto no Edge real). -->
+    <svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
+      <rect width="64" height="64" rx="15" fill="#17616C"/>
+      <rect x="17" y="15" width="6.5" height="34" rx="3.25" fill="#fff"/>
+      <rect x="17" y="15" width="27" height="6.5" rx="3.25" fill="#fff"/>
+      <rect x="17" y="28" width="19" height="6.5" rx="3.25" fill="#7FD1DE"/>
+      <circle cx="45.5" cy="44.5" r="10" fill="#7FD1DE"/>
+      <path d="M40.8 44.6l3.4 3.4 6.4-7.4" fill="none" stroke="#0C333B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <h1>O FISCALE não respondeu</h1>
+    <p>Este navegador não conseguiu falar com o servidor do FISCALE.</p>
+    <p>Verifique a conexão com o <b>servidor do escritório</b> ou com a <b>rede privada</b>.
+      Nenhum dado seu ficou guardado neste aparelho.</p>
+    <button onclick="location.reload()">TENTAR DE NOVO</button>
+  </div>
+</body>
+</html>

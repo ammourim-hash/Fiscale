@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Fiscale">
+  <title>Fiscale</title>
+  <!-- Símbolo do Fiscale
+       F  = a letra, formada por barras que também são as LINHAS de um documento
+            fiscal (a nota que o sistema lê).
+       ✓  = selo de conferido: é o que o sistema faz — auditar, conferir e
+            classificar antes de você declarar.
+       Cores: petróleo da identidade + ciano no ponto de atenção. -->
+  <defs>
+    <linearGradient id="fscFundo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#14505C"/>
+      <stop offset="1" stop-color="#0C333B"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="15" fill="url(#fscFundo)"/>
+
+  <!-- haste do F -->
+  <rect x="17" y="15" width="6.5" height="34" rx="3.25" fill="#FFFFFF"/>
+  <!-- barra de cima (linha cheia do documento) -->
+  <rect x="17" y="15" width="27" height="6.5" rx="3.25" fill="#FFFFFF"/>
+  <!-- barra do meio, em ciano: o dado que o sistema confere -->
+  <rect x="17" y="28" width="19" height="6.5" rx="3.25" fill="#7FD1DE"/>
+
+  <!-- selo de conferido -->
+  <circle cx="45.5" cy="44.5" r="10" fill="#7FD1DE"/>
+  <path d="M40.8 44.6 l3.4 3.4 l6.4 -7.4" fill="none" stroke="#0C333B"
+        stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

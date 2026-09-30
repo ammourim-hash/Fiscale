@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10444E">
+<title>Fiscale — Centro de operação fiscal</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="icone.webp">
+<link rel="apple-touch-icon" href="/icones/fiscale-180.png">
+<!-- Service worker (portal, Fase 3): voltou para o FISCALE poder ser instalado
+     como aplicativo, mas NÃO guarda páginas — o antigo guardava e deixava telas
+     presas em versão velha. Só a tela "sem conexão" fica no aparelho. Ver sw.js. -->
+<style>
+  /* ════════════════════════════════════════════════════════════════════════
+     CENTRO DE OPERAÇÃO
+
+     A tela tem três partes:
+
+        • o CARTÃO de abertura, que diz o que o sistema é;
+        • a SITUAÇÃO OPERACIONAL, à direita, que diz como ele está AGORA;
+        • as PORTAS: quatro frentes de trabalho, e a grade de módulos.
+
+     REGRA DA SITUAÇÃO OPERACIONAL
+        Cada linha vem de uma fonte de verdade e nenhuma é decorativa. O que
+        não pôde ser medido aparece como "—", nunca como verde. Um painel que
+        mostra "OK" porque a consulta falhou é pior do que painel nenhum: ele
+        transforma silêncio em garantia.
+
+     As cores são as mesmas de sempre.
+     ════════════════════════════════════════════════════════════════════════ */
+  :root{
+    --fundo:#EAEFF1;
+    --superficie:#FFFFFF;
+    --tinta:#1B2328;
+    --tinta-suave:#5C6B72;
+    --borda:#DDE4E7;
+    --petroleo:#10444E;
+    --nfse:#0E7490;
+    --ok:#0F8A5F;
+    --aviso:#B07D10;
+    --ruim:#B3382C;
+    --raio:20px;
+    --sombra:0 1px 2px rgba(18,33,42,.05), 0 12px 32px -12px rgba(18,33,42,.18);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Segoe UI", Roboto, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    background:var(--fundo);
+    color:var(--tinta);
+    -webkit-tap-highlight-color:transparent;
+  }
+  main{max-width:1400px;margin:0 auto;padding:4px 20px 20px}
+
+  /* ── Faixa da conta ─────────────────────────────────────────────────── */
+  .faixa{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio);
+    padding:14px 20px;margin-bottom:18px;box-shadow:0 1px 2px rgba(18,33,42,.04)}
+  .faixa .saudacao{flex:1;min-width:220px}
+  .faixa .saudacao b{display:block;font-size:19px;font-weight:800;color:var(--petroleo);
+    letter-spacing:-.01em}
+  .faixa .saudacao span{display:block;font-size:12.5px;color:var(--tinta-suave);margin-top:2px}
+  .faixa .divisa{width:1px;align-self:stretch;background:var(--borda);margin:0 2px}
+  .faixa button{display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:12.5px;
+    color:var(--tinta-suave);background:#fff;border:1px solid var(--borda);border-radius:12px;
+    padding:9px 15px;cursor:pointer;white-space:nowrap;
+    transition:border-color .16s ease,color .16s ease,transform .16s ease}
+  .faixa button:hover{color:var(--petroleo);border-color:#A9C2C7;transform:translateY(-1px)}
+  .faixa button.eu{color:var(--petroleo);background:#F2F7F8;border-color:#CFDEE1;cursor:default}
+  .faixa button.eu:hover{transform:none;border-color:#CFDEE1}
+  .faixa button.perigo{color:var(--ruim);border-color:#E8B4AE}
+  /* `hidden` precisa vencer o display:inline-flex acima — é ele que esconde o
+     "Instalar FISCALE" até o navegador permitir a instalação. */
+  .faixa button[hidden]{display:none}
+
+  /* ── Corpo: operação à esquerda, situação à direita ─────────────────── */
+  .geral{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;align-items:start}
+  @media(max-width:1080px){ .geral{grid-template-columns:1fr} }
+
+  /* ── O cartão de abertura ───────────────────────────────────────────── */
+  .heroi{position:relative;overflow:hidden;border-radius:24px;padding:36px 38px;
+    background:linear-gradient(112deg,#12454F 0%,#0C3038 60%,#08252B 100%);
+    color:#EAF2F3;border:1px solid rgba(255,255,255,.08);
+    box-shadow:0 3px 10px rgba(10,42,49,.16), 0 28px 56px -26px rgba(10,42,49,.6);
+    display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:center}
+  .heroi > *{position:relative}
+  .heroi h1{font-size:40px;line-height:1.06;letter-spacing:-.03em;font-weight:800;
+    color:#fff;margin:0 0 16px}
+  .heroi h1 span{display:block;color:#4FD3A2}
+  .heroi p{font-size:14px;line-height:1.7;color:#A8C4C9;margin:0;max-width:58ch}
+  .heroi p b{color:#fff;font-weight:700}
+  .lema{display:inline-flex;align-items:center;gap:9px;margin-top:18px;
+    font-size:13.5px;font-weight:700;color:#4FD3A2}
+  .lema svg{flex:0 0 17px}
+  .acoes{display:flex;gap:11px;flex-wrap:wrap;margin-top:24px}
+  .acoes a{display:inline-flex;align-items:center;gap:9px;text-decoration:none;
+    font-size:13.5px;font-weight:800;border-radius:13px;padding:12px 20px;
+    transition:transform .16s cubic-bezier(.22,.61,.36,1),box-shadow .16s ease,background .16s ease}
+  .acoes a.forte{background:#0F8A5F;color:#fff;box-shadow:0 8px 20px -8px rgba(15,138,95,.8)}
+  .acoes a.fraca{background:rgba(255,255,255,.07);color:#EAF2F3;border:1px solid rgba(255,255,255,.17)}
+  .acoes a:hover{transform:translateY(-2px)}
+  .acoes a.fraca:hover{background:rgba(255,255,255,.15)}
+  .radar{width:100%;height:auto;max-width:300px;justify-self:center;opacity:.92}
+  @media(max-width:900px){
+    .heroi{grid-template-columns:1fr;padding:28px 24px}
+    .heroi h1{font-size:32px}
+    .radar{display:none}
+  }
+
+  /* ── Quatro frentes ─────────────────────────────────────────────────── */
+  .frentes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:18px}
+  .frente{display:flex;flex-direction:column;text-decoration:none;background:var(--superficie);
+    border:1px solid var(--borda);border-radius:var(--raio);padding:22px 20px 18px;
+    box-shadow:0 1px 2px rgba(18,33,42,.04);
+    transition:transform .16s cubic-bezier(.22,.61,.36,1),box-shadow .16s ease}
+  .frente:hover{transform:translateY(-4px);
+    box-shadow:0 2px 6px rgba(18,33,42,.06), 0 20px 40px -14px rgba(18,33,42,.3)}
+  .frente .bolha{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;font-size:24px;background:var(--cf,#E8F0F1);margin-bottom:16px}
+  .frente b{font-size:16px;font-weight:800;color:var(--petroleo);margin-bottom:7px}
+  .frente span{font-size:12.5px;line-height:1.6;color:var(--tinta-suave)}
+  .frente .seta{margin-top:14px;width:26px;height:26px;border-radius:50%;border:1px solid var(--borda);
+    display:flex;align-items:center;justify-content:center;color:var(--tinta-suave);font-size:12px}
+  .frente:hover .seta{border-color:var(--petroleo);color:var(--petroleo)}
+  @media(max-width:1080px){ .frentes{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media(max-width:560px){ .frentes{grid-template-columns:1fr} }
+
+  /* ── Painéis da direita ─────────────────────────────────────────────── */
+  .cartao{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio);
+    box-shadow:var(--sombra);margin-bottom:18px;overflow:hidden}
+  .cartao > h2{font-size:15px;font-weight:800;color:var(--petroleo);padding:17px 20px 14px}
+  .linha{display:flex;align-items:center;gap:12px;padding:11px 20px;
+    border-top:1px solid #EFF3F4;font-size:13px}
+  .linha .ic{flex:0 0 22px;font-size:16px;line-height:1;text-align:center}
+  .linha .rot{flex:1;min-width:0;color:var(--tinta)}
+  .linha .rot small{display:block;font-size:11px;color:var(--tinta-suave);margin-top:1px}
+  .pill{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;font-size:11.5px;
+    font-weight:800;border-radius:999px;padding:5px 11px;white-space:nowrap}
+  .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .pill.ok{background:#E4F4EC;color:var(--ok)}
+  .pill.aviso{background:#FDF3DF;color:var(--aviso)}
+  .pill.ruim{background:#FBE9E7;color:var(--ruim)}
+  .pill.neutro{background:#EEF1F2;color:var(--tinta-suave)}
+
+  /* Roadmap — trilho com marcos */
+  .marco{display:flex;align-items:center;gap:12px;padding:11px 20px;border-top:1px solid #EFF3F4;
+    font-size:13px;position:relative}
+  .marco .ponto{flex:0 0 9px;width:9px;height:9px;border-radius:50%;background:var(--nfse)}
+  .marco .ponto.frio{background:#C7D3D6}
+  .marco .nome{flex:1;min-width:0;font-weight:600}
+  .marco .estado{font-size:11.5px;color:var(--tinta-suave);white-space:nowrap}
+  .verMais{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    margin:14px 20px 18px;padding:11px 15px;border:1px solid var(--borda);border-radius:13px;
+    font-size:12.5px;font-weight:700;color:var(--petroleo);text-decoration:none;
+    transition:border-color .16s ease}
+  .verMais:hover{border-color:var(--petroleo)}
+
+  /* ── Módulos ────────────────────────────────────────────────────────── */
+  h2.secao{font-size:12.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--tinta-suave);margin:26px 0 5px}
+  p.secao-sub{font-size:13px;color:var(--tinta-suave);margin:0 0 14px}
+  p.secao-sub b{color:var(--tinta)}
+  .modulos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  .mod{display:flex;gap:13px;align-items:flex-start;text-decoration:none;
+    background:var(--superficie);border:1px solid var(--borda);border-radius:16px;
+    padding:15px 16px;box-shadow:0 1px 2px rgba(18,33,42,.04);
+    transition:transform .16s cubic-bezier(.22,.61,.36,1),box-shadow .16s ease,border-color .16s ease}
+  .mod:hover{transform:translateY(-3px);border-color:transparent;
+    box-shadow:0 2px 6px rgba(18,33,42,.06), 0 18px 36px -14px rgba(18,33,42,.3)}
+  .mod .ic{flex:0 0 38px;width:38px;height:38px;border-radius:12px;display:flex;
+    align-items:center;justify-content:center;font-size:18px;line-height:1;
+    background:var(--c,#0E7490);color:#fff;box-shadow:0 6px 15px -6px var(--c,#0E7490)}
+  .mod b{display:block;font-size:13.5px;font-weight:800;color:var(--petroleo);margin:1px 0 3px}
+  .mod .txt{display:block;font-size:12px;line-height:1.52;color:var(--tinta-suave)}
+  @media(max-width:1080px){ .modulos{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media(max-width:620px){ .modulos{grid-template-columns:1fr} }
+
+  /* ── Rede ───────────────────────────────────────────────────────────── */
+  .rede{margin-top:18px;border:1px solid var(--borda);border-radius:var(--raio);
+    background:var(--superficie);padding:0 20px;box-shadow:0 1px 2px rgba(18,33,42,.04)}
+  .rede summary{cursor:pointer;padding:15px 0;font-weight:800;color:var(--petroleo);
+    font-size:13.5px;list-style:none;display:flex;align-items:center;gap:10px}
+  .rede summary::-webkit-details-marker{display:none}
+  .rede summary::after{content:"▾";margin-left:auto;color:var(--tinta-suave);font-size:13px;
+    transition:transform .18s ease}
+  .rede[open] summary::after{transform:rotate(180deg)}
+  .rede .corpo{padding:15px 0 18px;color:#3C4B52;font-size:13px;line-height:1.64;
+    border-top:1px solid var(--borda)}
+  .rede .corpo p{margin:0 0 10px}
+  .rede code{background:var(--petroleo);color:#fff;padding:8px 14px;border-radius:10px;
+    font-size:14.5px;font-weight:700;letter-spacing:.3px}
+  .rede .end{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:12px}
+  .rede .end button{font-weight:800;font-size:12px;color:var(--petroleo);background:#EAF2F3;
+    border:1px solid #B9D2D6;border-radius:999px;padding:8px 14px;cursor:pointer}
+
+  /* ── Rodapé ─────────────────────────────────────────────────────────── */
+  .rodape{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:18px;
+    padding:15px 20px;border-top:1px solid var(--borda);font-size:12px;color:var(--tinta-suave)}
+  .rodape .item{display:inline-flex;align-items:center;gap:8px}
+  .rodape .fim{margin-left:auto}
+  .rodape b{color:var(--tinta)}
+
+  @media (prefers-reduced-motion:reduce){
+    .frente,.mod,.acoes a,.faixa button{transition:none!important}
+    .frente:hover,.mod:hover,.acoes a:hover,.faixa button:hover{transform:none!important}
+  }
+</style>
+</head>
+<body>
+<script src="fiscale.js"></script>
+
+<main>
+
+  <!-- ── Faixa da conta ─────────────────────────────────────────────────── -->
+  <div class="faixa">
+    <div class="saudacao">
+      <b id="saudacaoHora">Bem-vindo(a)</b>
+      <span>Bem-vindo ao seu centro de operação fiscal.</span>
+    </div>
+    <div class="divisa"></div>
+    <button class="eu" id="quemSou" style="display:none"></button>
+    <button onclick="location.href='central.html'" title="Voltar à Central de Aplicações">▦ Aplicações</button>
+    <!-- Só aparece quando o navegador diz que dá para instalar (fiscale-pwa.js). -->
+    <button data-instalar-fiscale hidden title="Instalação opcional como aplicativo. O FISCALE funciona normalmente pelo navegador.">⤓ Instalar FISCALE</button>
+    <button id="btnElo" onclick="abrirElo(this)" title="Abrir o Elo — atendimento do escritório">🔗 Elo</button>
+    <button id="btnBackup" style="display:none" onclick="location.href='backup.html'"
+      title="Backup e migração para outro computador">☁ Backup</button>
+    <button id="btnUsuarios" style="display:none" onclick="location.href='usuarios.html'">👥 Usuários</button>
+    <button id="btnSeguranca" style="display:none" onclick="location.href='seguranca_acessos.html'"
+      title="Registro de acessos — quem entrou, quando e de onde">🛡 Segurança</button>
+    <button onclick="trocarSenha()" title="Trocar a minha senha">🔑 Senha</button>
+    <button onclick="fetch('/api/logout',{method:'POST'}).then(()=>location.href='/login.html')">↪ Sair</button>
+    <button id="btnEncerrar" class="perigo" style="display:none" onclick="encerrar()"
+      title="Fecha o Fiscale de verdade (o servidor)">⏻ Encerrar</button>
+  </div>
+
+  <div class="geral">
+
+    <!-- ═══ Esquerda: a operação ═══════════════════════════════════════ -->
+    <div>
+      <section class="heroi">
+        <div>
+          <h1>Centro de operação<span>fiscal do escritório</span></h1>
+          <p>O Fiscale centraliza <b>documento, acervo, conferência e apuração</b> num
+            ambiente só. A leitura do XML é a base do trabalho: NFS-e e NF-e em produção,
+            CT-e capturado da SEFAZ, e a apuração saindo do próprio documento — nunca de
+            digitação.</p>
+          <div class="lema">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                 stroke-linecap="round" stroke-linejoin="round" width="17" height="17">
+              <circle cx="12" cy="12" r="9"/><path d="M8.5 12.2l2.4 2.4 4.6-5"/>
+            </svg>
+            Ler, validar, conferir e só então apurar.
+          </div>
+          <div class="acoes">
+            <a class="forte" href="nfe_documentos.html">📦 Abrir documentos</a>
+            <a class="fraca" href="nfe_pendencias.html">🧾 Ver pendências</a>
+            <a class="fraca" href="clientes.html">🏛 Empresas</a>
+          </div>
+        </div>
+        <!-- Radar: decoração, e só. Nenhum número dele significa coisa alguma. -->
+        <svg class="radar" viewBox="0 0 240 240" aria-hidden="true">
+          <defs>
+            <radialGradient id="brilho" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#4FD3A2" stop-opacity=".55"/>
+              <stop offset="60%" stop-color="#0E7490" stop-opacity=".12"/>
+              <stop offset="100%" stop-color="#0E7490" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <circle cx="120" cy="120" r="112" fill="url(#brilho)"/>
+          <g fill="none" stroke="#3E8FA0" stroke-opacity=".45">
+            <circle cx="120" cy="120" r="106"/><circle cx="120" cy="120" r="82"/>
+            <circle cx="120" cy="120" r="58"/><circle cx="120" cy="120" r="34"/>
+            <path d="M14 120h212M120 14v212M45 45l150 150M195 45L45 195"/>
+          </g>
+          <g fill="#7FE3C0">
+            <circle cx="120" cy="120" r="9"/><circle cx="176" cy="86" r="3.5"/>
+            <circle cx="72" cy="150" r="3"/><circle cx="146" cy="176" r="3"/>
+            <circle cx="88" cy="72" r="2.5"/>
+          </g>
+        </svg>
+      </section>
+
+      <!-- Quatro frentes de trabalho -->
+      <section class="frentes">
+        <a class="frente" href="nfe_documentos.html">
+          <span class="bolha" style="--cf:#E3F0F3">📄</span>
+          <b>Documentos fiscais</b>
+          <span>Entrada por XML, distribuição da SEFAZ e importação manual — tudo pelo mesmo portão.</span>
+          <span class="seta">›</span>
+        </a>
+        <a class="frente" href="nfe.html">
+          <span class="bolha" style="--cf:#E4F4EC">🛡</span>
+          <b>Conferência</b>
+          <span>NCM, CFOP e CST item a item; cancelamentos, substituições e o crédito que tem respaldo.</span>
+          <span class="seta">›</span>
+        </a>
+        <!-- A prévia do DAS mora no módulo NFS-e. O Painel do mês saiu do
+             produto, e um cartão apontando para uma tela fora do menu daria
+             um caminho que ninguém consegue refazer. -->
+        <a class="frente" href="nfse.html">
+          <span class="bolha" style="--cf:#F3ECFB">📊</span>
+          <b>Apuração</b>
+          <span>Simples Nacional com RBT12, anexo e faixa; retenções e federais a partir dos documentos.</span>
+          <span class="seta">›</span>
+        </a>
+        <!-- CT-e e Clientes faltavam aqui, e são o começo de duas tarefas
+             frequentes: conferir frete e acertar cadastro. Os dois JÁ estão no
+             submenu da barra, então o caminho é refazível — foi por isso que a
+             Apuração continuou apontando para o módulo NFS-e, que é onde ela
+             mora no menu, em vez de para uma tela fora dele. -->
+        <a class="frente" href="cte.html">
+          <span class="bolha" style="--cf:#EAF2FB">🚚</span>
+          <b>CT-e</b>
+          <span>Conhecimentos de transporte do acervo — modal, rota e o vínculo com a NF-e que viajou.</span>
+          <span class="seta">›</span>
+        </a>
+        <a class="frente" href="clientes.html">
+          <span class="bolha" style="--cf:#EDF1F2">👥</span>
+          <b>Clientes</b>
+          <span>Certificado, regime, IE e IM — é aqui que uma empresa passa a capturar (ou para de).</span>
+          <span class="seta">›</span>
+        </a>
+        <a class="frente" href="backup.html">
+          <span class="bolha" style="--cf:#FDF3DF">🔒</span>
+          <b>Segurança</b>
+          <span>Certificados controlados, senhas protegidas pelo Windows e backup cifrado por inteiro.</span>
+          <span class="seta">›</span>
+        </a>
+      </section>
+    </div>
+
+    <!-- ═══ Direita: como o sistema está agora ═════════════════════════ -->
+    <div>
+      <!-- O QUE PRECISA DE MÃO HUMANA HOJE.
+           Fila de trabalho, não painel: cada linha tem um número real, a fonte
+           de onde ele saiu e o caminho para resolver. Bloco que não pôde ser
+           medido diz POR QUE — nunca aparece como zero. -->
+      <section class="cartao">
+        <h2>Precisa de atenção <span class="pill neutro" id="filaTotal">—</span></h2>
+        <div id="fila">
+          <div class="linha"><span class="ic">⏳</span>
+            <span class="rot">Montando a fila…</span>
+            <span class="pill neutro">—</span></div>
+        </div>
+        <p class="dica" id="filaRodape" style="display:none"></p>
+      </section>
+
+      <section class="cartao">
+        <h2>Situação operacional</h2>
+        <div id="situacao">
+          <div class="linha"><span class="ic">⏳</span>
+            <span class="rot">Conferindo…</span>
+            <span class="pill neutro">—</span></div>
+        </div>
+      </section>
+
+      <section class="cartao">
+        <h2>Próximos avanços</h2>
+        <div id="avancos"></div>
+        <a class="verMais" href="central_fiscal.html">
+          <span>Central Fiscal — o que mudou</span><span>›</span></a>
+      </section>
+    </div>
+
+  </div>
+
+  <!-- ── Módulos: a MESMA lista da barra ────────────────────────────────── -->
+  <h2 class="secao">Os módulos</h2>
+  <p class="secao-sub">Os mesmos que ficam na <b>barra no topo</b> — aqui, com o que cada um faz.</p>
+  <section class="modulos" id="grade"></section>
+
+  <!-- ── Rede ───────────────────────────────────────────────────────────── -->
+  <details class="rede">
+    <summary>👥 Outras pessoas do escritório vão usar o Fiscale?</summary>
+    <div class="corpo">
+      <p><b>Elas não instalam nada.</b> O Fiscale roda nesta máquina e as outras abrem pelo
+        navegador, neste endereço:</p>
+      <div class="end">
+        <code id="escUrl">carregando…</code>
+        <button onclick="copiarEndereco(this)">Copiar</button>
+      </div>
+      <p>Use sempre o <b>nome</b> da máquina, nunca o número de IP — o IP muda sozinho de tempos
+        em tempos, o nome não.</p>
+      <p>Existe <b>um</b> Fiscale, e todo mundo trabalha dentro dele: as notas que uma pessoa
+        baixa já estão lá para as outras. Nada é copiado nem sincronizado.</p>
+      <p id="escNota" style="display:none"></p>
+      <p style="margin:0;color:#5C6B72;font-size:12.5px">Se as outras máquinas não conseguirem
+        abrir, rode o <b>rede_diagnostico.bat</b> nesta — ele diz o que falta. E se você usa o
+        Fiscale sozinho, não precisa fazer nada disto.</p>
+    </div>
+  </details>
+
+  <div class="rodape">
+    <span class="item">🔒 Dados protegidos no servidor do escritório — sem nuvem de terceiros</span>
+    <span class="item" id="rodapeModulos">· </span>
+    <span class="item fim">Estimativas para <b>conferência</b>: a palavra final é sempre sua.</span>
+  </div>
+
+</main>
+
+<script src="fiscale-nav.js"></script>
+<script src="fiscale-elo.js"></script>
+<script src="fiscale-pwa.js"></script>
+<script>
+// ── A grade de módulos ───────────────────────────────────────────────────
+// Montada a partir da lista que a BARRA publica. Não existe uma segunda lista
+// aqui de propósito: a Home não pode oferecer um módulo que a barra já não
+// tem, nem esconder um que ela ganhou.
+(function grade(){
+  var mods = (window.Fiscale && window.Fiscale.MODULOS) || [];
+  var alvo = document.getElementById('grade');
+  if(!mods.length){ alvo.style.display = 'none'; return; }   // sem lista, sem grade
+  alvo.innerHTML = mods.map(function(m){
+    return '<a class="mod" href="' + m.href + '" style="--c:' + m.cor + '">'
+         +   '<span class="ic">' + m.icone + '</span>'
+         +   '<span><b>' + m.nome + '</b><span class="txt">' + (m.desc || '') + '</span></span>'
+         + '</a>';
+  }).join('');
+})();
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SITUAÇÃO OPERACIONAL
+
+   Cinco linhas, cinco fontes de verdade. A regra que vale para todas: o que
+   não pôde ser medido sai como "—" cinza e diz por quê. Nenhuma linha nasce
+   verde e nenhuma vira verde por falta de resposta — um painel que mostra
+   "OK" porque a consulta falhou transforma silêncio em garantia, e é assim
+   que um certificado vence sem ninguém ver.
+   ══════════════════════════════════════════════════════════════════════════ */
+function linha(ic, rotulo, detalhe, estado, texto){
+  return `<div class="linha"><span class="ic">${ic}</span>
+    <span class="rot">${rotulo}${detalhe?`<small>${detalhe}</small>`:''}</span>
+    <span class="pill ${estado}">${texto}</span></div>`;
+}
+
+function diasParaVencer(iso){
+  if(!iso) return null;
+  const d = new Date(iso + 'T00:00:00');
+  if(isNaN(d)) return null;
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  return Math.round((d - hoje) / 86400000);
+}
+
+async function situacaoOperacional(){
+  const linhas = [];
+
+  // 1 e 2. CADASTRO E CERTIFICADOS — a mesma fonte que a tela de Clientes lê.
+  //        Ler daqui, e não de um resumo próprio, é o que impede a Home de
+  //        discordar do cadastro.
+  try{
+    const s = await Fiscale.carregar('clientes');
+    const cli = (s && s.clientes) || [];
+    linhas.push(linha('🏛', 'Empresas cadastradas',
+      cli.filter(c=>c.cert).length + ' com certificado',
+      cli.length ? 'ok' : 'neutro', cli.length ? String(cli.length) : '—'));
+
+    const comCert = cli.filter(c => c.cert);
+    const vencidos = comCert.filter(c => { const d = diasParaVencer(c.certValidade); return d!==null && d<0; });
+    const vencendo = comCert.filter(c => { const d = diasParaVencer(c.certValidade); return d!==null && d>=0 && d<=30; });
+    // Sem data de validade não dá para afirmar nada: o certificado não entra
+    // na conta dos vencidos NEM na dos válidos.
+    const semData = comCert.filter(c => diasParaVencer(c.certValidade) === null);
+    if(vencidos.length)
+      linhas.push(linha('⚠', vencidos.length + ' certificado(s) vencido(s)',
+        vencidos.map(c=>c.nome).join(' · ').slice(0,70), 'ruim', 'Vencido'));
+    else if(vencendo.length)
+      linhas.push(linha('⚠', vencendo.length + ' vence(m) em ≤30 dias',
+        vencendo.map(c=>c.nome).join(' · ').slice(0,70), 'aviso', 'Atenção'));
+    else if(comCert.length)
+      // 'Em dia' conta só quem TEM validade lida e ainda vale. Somar os sem
+      // data aqui diria que estão bons certificados que ninguém conferiu.
+      linhas.push(linha('🔒', 'Certificados', (comCert.length - semData.length) + ' em dia'
+        + (semData.length ? ' · ' + semData.length + ' sem validade lida' : ''),
+        semData.length ? 'aviso' : 'ok', semData.length ? 'Conferir' : 'Válidos'));
+    else
+      linhas.push(linha('🔒', 'Certificados', 'nenhum cadastrado', 'neutro', '—'));
+  }catch(e){
+    linhas.push(linha('🏛', 'Empresas cadastradas', 'cadastro não respondeu', 'neutro', '—'));
+    linhas.push(linha('🔒', 'Certificados', 'não foi possível conferir', 'neutro', '—'));
+  }
+
+  // 3. MÓDULO NFS-e — sonda de verdade. Ele roda noutro processo, na porta
+  //    interna; quando cai, o resto da tela continua de pé e ninguém percebe.
+  let nfseOk = false;
+  try{
+    const r = await fetch('/api/certificados');
+    nfseOk = r.ok;
+    linhas.push(linha('🧾', 'Módulo NFS-e', nfseOk ? 'respondendo' : 'HTTP ' + r.status,
+      nfseOk ? 'ok' : 'ruim', nfseOk ? 'Operacional' : 'Fora do ar'));
+  }catch(e){
+    linhas.push(linha('🧾', 'Módulo NFS-e', 'sem resposta', 'ruim', 'Fora do ar'));
+  }
+
+  // 4. PENDÊNCIAS DE CADASTRO DA NF-e — empresas COM documento parado e sem
+  //    o cadastro que o filtro por IE exige. É fila de trabalho real.
+  try{
+    const r = await fetch('/api/nfe/pendencias-cadastrais');
+    if(!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    const n = (d.fila || d.pendencias || []).length;
+    linhas.push(linha('📦', 'Pendências de cadastro (NF-e)',
+      n ? 'empresas com documento parado' : 'nada parado',
+      n ? 'aviso' : 'ok', n ? String(n) : 'Em dia'));
+  }catch(e){
+    linhas.push(linha('📦', 'Pendências de cadastro (NF-e)', 'não foi possível conferir',
+      'neutro', '—'));
+  }
+
+  // 5. BACKUP — só o administrador alcança a rota. Para o operador isto não é
+  //    falha: é ausência de permissão, e a linha diz isso em vez de sumir.
+  try{
+    const r = await fetch('/api/backup/situacao');
+    if(r.status === 403){
+      linhas.push(linha('☁', 'Backup', 'visível ao administrador', 'neutro', '—'));
+    }else if(r.ok){
+      const d = await r.json();
+      const n = d.copias_no_destino ?? d.copias ?? null;
+      linhas.push(linha('☁', 'Backup',
+        `${d.empresas ?? '—'} empresas · ${d.certificados ?? '—'} certificados`,
+        n === 0 ? 'aviso' : 'ok', n === null ? 'Pronto' : (n === 0 ? 'Nenhuma cópia' : n + ' cópia(s)')));
+    }else throw new Error(r.status);
+  }catch(e){
+    linhas.push(linha('☁', 'Backup', 'não foi possível conferir', 'neutro', '—'));
+  }
+
+  document.getElementById('situacao').innerHTML = linhas.join('');
+  document.getElementById('rodapeModulos').innerHTML =
+    nfseOk ? '· <b style="color:#0F8A5F">Módulos respondendo</b>'
+           : '· <b style="color:#B3382C">Módulo NFS-e fora do ar</b>';
+}
+
+/* ── Próximos avanços ─────────────────────────────────────────────────────
+   O estado de cada frente é o que o projeto REALMENTE tem hoje, não o que
+   seria bonito mostrar. CT-e não é "em preparação": ele já captura da SEFAZ
+   e tem acervo. Dizer o contrário na tela de abertura é a forma mais fácil
+   de o roadmap virar ficção. */
+const AVANCOS = [
+  { nome:'CT-e — captura da SEFAZ',      estado:'Em produção (piloto)', quente:true },
+  { nome:'Reforma tributária — CClassTrib', estado:'No ar',             quente:true },
+  { nome:'NFS-e Nacional',               estado:'Em preparação',        quente:false },
+  { nome:'Emissão própria por autXML',   estado:'Aguardando o cliente', quente:false },
+  { nome:'Integrações com ERP',          estado:'Em avaliação',         quente:false }
+];
+document.getElementById('avancos').innerHTML = AVANCOS.map(a =>
+  `<div class="marco"><span class="ponto${a.quente?'':' frio'}"></span>
+     <span class="nome">${a.nome}</span>
+     <span class="estado">${a.estado}</span></div>`).join('');
+
+// Saudação da abertura: muda com a hora e cumprimenta quem entrou.
+function saudacao(usuario){
+  const h = new Date().getHours();
+  const parte = h < 12 ? 'Bom dia' : (h < 18 ? 'Boa tarde' : 'Boa noite');
+  const el = document.getElementById('saudacaoHora');
+  if(el) el.textContent = usuario ? `${parte}, ${usuario}` : `${parte} — bem-vindo(a)`;
+}
+async function identificar(){
+  saudacao();
+  try{
+    const q = await fetch('/api/quem').then(r=>r.json());
+    if(q.usuario){
+      saudacao(q.usuario);
+      // O papel aparece sempre, não só para o admin: quem leva 403 numa tela
+      // precisa conseguir ver, sozinho, com que perfil entrou.
+      const eu = document.getElementById('quemSou');
+      // "admin" aqui é o perfil da PLATAFORMA (usuários, backup, segurança),
+      // não um papel contábil nem fiscal — a etiqueta diz isso por extenso.
+      const plataforma = q.admin || q.papel === 'admin';
+      eu.textContent = '👤 ' + q.usuario + ' · ' + (plataforma ? 'administração da plataforma' : 'operador');
+      eu.title = plataforma
+        ? 'Perfil de administração da PLATAFORMA: Backup, Usuários e Segurança, ao lado, são dela. Não é um perfil contábil.'
+        : 'Perfil operacional: usa as aplicações, sem funções de administração da plataforma.';
+      eu.style.display = 'inline-flex';
+      if(q.admin){
+        document.getElementById('btnUsuarios').style.display = 'inline-flex';
+        document.getElementById('btnSeguranca').style.display = 'inline-flex';
+        document.getElementById('btnBackup').style.display = 'inline-flex';
+      }
+      // Encerrar: qualquer usuário, mas só no PC onde o Fiscale roda (encerrar pela
+      // rede derrubaria o servidor de todo mundo).
+      if(q.local) document.getElementById('btnEncerrar').style.display = 'inline-flex';
+    }
+  }catch(e){}
+}
+// Endereço que as outras máquinas do escritório usam.
+let escEndereco = '';
+async function carregarEndereco(){
+  try{
+    const e = await fetch('/api/escritorio').then(r=>r.json());
+    if(!e || !e.url) return;
+    escEndereco = e.url;
+    document.getElementById('escUrl').textContent = e.url;
+    // O IP aparece só como último recurso, e dizendo que é isso mesmo: quem
+    // anota o IP volta a ligar para o suporte quando o roteador o troca.
+    if(e.ips && e.ips.length){
+      const n = document.getElementById('escNota');
+      n.style.display = 'block';
+      n.innerHTML = 'Se o nome não funcionar, dá para usar <code style="font-size:12.5px;'
+        + 'padding:4px 9px">http://' + e.ips[0] + ':' + e.porta + '</code> — mas só para '
+        + 'testar: esse número muda.';
+    }
+  }catch(err){}
+}
+async function copiarEndereco(btn){
+  if(!escEndereco) return;
+  const antes = btn.textContent;
+  try{ await navigator.clipboard.writeText(escEndereco); btn.textContent = '✓ Copiado'; }
+  catch(e){ btn.textContent = 'Copie à mão'; }
+  setTimeout(()=>{ btn.textContent = antes; }, 1800);
+}
+
+async function encerrar(){
+  if(!confirm("Encerrar o servidor do FISCALE?\n\nO Sistema Web sai do ar para TODAS as estações da rede. "
+    +"Para voltar a usar, o servidor do FISCALE precisa ser iniciado novamente.")) return;
+  try{
+    const d = await fetch('/api/encerrar',{method:'POST'}).then(r=>r.json());
+    if(d && d.ok===false){ alert(d.erro); return; }
+  }catch(e){}   // o servidor morre no meio da resposta — falhar aqui é o esperado
+  document.body.innerHTML = '<div style="font-family:Segoe UI,Arial,sans-serif;text-align:center;'
+    +'padding:80px 20px;color:#5C6B72"><h2 style="color:#10444E">Servidor do FISCALE encerrado</h2>'
+    +'<p>Pode fechar esta aba. Para voltar a usar, inicie novamente o servidor do FISCALE e acesse pelo navegador.</p></div>';
+}
+// Abrir o Elo: `abrirElo` mora em fiscale-elo.js, o mesmo da Central de
+// Aplicações — ver os motivos de segurança lá.
+async function trocarSenha(){
+  const atual = prompt("Senha ATUAL:"); if(atual===null) return;
+  const nova = prompt("NOVA senha (mínimo 4 caracteres):"); if(nova===null) return;
+  const r = await fetch('/api/senha',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({atual, nova})});
+  const d = await r.json();
+  alert(d.ok ? "Senha alterada com sucesso." : (d.erro||"Não foi possível alterar a senha."));
+}
+/* ── A FILA DE TRABALHO ───────────────────────────────────────────────────
+   Uma chamada só (`/api/centro`), porque a fila é uma pergunta só: o que
+   precisa de mão humana hoje? Cada bloco chega com o número, a fonte e — se
+   não pôde ser medido — o motivo. A tela NÃO calcula nada e não preenche
+   ausência com zero. */
+const FILA_ROT = {
+  empresas_atencao:     ['🏢', 'Empresas que exigem atenção'],
+  documentos_pendentes: ['📥', 'Documentos pendentes de processamento'],
+  falhas_captura:       ['📡', 'Falhas de captura'],
+  inconsistencias:      ['🔍', 'Inconsistências'],
+  apuracoes_pendentes:  ['🧮', 'Apurações pendentes'],
+  situacao_fiscal:      ['🛡', 'Situação fiscal pendente'],
+  avisos:               ['⚠', 'Avisos operacionais'],
+};
+
+async function carregarFila(){
+  const alvo = document.getElementById('fila');
+  try{
+    const r = await fetch('/api/centro');
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if(d.erro){ alvo.innerHTML = linha('⚠','Fila',d.erro,'neutro','—'); return; }
+
+    const html = (d.ordem || []).map(k => {
+      const b = (d.blocos || {})[k] || {};
+      const [ic, rot] = FILA_ROT[k] || ['•', k];
+      /* Indisponível NÃO é zero: a linha diz o motivo e fica neutra. */
+      if(b.valor === null || b.valor === undefined)
+        return linha(ic, rot, b.indisponivel || 'não foi possível medir',
+                     'neutro', '—');
+      if(!b.valor)
+        return linha(ic, rot, b.detalhe || b.fonte, 'ok', 'Em dia');
+      /* Com pendência: mostra as três primeiras, com o caminho de resolver. */
+      const amostra = (b.itens || []).slice(0, 3).map(i => {
+        const onde = i.somente_admin ? '' : (i.onde || '');
+        const texto = (i.empresa && i.empresa !== '—' ? i.empresa + ' — ' : '')
+                    + (i.motivo || '');
+        return onde ? `<a href="${onde}">${texto}</a>` : texto;
+      }).join('<br>');
+      const mais = (b.itens || []).length > 3
+        ? `<br>+ ${(b.itens || []).length - 3} outra(s)` : '';
+      const grave = (b.itens || []).some(i => i.grau === 'ruim');
+      return linha(ic, rot, amostra + mais, grave ? 'ruim' : 'aviso',
+                   String(b.valor));
+    }).join('');
+    alvo.innerHTML = html || linha('✅','Nada na fila','','ok','Em dia');
+
+    /* O total conta só o que foi possível medir — e diz quantos blocos
+       ficaram sem resposta, para o número não parecer completo. */
+    const tot = document.getElementById('filaTotal');
+    const semResposta = (d.blocos_indisponiveis || []).length;
+    tot.textContent = d.total_pendencias === null ? '—'
+      : d.total_pendencias + (semResposta ? ' + ?' : '');
+    tot.className = 'pill ' + (d.total_pendencias ? 'aviso' : 'ok');
+    const rod = document.getElementById('filaRodape');
+    rod.style.display = 'block';
+    rod.textContent = semResposta
+      ? `${semResposta} bloco(s) sem resposta — veja o motivo na linha. `
+        + `Apurado em ${d.gerado_em}.`
+      : `Apurado em ${d.gerado_em} sobre ${d.empresas_no_cadastro} empresa(s) do cadastro.`;
+  }catch(e){
+    alvo.innerHTML = linha('⚠','Fila de trabalho',
+      'não foi possível montar ('+(e.message||'')+')','neutro','—');
+  }
+}
+
+identificar();
+carregarEndereco();
+situacaoOperacional();
+carregarFila();
+</script>
+</body>
+</html>

@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Central Fiscal — Fiscale</title>
+<!--
+  O que mudou no fiscal, com o link para conferir na fonte.
+
+  DUAS REGRAS QUE ESTA TELA OBEDECE
+    1. Item sem link não aparece — notícia que não se pode conferir na fonte
+       é boato com cara de informação.
+    2. Fonte que não respondeu aparece como "não verificada", nunca some.
+       Silêncio de fonte não é prova de que nada mudou, e o dia em que a
+       fonte cai é justamente o dia em que alguém precisa saber disso.
+
+  E UMA QUE ELA NÃO PODE QUEBRAR
+    Nada aqui altera alíquota, anexo, regra de cálculo ou documento. É
+    jornal, não motor.
+-->
+<style>
+  :root{
+    --tinta:#12212A; --tinta-suave:#5A6B72; --borda:#DDE4E7;
+    --superficie:#fff; --cor:#0E7490; --cor-claro:#ECFEFF; --raio:18px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    color:var(--tinta);background:#EAEFF1}
+  .capa{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+  h1{font-size:22px;margin:0 0 3px}
+  .sub{color:var(--tinta-suave);font-size:13.5px;margin:0 0 16px}
+  .painel{background:var(--superficie);border:1px solid var(--borda);
+    border-radius:var(--raio);padding:15px 17px;margin-bottom:13px}
+  .barra{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .btn{border:1px solid var(--borda);background:#fff;border-radius:999px;
+    padding:7px 15px;font-size:13px;font-weight:800;cursor:pointer;color:var(--tinta)}
+  .btn:hover{background:#F2F6F7}
+  .btn.primario{background:#10444E;border-color:#10444E;color:#fff}
+  .btn.primario:hover{background:#0C3038}
+  .btn[disabled]{opacity:.5;cursor:default}
+  .chip{border:1px solid var(--borda);background:#fff;border-radius:999px;
+    padding:5px 13px;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--tinta-suave)}
+  .chip[aria-pressed="true"]{background:var(--cor);border-color:var(--cor);color:#fff}
+  .item{background:var(--superficie);border:1px solid var(--borda);
+    border-radius:var(--raio);padding:14px 17px;margin-bottom:10px}
+  .item.novo{border-left:4px solid var(--cor);background:var(--cor-claro)}
+  .item h2{font-size:15.5px;margin:0 0 5px;line-height:1.35}
+  .item h2 a{color:inherit;text-decoration:none}
+  .item h2 a:hover{text-decoration:underline}
+  .meta{font-size:12.5px;color:var(--tinta-suave);display:flex;gap:8px;
+    flex-wrap:wrap;align-items:center;margin-bottom:6px}
+  .resumo{font-size:13.5px;color:#31424A}
+  .selo{display:inline-block;padding:2px 9px;border-radius:999px;
+    font-size:11px;font-weight:800;letter-spacing:.02em}
+  .selo.tema{background:#E0F2FE;color:#075985}
+  .selo.novo{background:var(--cor);color:#fff}
+  .selo.ok{background:#DCFCE7;color:#166534}
+  .selo.aviso{background:#FEF3C7;color:#92400E}
+  .selo.mudo{background:#EEF2F4;color:#41535B}
+  .fontes{display:grid;gap:7px;margin-top:10px;font-size:13px}
+  .fonte{display:flex;gap:9px;align-items:baseline;flex-wrap:wrap}
+  .fonte .nome{font-weight:700;min-width:250px}
+  .nota{font-size:12.5px;color:var(--tinta-suave)}
+  .vazio{padding:32px 18px;text-align:center;color:var(--tinta-suave)}
+  .vazio .emoji{font-size:32px;display:block;margin-bottom:7px}
+  .esqueleto{background:linear-gradient(90deg,#EDF1F2,#F6F9FA,#EDF1F2);
+    border-radius:10px;height:66px;margin-bottom:10px;animation:brilho 1.2s infinite}
+  @keyframes brilho{0%{opacity:.7}50%{opacity:1}100%{opacity:.7}}
+  @media (prefers-reduced-motion:reduce){.esqueleto{animation:none}}
+  details.cobertura > summary{cursor:pointer;font-weight:700;font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="capa">
+  <h1>Central Fiscal</h1>
+  <p class="sub">O que mudou no fiscal, com o link para conferir na fonte
+    oficial. Esta tela <b>não altera cálculo nenhum</b>.</p>
+
+  <div class="barra">
+    <button class="btn primario" id="btnVerificar">Verificar agora</button>
+    <button class="btn" id="btnLido">Marcar tudo como lido</button>
+    <span id="estadoTopo" class="nota"></span>
+  </div>
+
+  <div class="barra" id="filtros"></div>
+
+  <div id="lista"><div class="esqueleto"></div><div class="esqueleto"></div></div>
+
+  <div class="painel" style="margin-top:16px">
+    <details class="cobertura" id="cobertura">
+      <summary>Cobertura das fontes</summary>
+      <p class="nota" style="margin:8px 0 0">Fonte que não respondeu aparece
+        como <b>não verificada</b> — nunca como "nada mudou". Fonte sem feed
+        oficial fica listada com o endereço, para consulta à mão.</p>
+      <div class="fontes" id="listaFontes"></div>
+    </details>
+  </div>
+
+  <div class="painel" data-admin>
+    <b style="font-size:14.5px">Com que frequência verificar</b>
+    <p class="nota" style="margin:5px 0 9px">Não existe aviso em tempo real de
+      legislação: os portais publicam algumas vezes ao dia, quando publicam.
+      O Fiscale verifica no intervalo escolhido e avisa assim que aparece.</p>
+    <div class="barra" style="margin:0">
+      <select id="intervalo" style="border:1px solid var(--borda);
+              border-radius:11px;padding:7px 10px">
+        <option value="900">A cada 15 minutos</option>
+        <option value="1800">A cada 30 minutos</option>
+        <option value="3600">A cada hora</option>
+        <option value="10800">A cada 3 horas</option>
+        <option value="86400">Uma vez por dia</option>
+      </select>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px">
+        <input type="checkbox" id="ligado"> Verificar sozinho
+      </label>
+      <button class="btn" id="btnSalvarConfig">Salvar</button>
+      <span id="avisoConfig" class="nota"></span>
+    </div>
+  </div>
+</div>
+
+<script src="fiscale-nav.js"></script>
+<script>
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const NUM = n => Number(n||0).toLocaleString('pt-BR');
+
+async function pedir(rota, opcoes){
+  const o = opcoes || {};
+  const r = await fetch(rota, o.corpo === undefined ? undefined : {
+    method: o.metodo || 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(o.corpo)});
+  if(!r.ok){
+    let m = `Erro ${r.status}`;
+    try{ const j = await r.json(); m = j.detail || j.erro || m; }catch(e){}
+    throw new Error(m);
+  }
+  return r.json();
+}
+
+function quando(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  if(isNaN(d)) return String(iso).slice(0,16).replace('T',' ');
+  return d.toLocaleString('pt-BR', {day:'2-digit', month:'2-digit',
+    year:'numeric', hour:'2-digit', minute:'2-digit'});
+}
+
+let estado = {tema:'', dados:null};
+
+function desenharFiltros(temas, dados){
+  const conta = {};
+  (dados.publicacoes||[]).forEach(p => (p.temas||[]).forEach(
+    t => conta[t] = (conta[t]||0) + 1));
+  const alvo = document.getElementById('filtros');
+  const ordem = ['', 'REFORMA', 'DOCUMENTOS', 'SIMPLES', 'OBRIGACOES', 'GERAL'];
+  alvo.innerHTML = ordem.map(t => {
+    const rot = t ? (temas[t] || t) : 'Tudo';
+    return `<button class="chip" data-tema="${esc(t)}"
+      aria-pressed="${estado.tema===t}">${esc(rot)}</button>`;
+  }).join('');
+  alvo.querySelectorAll('[data-tema]').forEach(b => b.onclick = ()=>{
+    estado.tema = b.dataset.tema;
+    carregar();
+  });
+}
+
+function desenharFontes(fontes, rotulos){
+  document.getElementById('listaFontes').innerHTML = fontes.map(f => {
+    const cls = f.estado === 'OK' ? 'ok'
+              : (f.estado === 'SEM_FEED' ? 'mudo' : 'aviso');
+    return `<div class="fonte">
+      <span class="nome">${esc(f.nome)}</span>
+      <span class="selo ${cls}">${esc(rotulos[f.estado] || f.estado)}</span>
+      <span class="nota">${esc(f.detalhe || '')}${
+        f.quando ? ' · ' + esc(quando(f.quando)) : ''}</span>
+      <a class="nota" href="${esc(f.site)}" target="_blank" rel="noopener">abrir o portal</a>
+    </div>`;
+  }).join('');
+  const fora = fontes.filter(f => f.estado !== 'OK').length;
+  document.getElementById('cobertura').querySelector('summary').innerHTML =
+    `Cobertura das fontes — <b>${fontes.length - fora} de ${fontes.length}</b> verificadas`
+    + (fora ? ` <span class="selo aviso">${fora} fora</span>` : '');
+}
+
+function desenharLista(dados){
+  const alvo = document.getElementById('lista');
+  const itens = dados.publicacoes || [];
+  if(!itens.length){
+    alvo.innerHTML = `<div class="painel vazio"><span class="emoji">📰</span>
+      <h2 style="margin:0 0 4px;font-size:16.5px">Nada guardado ainda</h2>
+      <p style="margin:0">Use <b>Verificar agora</b> para buscar nas fontes
+        oficiais.</p></div>`;
+    return;
+  }
+  alvo.innerHTML = itens.map(p => `
+    <article class="item ${p.novo ? 'novo' : ''}">
+      <div class="meta">
+        ${p.novo ? '<span class="selo novo">novo</span>' : ''}
+        ${(p.temas||[]).map(t =>
+          `<span class="selo tema">${esc((dados.temas||{})[t] || t)}</span>`).join('')}
+        <span>${esc(nomeFonte(dados, p.fonte))}</span>
+        <span>· ${esc(quando(p.publicado_em || p.visto_em))}</span>
+      </div>
+      <h2><a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.titulo)}</a></h2>
+      ${p.resumo ? `<div class="resumo">${esc(p.resumo)}</div>` : ''}
+    </article>`).join('');
+}
+
+function nomeFonte(dados, id){
+  const f = (dados.fontes||[]).find(x => x.id === id);
+  return f ? f.nome : id;
+}
+
+async function carregar(){
+  let dados;
+  try{
+    dados = await pedir('/api/fiscal/atualizacoes?tema='
+                        + encodeURIComponent(estado.tema));
+  }catch(e){
+    document.getElementById('lista').innerHTML =
+      `<div class="painel"><b>Não consegui carregar.</b>
+       <div class="nota">${esc(e.message)}</div></div>`;
+    return;
+  }
+  estado.dados = dados;
+  desenharFiltros(dados.temas || {}, dados);
+  desenharFontes(dados.fontes || [], dados.rotulos_estado || {});
+  desenharLista(dados);
+  const est = dados.estado || {};
+  document.getElementById('estadoTopo').innerHTML =
+    `${NUM(dados.nao_lidos)} não lido${dados.nao_lidos===1?'':'s'}
+     · última verificação ${esc(quando(est.ultima_verificacao))}`;
+  const sel = document.getElementById('intervalo');
+  if(sel) sel.value = String(est.intervalo || 3600);
+  const lig = document.getElementById('ligado');
+  if(lig) lig.checked = est.ligado !== false;
+}
+
+async function verificar(){
+  const b = document.getElementById('btnVerificar');
+  const rot = b.textContent;
+  b.disabled = true; b.textContent = 'Verificando…';
+  try{
+    const r = await pedir('/api/fiscal/atualizacoes/verificar', {corpo:{}});
+    /* A frase diz as duas coisas juntas de propósito. "12 novidades" sozinho
+       esconde que metade das fontes não respondeu. */
+    document.getElementById('estadoTopo').innerHTML =
+      `<b>${NUM(r.novas)}</b> nova${r.novas===1?'':'s'}`
+      + (r.nao_verificadas
+         ? ` · <span class="selo aviso">${NUM(r.nao_verificadas)} fonte${
+             r.nao_verificadas===1?'':'s'} não verificada${
+             r.nao_verificadas===1?'':'s'}</span>` : '');
+    await carregar();
+    /* A barra repinta sozinha a cada 2 min. Quando a busca acontece AQUI, o
+       sino ficaria mostrando o número velho até lá — e o usuário veria a
+       novidade na tela e o sino zerado ao lado. */
+    if(window.Fiscale && Fiscale.atualizarSinoFiscal) Fiscale.atualizarSinoFiscal();
+  }catch(e){
+    document.getElementById('estadoTopo').textContent = e.message;
+  }finally{
+    b.disabled = false; b.textContent = rot;
+  }
+}
+
+document.getElementById('btnVerificar').onclick = verificar;
+document.getElementById('btnLido').onclick = async ()=>{
+  await pedir('/api/fiscal/atualizacoes/lido', {corpo:{}});
+  if(window.Fiscale && Fiscale.atualizarSinoFiscal) Fiscale.atualizarSinoFiscal();
+  carregar();
+};
+document.getElementById('btnSalvarConfig').onclick = async ()=>{
+  const aviso = document.getElementById('avisoConfig');
+  try{
+    await pedir('/api/fiscal/atualizacoes/config', {corpo:{
+      intervalo: Number(document.getElementById('intervalo').value),
+      ligado: document.getElementById('ligado').checked}});
+    aviso.textContent = 'Salvo.';
+  }catch(e){ aviso.textContent = e.message; }
+};
+
+(async function iniciar(){
+  await carregar();
+  /* Se já passou o intervalo, busca sozinho ao abrir a tela — é o que faz a
+     novidade aparecer sem ninguém clicar. */
+  try{
+    const r = await pedir('/api/fiscal/atualizacoes/resumo');
+    if(r.precisa_verificar) verificar();
+  }catch(e){}
+})();
+</script>
+</body>
+</html>

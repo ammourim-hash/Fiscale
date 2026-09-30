@@ -1,0 +1,29 @@
+{
+  "id": "/fiscale",
+  "name": "FISCALE",
+  "short_name": "FISCALE",
+  "description": "Plataforma Fiscal do Escritório",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "/home_portal.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0C333B",
+  "theme_color": "#0C333B",
+  "categories": ["business", "finance", "productivity"],
+  "launch_handler": { "client_mode": "focus-existing" },
+  "icons": [
+    { "src": "/icones/fiscale-192.png",          "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icones/fiscale-512.png",          "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icones/fiscale-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Central de Aplicações", "short_name": "Central", "url": "/central.html",
+      "icons": [{ "src": "/icones/fiscale-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Documentos Fiscais", "short_name": "Documentos", "url": "/nfe_documentos.html",
+      "icons": [{ "src": "/icones/fiscale-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Clientes", "short_name": "Clientes", "url": "/clientes.html",
+      "icons": [{ "src": "/icones/fiscale-192.png", "sizes": "192x192", "type": "image/png" }] }
+  ]
+}

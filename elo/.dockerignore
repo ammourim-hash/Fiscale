@@ -1,0 +1,76 @@
+# O que NAO entra no contexto de build da imagem.
+#
+# Nao e so tamanho: o que nao e copiado nao pode vazar para dentro de uma
+# camada. Segredo dentro de imagem sobrevive ao `rm` do arquivo, porque a
+# camada anterior continua la.
+#
+# Cuidado ao mexer: o build PRECISA de prisma/, src/, public/, package.json,
+# package-lock.json, next.config.ts e tsconfig.json.
+
+# Dependencias e artefatos: reinstalados e reconstruidos dentro da imagem.
+node_modules
+.next
+out
+build
+dist
+tsconfig.tsbuildinfo
+
+# Gerado por `prisma generate` dentro da imagem, para a plataforma certa.
+src/generated
+
+# Historia do repositorio. Inclui, entre outras coisas, versoes antigas de
+# arquivos que hoje estao no .gitignore.
+.git
+.gitignore
+.github
+
+# SEGREDOS. O `!.env*.example` devolve so os modelos, que nao tem valor real.
+.env
+.env.*
+!.env.example
+!.env.test.example
+!.env.dev.example
+
+# Testes e ferramentas que nao rodam em producao.
+tests
+vitest.config.mts
+eslint.config.mjs
+coverage
+playwright-report
+
+# Ambiente local de desenvolvimento.
+docker-compose.yml
+docker
+
+# Dumps, backups e log: dado de cliente nao entra em imagem.
+*.dump
+*.sql
+*.bak
+backups
+*.log
+logs
+
+# Documentacao e ruido de editor.
+*.md
+!README.md
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Armazenamento local de anexos.
+#
+# O `.storage` COM PONTO e o que o codigo usa de verdade
+# (src/server/storage/index.ts monta `process.cwd()/.storage`). A linha
+# `storage` sozinha NAO casa com ele, e por causa disso cinco anexos de
+# desenvolvimento — um deles de um tenant real — entraram numa imagem: o
+# `COPY . .` os trouxe, o build standalone os copiou junto e o estagio
+# final os levou embutidos.
+#
+# Anexo de cliente dentro de imagem e vazamento que sobrevive ao `rm`,
+# porque a camada anterior continua la. As duas formas abaixo cobrem o
+# diretorio e todo o conteudo.
+.storage
+.storage/**
+storage
+uploads

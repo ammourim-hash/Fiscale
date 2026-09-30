@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#6D28A8">
+<title>Classificador — Anexo do Simples · Fiscale</title>
+<style>
+  :root{
+    --fundo:#EFF2F3; --superficie:#FFFFFF; --tinta:#1B2328; --tinta-suave:#5C6B72;
+    --borda:#C7CDD1; --petroleo:#10444E; --cor:#6D28A8; --cor-claro:#F0E8FA;
+    --ok:#0F8A5F; --alerta:#B3382C; --aviso:#B07D10;
+    --raio:16px; --sombra:0 1px 2px rgba(27,35,40,.06), 0 6px 18px rgba(27,35,40,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Roboto,-apple-system,Arial,sans-serif;background:var(--fundo);color:var(--tinta)}
+  header{background:var(--superficie);border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:20}
+  .barra{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:12px 20px}
+  .voltar{font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta);
+          background:var(--superficie);border:2px solid var(--borda);border-radius:11px;padding:9px 16px;cursor:pointer}
+  .voltar:hover{border-color:var(--petroleo);color:var(--petroleo)}
+  .modulo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+  .modulo .ponto{width:12px;height:12px;border-radius:4px;background:var(--cor)}
+  main{max-width:1200px;margin:0 auto;padding:20px}
+  .painel{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra);margin-bottom:16px}
+  .painel h2{font-size:14px;padding:14px 16px;border-bottom:1px solid var(--borda);display:flex;align-items:center;justify-content:space-between}
+  .painel .corpo{padding:16px}
+  label{display:block;font-size:12px;font-weight:600;color:var(--tinta-suave);margin:0 0 5px}
+  .linha{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}.linha>*{flex:1;min-width:110px}
+  input,select{width:100%;font-size:14px;padding:9px 11px;border:1px solid var(--borda);border-radius:9px;background:#fff;color:var(--tinta)}
+  input:focus,select:focus{outline:none;border-color:var(--cor);box-shadow:0 0 0 3px rgba(109,40,168,.15)}
+  .btn{font-size:13.5px;font-weight:700;padding:10px 15px;border-radius:10px;border:none;cursor:pointer;white-space:nowrap}
+  .btn-primario{background:var(--cor);color:#fff}.btn-primario:hover{background:#571f86}
+  .btn-sec{background:#fff;border:1px solid var(--borda);color:var(--tinta)}.btn-sec:hover{border-color:var(--cor);color:var(--cor)}
+  .aviso{font-size:11.5px;color:var(--tinta-suave);line-height:1.45;margin-top:10px;background:#F7F9FA;border:1px solid var(--borda);border-radius:10px;padding:10px 12px}
+  .aviso b{color:var(--tinta)}
+  .alerta{background:#FDF3DF;border-color:#F3DFA8;color:#7a5a10}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--cor-claro);color:var(--cor)}
+  .tag.ok{background:#E5F4EC;color:var(--ok)}
+  .totais{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+  .stat{border-radius:11px;padding:11px 13px;border:1px solid var(--borda);background:#fff}
+  .stat .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:var(--tinta-suave)}
+  .stat .val{font-size:19px;font-weight:800;margin-top:2px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-size:10px;letter-spacing:.03em;color:var(--tinta-suave);text-transform:uppercase;padding:7px 8px;border-bottom:1px solid var(--borda)}
+  td{padding:7px 8px;border-bottom:1px solid #EDF1F2;font-variant-numeric:tabular-nums}
+  td.num,th.num{text-align:right}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:900px){.cols{grid-template-columns:1fr}}
+  .anexo{font-weight:800}
+  .anexo.cfg,.anexo.fr{color:var(--aviso)}
+  .vazio{color:var(--tinta-suave);font-size:13px;padding:16px;text-align:center}
+  /* blocos recolhíveis: a tela abre enxuta e só cresce no que você for mexer */
+  details.bloco{margin-top:10px;border-top:1px dashed var(--borda);padding-top:10px}
+  details.bloco>summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--tinta);
+    list-style:none;display:flex;align-items:center;gap:8px;padding:4px 0;user-select:none}
+  details.bloco>summary::-webkit-details-marker{display:none}
+  details.bloco>summary::before{content:"▸";color:var(--cor);font-size:13px;transition:transform .15s ease}
+  details.bloco[open]>summary::before{transform:rotate(90deg)}
+  details.bloco>summary:hover{color:var(--cor)}
+  details.bloco .resumo{font-weight:400;font-size:11.5px;color:var(--tinta-suave)}
+  /* resumo e DAS lado a lado em tela larga; empilham no estreito */
+  .duplo{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  @media(max-width:1000px){ .duplo{grid-template-columns:1fr} }
+  .duplo .painel{margin-bottom:0}
+  h3.sub{font-size:12px;color:var(--tinta-suave);text-transform:uppercase;margin-bottom:8px;letter-spacing:.03em}
+  /* tabela de notas: cabeçalho fixo ao rolar */
+  .tbl-fixa{max-height:60vh;overflow:auto}
+  .tbl-fixa thead th{position:sticky;top:0;z-index:2;background:#EEF2F3;box-shadow:inset 0 -1px 0 var(--borda)}
+</style>
+</head>
+<body>
+<script src="fiscale.js"></script>
+<header>
+  <div class="barra">
+    <button class="voltar" onclick="location.href='home_portal.html'">◄ Home</button>
+    <div class="modulo"><span class="ponto"></span> Classificador — Anexo do Simples (XMLs baixados)</div>
+  </div>
+</header>
+
+<main>
+  <div class="painel">
+    <h2>Empresa e período <span id="regimeTag" class="tag" style="display:none"></span></h2>
+    <div class="corpo">
+      <div class="linha">
+        <div style="flex:2"><label>Empresa</label>
+          <select id="emp" onchange="aoTrocar()"><option value="">— selecione —</option></select></div>
+        <div style="flex:0 0 140px"><label>De</label><input type="date" id="ini"></div>
+        <div style="flex:0 0 140px"><label>Até</label><input type="date" id="fim"></div>
+        <div style="flex:0 0 170px"><label>Período por</label>
+          <select id="baseData" onchange="salvarCfg();rodar()"
+            title="A MESMA base vale para a lista de notas e para o DAS. Uma nota emitida em setembro com competência de agosto cai em agosto por competência e em setembro por emissão — e o DAS muda junto.">
+            <option value="competencia">Competência</option>
+            <option value="emissao">Emissão</option>
+          </select></div>
+        <div style="flex:0 0 auto"><button class="btn btn-primario" onclick="rodar()">🔎 Classificar</button></div>
+        <div style="flex:0 0 auto"><button class="btn btn-sec" onclick="exportar()">⬇ CSV</button></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn btn-sec btn-mini" onclick="pMesAnterior('ini','fim',rodar)" title="Mês anterior ao período pesquisado">◀ Mês anterior</button>
+        <button class="btn btn-sec btn-mini" onclick="pAno('ini','fim',0,rodar)" title="1º de janeiro até 31 de dezembro deste ano">🗓 Ano vigente</button>
+        <button class="btn btn-sec btn-mini" onclick="pAno('ini','fim',-1,rodar)" title="Ano inteiro anterior">🗓 Ano anterior</button>
+      </div>
+      <!-- Configuração fiscal — recolhida: só se abre quando precisa mexer -->
+      <details class="bloco">
+        <summary>⚙ Configuração fiscal <span id="cfgResumo" class="resumo"></span></summary>
+        <div class="linha" style="margin-top:10px">
+          <!-- O regime vem do módulo Clientes; aqui é só leitura. Cadastrar em
+               dois lugares abriria espaço para divergirem. -->
+          <div style="flex:0 0 auto;padding-bottom:9px"><label>Regime</label>
+            <div id="regimeLido" class="tag" style="font-size:12px;padding:7px 12px">—</div>
+            <input type="hidden" id="regime" value="simples"></div>
+          <div style="flex:0 0 auto;display:flex;align-items:center;gap:6px;padding-bottom:9px">
+            <input type="checkbox" id="fatorR" style="width:auto" onchange="salvarCfg();rodar()">
+            <label for="fatorR" style="margin:0" id="rotuloFatorR"
+              title="Marque só para atividade que a lei não classifica. Quando o item da LC 116 já obriga (art. 18, §§5º-D e 5º-I), o sistema reconhece sozinho.">Fator R</label>
+            <span id="selofatorR" class="tag" style="display:none;font-size:11px"></span></div>
+          <div style="flex:0 0 160px"><label>Folha 12 meses (R$)</label>
+            <input id="folha" type="number" step="0.01" placeholder="0,00" onchange="salvarCfg();rodar()"></div>
+          <div style="flex:0 0 140px"><label>Anexo fixo</label>
+            <select id="anexoServ" onchange="salvarCfg();rodar()">
+              <option value="">— não usar —</option><option>III</option><option>IV</option><option>V</option></select></div>
+          <div style="flex:0 0 auto;display:flex;align-items:center;gap:6px;padding-bottom:9px">
+            <input type="checkbox" id="issFixo" style="width:auto" onchange="salvarCfg();rodar()">
+            <label for="issFixo" style="margin:0" title="LC 123/2006, art. 18, §22-A — escritório de serviços contábeis e sociedade de profissionais recolhem o ISS em valor FIXO à prefeitura; a fatia do ISS sai do DAS.">ISS fixo (fora do DAS)</label></div>
+          <div id="boxPresuncao" style="flex:0 0 240px;display:none"><label>Presunção (Lucro Presumido)</label>
+            <select id="presuncao" onchange="salvarCfg();rodar()"
+              title="Lei 9.249/1995, arts. 15 e 20. Muda muito o IRPJ e a CSLL — confira a atividade.">
+              <option value="32|32">Serviços, locação, intermediação — 32% / 32%</option>
+              <option value="8|12">Comércio, indústria, transporte de cargas — 8% / 12%</option>
+              <option value="16|12">Transporte exceto cargas — 16% / 12%</option>
+              <option value="1.6|12">Revenda de combustíveis — 1,6% / 12%</option>
+            </select></div>
+          <div style="flex:0 0 150px"><label>Início de atividade</label>
+            <input id="inicioAtiv" type="month" onchange="salvarCfg();rodar()"
+              title="Nos 12 primeiros meses o RBT12 é proporcional (média × 12), não a soma — CGSN 140/2018, art. 21, §2º. Se a empresa tiver esta data no cadastro de Clientes, é a de lá que vale."></div>
+          <div style="flex:1"></div>
+        </div>
+        <div class="aviso" style="margin-top:6px">Quem decide se a empresa é de <b>Fator R</b> é o
+          <b>item da LC 116</b> das notas dela (LC 123, art. 18, §§5º-D e 5º-I) — o sistema lê isso sozinho
+          e mostra o selo <b>✔ por lei</b>. A caixa só serve para atividade que a lei não classifica.
+          Falta só a <b>Folha 12m</b>: ≥ 28% → Anexo III; abaixo → Anexo V.
+          O <b>Anexo é sugestão</b> — a decisão é sua.<br>
+          Preencha o <b>Início de atividade</b> em empresa nova: nos 12 primeiros meses o RBT12 é
+          <b>proporcional</b> (média mensal × 12). Sem isso a alíquota sai baixa e o DAS, menor que o devido.
+          O lugar certo dessa data é o <b>cadastro de Clientes</b> — quando ela estiver lá, é a de lá que vale,
+          e o campo acima serve só de reserva.</div>
+      </details>
+
+      <!-- Receitas complementares — histórico municipal e receita sem nota -->
+      <details class="bloco">
+        <summary>➕ Receitas complementares <span id="recResumo" class="resumo"></span></summary>
+
+        <div class="aviso" style="margin-top:10px;background:#EAF4F6;border-color:#BBD9DF">
+          🏛 <b>Baixar histórico das prefeituras</b> (Recife, Paulista e outras) agora fica no
+          <b><a href="nfse.html" style="color:var(--cor)">módulo NFS-e → Outras cidades</a></b> —
+          um lugar só para todo download de notas.</div>
+
+        <div id="faltaBox" style="display:none;margin-top:12px;border:1px solid #fed7aa;background:#fffbf5;border-radius:10px;padding:11px 12px">
+          <div style="font-size:12.5px;font-weight:700;color:#9a3412;margin-bottom:2px">
+            ⚠ Faltam meses no RBT12 <span id="faltaQtd" style="font-weight:400"></span></div>
+          <div style="font-size:11px;color:#9a3412;margin-bottom:9px">
+            Informe a <b>receita bruta</b> de cada um — está no <b>PGDAS-D</b> daquele mês. Digita uma vez e fica salvo.</div>
+          <div id="faltaGrid" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+          <div style="margin-top:9px"><button class="btn btn-primario btn-mini" onclick="salvarFaltantes()">✓ Salvar meses</button>
+            <span id="faltaMsg" style="font-size:11.5px;color:var(--ok);margin-left:8px"></span></div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label>Receitas de meses anteriores <span style="font-weight:400">— manual, uma por linha: <b>MM/AAAA valor</b></span></label>
+          <textarea id="manuais" rows="2" onchange="salvarCfg();rodar()" placeholder="06/2025 30303.54&#10;07/2025 11513.56"
+            style="width:100%;font-size:13px;padding:9px 11px;border:1px solid var(--borda);border-radius:9px;font-family:inherit"></textarea>
+          <div id="manuaisInfo" style="font-size:11.5px;color:var(--tinta-suave);margin-top:4px"></div>
+        </div>
+
+        <div style="margin-top:12px;border-top:1px dashed var(--borda);padding-top:10px">
+          <label>Receita sem nota fiscal <span style="font-weight:400">— aluguel e afins; entra no DAS do mês</span></label>
+          <div class="linha" style="align-items:flex-end;gap:8px">
+            <div style="flex:0 0 108px"><label style="font-size:11px">Competência</label>
+              <input type="month" id="lc_comp"></div>
+            <div style="flex:0 0 110px"><label style="font-size:11px">Valor (R$)</label>
+              <input id="lc_valor" placeholder="5.000,00"></div>
+            <div style="flex:1;min-width:170px"><label style="font-size:11px">Tipo</label>
+              <select id="lc_tipo"></select></div>
+            <div style="flex:1;min-width:110px"><label style="font-size:11px">Descrição</label>
+              <input id="lc_desc" placeholder="Aluguel do galpão"></div>
+            <div style="flex:0 0 auto"><button class="btn btn-primario" onclick="addLanc()">+ Lançar</button></div>
+          </div>
+          <div id="lc_nota" style="font-size:11px;color:var(--tinta-suave);margin-top:5px"></div>
+          <div id="lc_lista" style="margin-top:8px"></div>
+        </div>
+      </details>
+
+      <div id="alertas"></div>
+    </div>
+  </div>
+
+  <!-- Resumo e DAS lado a lado: em tela larga, a conferência acontece sem rolar -->
+  <div class="duplo">
+    <div class="painel" id="res" style="display:none">
+      <h2>Resultado <span id="perTag" class="tag"></span></h2>
+      <div class="corpo">
+        <div id="totais" class="totais"></div>
+        <h3 class="sub">Receita por Anexo</h3>
+        <table><thead id="thAnexo"></thead><tbody id="tbAnexo"></tbody></table>
+        <h3 class="sub" style="margin-top:14px">Por item da LC 116</h3>
+        <table><thead id="thItem"></thead><tbody id="tbItem"></tbody></table>
+      </div>
+    </div>
+
+    <div class="painel" id="dasWrap" style="display:none">
+      <h2>💰 Prévia do DAS <span id="dasTotalTag" class="tag"></span></h2>
+      <div class="corpo">
+        <div style="overflow-x:auto"><table><thead id="thDas"></thead><tbody id="tbDas"></tbody></table></div>
+        <div id="dasAvisos"></div>
+        <details class="bloco" style="border-top:none;margin-top:8px">
+          <summary>ℹ O que esta prévia não considera</summary>
+          <div class="aviso alerta" style="margin-top:6px"><b>Não substitui o PGDAS-D.</b>
+            O valor oficial só se constitui na transmissão do PGDAS-D, que tem caráter
+            declaratório e vale como confissão de dívida.
+            Fórmula oficial (Res. CGSN 140/2018): <b>[(RBT12 × Alíquota) − PD] ÷ RBT12</b>, com o RBT12 dos
+            <b>12 meses anteriores</b>. <b>Fora da conta:</b> início de atividade (RBT12 proporcional),
+            sublimite de ICMS/ISS, devoluções, receitas do exterior, imunidades/reduções municipais e
+            outras receitas não baixadas aqui. O valor oficial é o do PGDAS-D.</div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEMÓRIA DE CÁLCULO — de onde veio cada valor.
+       Não é painel de indicadores: é o fluxo fiscal. Cada número carrega o
+       motor que o produziu (`de_onde`) e os documentos que o formaram. O que
+       não pôde ser apurado aparece como DEPENDE_DE, com o que falta — nunca
+       como zero. -->
+  <div class="painel" id="memoriaWrap" style="display:none">
+    <h2>Memória de cálculo <span id="memTag" class="tag"></span></h2>
+    <div class="corpo">
+      <div class="linha" style="align-items:flex-end;gap:10px;margin-bottom:10px">
+        <label>Competência do rastro
+          <input type="month" id="memComp">
+        </label>
+        <button class="btn" id="btnMemoria" type="button">Rastrear</button>
+        <span class="dica" id="memDica">Sem competência, o rastro cobre o
+          período filtrado acima.</span>
+      </div>
+      <div id="memCorpo"></div>
+    </div>
+  </div>
+
+  <!-- Notas: largura inteira, que é tabela longa -->
+  <div class="painel" id="notasWrap" style="display:none">
+    <h2>Notas <span id="notasTag" class="tag"></span></h2>
+    <div class="corpo">
+      <div class="tbl-fixa"><table><thead id="thNotas"></thead><tbody id="tbNotas"></tbody></table></div>
+      <div id="retResumo"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const BRL = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const fmtData = d => (d||'').slice(0,10).split('-').reverse().join('/');
+/* ── Atalhos de período (mesmo padrão do NFS-e). Mês anterior: recua um mês
+   relativo ao "De"; sem período, parte do mês ATUAL (07/2026 → 06/2026). ── */
+function _mesAtual(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+function pMesAnterior(ini, fim, cb){
+  let [y,m]=(($('#'+ini).value||'').slice(0,7)||_mesAtual()).split('-').map(Number);
+  m--; if(m===0){ m=12; y--; }
+  const mm=String(m).padStart(2,'0'), ult=new Date(y,m,0).getDate();
+  $('#'+ini).value=`${y}-${mm}-01`; $('#'+fim).value=`${y}-${mm}-${String(ult).padStart(2,'0')}`;
+  cb&&cb();
+}
+function pAno(ini, fim, delta, cb){
+  const y=new Date().getFullYear()+delta;
+  $('#'+ini).value=`${y}-01-01`; $('#'+fim).value=`${y}-12-31`;
+  cb&&cb();
+}
+let certs=[], cfgs={}, tipos=[];
+
+async function api(u,o){ const r=await fetch(u,o); if(!r.ok){let d;try{d=await r.json()}catch{d={}} throw new Error(d.detail||('Erro '+r.status));} return r.json(); }
+function cfgAtual(){ return cfgs[emp.value] || {regime:'simples', fatorR:false, folha12m:'', anexoServico:'', issFixo:false, inicioAtividade:'', baseData:'competencia', manuais:'', lancamentos:[]}; }
+function salvarCfg(){ if(!emp.value) return;
+  const a = cfgAtual();
+  const [pi,pc]=(presuncao.value||'32|32').split('|').map(Number);
+  cfgs[emp.value]={regime:regime.value, fatorR:fatorR.checked, folha12m:folha.value,
+                   anexoServico:anexoServ.value,
+                   issFixo:issFixo.checked, inicioAtividade:inicioAtiv.value,
+                   baseData:baseData.value,
+                   presuncaoIRPJ:pi, presuncaoCSLL:pc,
+                   manuais:manuais.value, lancamentos:a.lancamentos||[]};
+  Fiscale.salvar('classificador', {cfgs}); resumoBlocos(); mostrarPresuncao(); }
+
+// A presunção só existe no Lucro Presumido. Mostrar sempre confundiria quem é
+// do Simples, e esconder sem explicar esconderia um campo que muda o imposto.
+function mostrarPresuncao(){
+  const b=document.getElementById('boxPresuncao');
+  if(b) b.style.display = regime.value==='presumido' ? '' : 'none';
+}
+
+// O regime chega do backend (que o lê do Clientes). A tela se ajusta: fora do
+// Simples não há Anexo nem Fator R para escolher — são conceitos do Simples.
+const _RG={simples:'Simples Nacional', mei:'MEI', presumido:'Lucro Presumido', real:'Lucro Real'};
+function aplicarRegime(r){
+  regime.value=r;
+  const el=document.getElementById('regimeLido');
+  if(el){ el.textContent=_RG[r]||r; el.title='Cadastrado no módulo Clientes'; }
+  const simples = (r==='simples' || r==='mei');
+  // Anexo, Fator R e Folha só existem no Simples Nacional.
+  [['anexoServ',1],['fatorR',1],['folha',1]].forEach(([id])=>{
+    const c=document.getElementById(id);
+    if(c && c.parentElement) c.parentElement.style.display = simples ? '' : 'none';
+  });
+  const fx=document.getElementById('issFixo');
+  if(fx && fx.parentElement) fx.parentElement.style.display = simples ? '' : 'none';
+  mostrarPresuncao();
+}
+function aoTrocar(){ const c=cfgAtual(); fatorR.checked=!!c.fatorR; folha.value=c.folha12m||'';
+  regime.value=c.regime||'simples';
+  anexoServ.value=c.anexoServico||''; issFixo.checked=!!c.issFixo;
+  inicioAtiv.value=c.inicioAtividade||'';
+  baseData.value=c.baseData||'competencia';
+  presuncao.value=`${c.presuncaoIRPJ||32}|${c.presuncaoCSLL||32}`;
+  mostrarPresuncao();
+  manuais.value=c.manuais||''; renderLancs(); resumoBlocos(); rodar(); }
+
+// Mostra no título recolhido o que já está configurado — assim dá para conferir
+// sem abrir cada bloco.
+function resumoBlocos(){
+  const c=cfgAtual(), p=[];
+  const RG={simples:'Simples Nacional', mei:'MEI', presumido:'Lucro Presumido', real:'Lucro Real'};
+  p.push(RG[c.regime||'simples']);
+  if(c.folha12m) p.push('folha '+Number(c.folha12m).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}));
+  if(c.anexoServico) p.push('Anexo '+c.anexoServico);
+  if(c.issFixo) p.push('ISS fixo');
+  if(c.inicioAtividade) p.push('início '+c.inicioAtividade.split('-').reverse().join('/'));
+  p.push('por '+((c.baseData||'competencia')==='emissao'?'emissão':'competência'));
+  if(c.fatorR && !c.folha12m) p.push('Fator R sem folha ⚠');
+  const el=document.getElementById('cfgResumo');
+  if(el) el.textContent = p.length ? '· '+p.join(' · ') : '· nada configurado';
+  const nm=(c.manuais||'').split('\n').filter(x=>x.trim()).length;
+  const nl=(c.lancamentos||[]).length;
+  const q=[]; if(nm) q.push(nm+' mês(es) informado(s)'); if(nl) q.push(nl+' lançamento(s)');
+  const el2=document.getElementById('recResumo');
+  if(el2) el2.textContent = q.length ? '· '+q.join(' · ') : '';
+}
+
+/* ---- receita sem nota fiscal ---- */
+/* Lê valor em português. O caso perigoso é "15.000": em pt-BR é QUINZE MIL, mas
+   parseFloat leria 15 — e o RBT12 sairia mil vezes menor, sem nenhum aviso. */
+function numBR(s){
+  let t=String(s||'').trim().replace(/\s|R\$/g,'');
+  if(!t) return null;
+  if(t.includes(',')){                        // vírgula = decimal, logo ponto é milhar
+    t=t.replace(/\./g,'').replace(',','.');
+  } else if(/^-?\d{1,3}(\.\d{3})+$/.test(t)){ // só pontos, em grupos de 3 -> milhar
+    t=t.replace(/\./g,'');
+  }                                            // senão o ponto é decimal ("9800.50")
+  const v=parseFloat(t); return isNaN(v)?null:v;
+}
+function tipoDe(id){ return tipos.find(t=>t.id===id); }
+function mostrarNotaTipo(){ const t=tipoDe($('#lc_tipo').value);
+  $('#lc_nota').innerHTML = t ? `Anexo <b>${t.anexo}</b>${t.sem_iss?' · <b>sem ISS</b>':' · com ISS'}`
+    + (t.nota?` — ${t.nota}`:'') : ''; }
+function addLanc(){
+  const comp=$('#lc_comp').value, valor=numBR($('#lc_valor').value), tipo=$('#lc_tipo').value;
+  if(!comp){ alert('Informe a competência.'); return; }
+  if(valor===null || valor<=0){ alert('Informe um valor maior que zero.'); return; }
+  const c=cfgAtual(); c.lancamentos=c.lancamentos||[];
+  c.lancamentos.push({competencia:comp, valor:valor, tipo:tipo, descricao:$('#lc_desc').value||''});
+  cfgs[emp.value]=c; salvarCfg();
+  $('#lc_valor').value=''; $('#lc_desc').value='';
+  renderLancs(); rodar();
+}
+function delLanc(i){
+  const c=cfgAtual(); (c.lancamentos||[]).splice(i,1); cfgs[emp.value]=c; salvarCfg(); renderLancs(); rodar();
+}
+function renderLancs(){
+  const l=(cfgAtual().lancamentos)||[];
+  if(!l.length){ $('#lc_lista').innerHTML=''; return; }
+  $('#lc_lista').innerHTML = '<table style="width:100%;font-size:12.5px;border-collapse:collapse">'
+    + l.map((x,i)=>{ const t=tipoDe(x.tipo);
+        return `<tr style="border-top:1px solid #EDF1F2">
+          <td style="padding:5px 4px;white-space:nowrap"><b>${(x.competencia||'').slice(5,7)}/${(x.competencia||'').slice(0,4)}</b></td>
+          <td style="padding:5px 4px;text-align:right;white-space:nowrap">${BRL(x.valor)}</td>
+          <td style="padding:5px 8px">${t?t.rotulo:x.anexo||'?'}${t&&t.sem_iss?' <span style="font-size:10px;color:#0b5c40">(sem ISS)</span>':''}</td>
+          <td style="padding:5px 4px;color:var(--tinta-suave)">${x.descricao||''}</td>
+          <td style="padding:5px 4px;text-align:right"><button class="btn btn-sec btn-mini" onclick="delLanc(${i})">remover</button></td>
+        </tr>`; }).join('') + '</table>';
+}
+
+/* ---- meses faltando no RBT12: o sistema diz quais, você só digita o valor ---- */
+const fmtMes = m => m.slice(5,7)+'/'+m.slice(0,4);
+/* {'2025-06': 30303.54} -> "06/2025 30303.54" (formato do textarea, mesma fonte de verdade) */
+function serializaManuais(obj){
+  return Object.keys(obj).sort().map(k=>`${fmtMes(k)} ${obj[k]}`).join('\n');
+}
+function renderFaltantes(meses){
+  const box=$('#faltaBox');
+  if(!meses.length){ box.style.display='none'; return; }
+  const ja=parseManuais(cfgAtual().manuais);
+  box.style.display='block';
+  $('#faltaQtd').textContent = `— ${meses.length} mês(es): ${meses.map(fmtMes).join(', ')}`;
+  $('#faltaGrid').innerHTML = meses.map(m=>`
+    <div style="flex:0 0 118px">
+      <label style="font-size:11px;color:#9a3412;font-weight:700">${fmtMes(m)}</label>
+      <input class="falta-in" data-mes="${m}" placeholder="0,00" value="${ja[m]!=null?ja[m]:''}"
+        style="width:100%;font-size:13px;padding:7px 8px;border:1px solid var(--borda);border-radius:8px">
+    </div>`).join('');
+}
+function salvarFaltantes(){
+  const c=cfgAtual();
+  const atual=parseManuais(c.manuais);
+  let n=0;
+  document.querySelectorAll('.falta-in').forEach(i=>{
+    const v=numBR(i.value);
+    if(v!==null && v>0){ atual[i.dataset.mes]=v; n++; }
+    else delete atual[i.dataset.mes];   // apagou o campo -> tira o mês
+  });
+  manuais.value=serializaManuais(atual);
+  salvarCfg();
+  $('#faltaMsg').textContent = n ? `✓ ${n} mês(es) salvo(s)` : '';
+  setTimeout(()=>{ $('#faltaMsg').textContent=''; }, 3000);
+  rodar();
+}
+
+/* "06/2025 30303.54" | "2025-06;30.303,54" -> {'2025-06': 30303.54} */
+function parseManuais(txt){
+  const out={};
+  (txt||'').split(/\n+/).forEach(l=>{
+    const m=l.trim().match(/^(\d{1,2})[\/\-](\d{4})\s*[;= ]\s*(.+)$/) || l.trim().match(/^(\d{4})-(\d{2})\s*[;= ]\s*(.+)$/);
+    if(!m) return;
+    let comp, bruto;
+    if(m[1].length===4){ comp=m[1]+'-'+m[2]; bruto=m[3]; }
+    else { comp=m[2]+'-'+String(m[1]).padStart(2,'0'); bruto=m[3]; }
+    const v=numBR(bruto);          // mesma regra do campo (trata "15.000" = 15 mil)
+    if(v!==null) out[comp]=v;
+  });
+  return out;
+}
+
+async function rodar(){
+  if(!emp.value){ return; }
+  guardarUltimo();
+  const c=cfgAtual();
+  const rec=parseManuais(c.manuais);
+  const nRec=Object.keys(rec).length;
+  manuaisInfo.textContent = nRec ? `${nRec} mês(es) informado(s): `+Object.keys(rec).sort().join(', ') : '';
+  try{
+    const r=await api('/api/classificador',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id:emp.value, data_ini:ini.value||null, data_fim:fim.value||null,
+        fator_r:!!c.fatorR, folha12m:c.folha12m?parseFloat(c.folha12m):null,
+        anexo_servico:c.anexoServico||null, iss_fixo:!!c.issFixo,
+        regime:null, inicio_atividade:c.inicioAtividade||null,
+        base_data:c.baseData||'competencia', receitas_manuais:rec,
+        lancamentos:c.lancamentos||[]})});
+    const s=r.resumo;
+    // Reúne os meses sem receita de TODAS as competências apuradas e mostra
+    // exatamente quais faltam — em vez de deixar você descobrir e digitar no escuro.
+    const falta=new Set();
+    (r.das||[]).forEach(m=>(m.rbt12_sem_dados||[]).forEach(x=>falta.add(x)));
+    renderFaltantes([...falta].sort());
+    regimeTag.style.display = s.regime_no_xml ? 'inline-block':'none';
+    regimeTag.textContent = s.regime_no_xml ? 'XML diz: '+s.regime_no_xml : '';
+    regimeTag.className = 'tag ok';
+    perTag.textContent = (ini.value?fmtData(ini.value):'início')+' — '+(fim.value?fmtData(fim.value):'hoje');
+    totais.innerHTML =
+      `<div class="stat"><div class="lbl">Notas válidas</div><div class="val">${s.quantidade}</div></div>
+       <div class="stat"><div class="lbl">Receita no período</div><div class="val">${BRL(s.total)}</div></div>
+       <div class="stat"><div class="lbl">RBT12 (automático)</div><div class="val">${BRL(s.rbt12)}</div></div>
+       <div class="stat"><div class="lbl">Fator R${s.sujeita_fator_r?' <span title="obrigatório pelo item da LC 116">(por lei)</span>':''}</div>
+         <div class="val">${s.fator_r!=null?(s.fator_r*100).toFixed(1)+'%'
+                            :(s.sujeita_fator_r?'falta a folha':'não se aplica')}</div></div>
+       <div class="stat"><div class="lbl">Canceladas</div><div class="val">${s.canceladas}</div></div>`;
+    // O veredito vem do BACKEND, que o tirou do item da LC 116 das notas —
+    // não da caixa marcada. Assim a tela afirma "é Fator R" em vez de perguntar.
+    const selo = document.getElementById('selofatorR');
+    if(selo){
+      const itens = Object.keys(s.fator_r_incisos||{});
+      if(s.sujeita_fator_r){
+        selo.style.display=''; selo.textContent='✔ por lei ('+itens.join(', ')+')';
+        selo.title = Object.entries(s.fator_r_incisos).map(([i,d])=>i+': '+d).join(' · ');
+        selo.style.background='#E5F4EC'; selo.style.color='#0F8A5F';
+        fatorR.disabled = true;   // não há o que marcar: a lei já respondeu
+        fatorR.checked = true;
+      } else {
+        selo.style.display='none'; fatorR.disabled = false;
+      }
+    }
+    alertas.innerHTML = (s.alertas||[]).length
+      ? '<div class="aviso alerta">⚠️ '+s.alertas.join('<br>⚠️ ')+'</div>' : '';
+    thAnexo.innerHTML='<tr><th>Anexo</th><th class="num">Notas</th><th class="num">Valor</th></tr>';
+    tbAnexo.innerHTML=s.por_anexo.length?s.por_anexo.map(a=>{
+      const cls = /CONFIGURAR|FATOR/.test(a.anexo)?'anexo cfg':'anexo';
+      return `<tr><td class="${cls}">${a.anexo}</td><td class="num">${a.qtd}</td><td class="num">${BRL(a.valor)}</td></tr>`;
+    }).join(''):'<tr><td colspan="3" class="vazio">—</td></tr>';
+    thItem.innerHTML='<tr><th>Item</th><th>Descrição</th><th class="num">Valor</th></tr>';
+    tbItem.innerHTML=s.por_item.length?s.por_item.slice(0,12).map(i=>
+      `<tr><td><b>${i.item}</b></td><td>${(i.desc||'').slice(0,42)}</td><td class="num">${BRL(i.valor)}</td></tr>`).join(''):'<tr><td colspan="3" class="vazio">—</td></tr>';
+    renderNotas(r);
+    res.style.display='block';
+    /* A memória fica disponível assim que há apuração na tela. Ela NÃO é
+       carregada sozinha: é um segundo pedido, e quem o faz é quem quer
+       rastrear — carregar sempre custaria a travessia do acervo sem ninguém
+       ter pedido. */
+    memoriaWrap.style.display='block';
+    notasWrap.style.display='block';
+    notasTag.textContent=(r.notas||[]).length+' nota(s)';
+    aplicarRegime(r.regime||'simples');
+    renderDas(r.das||[]);
+  }catch(e){ alertas.innerHTML='<div class="aviso alerta">'+e.message+'</div>'; }
+}
+
+// ── Notas: as colunas mudam com o regime ────────────────────────────────────
+// Simples  → Anexo e base da classificação (o tributo está dentro do DAS).
+// Presumido/Real → as retenções DISCRIMINADAS (PIS, COFINS, CSLL, IRRF) e, no
+// rodapé por competência, o devido × retido × a recolher — porque "não retido"
+// não existe no XML: é o devido menos o retido, calculado sobre a receita.
+const ALIQ={presumido:{pis:0.0065,cofins:0.03}, real:{pis:0.0165,cofins:0.076}};
+
+function renderNotas(r){
+  const regime=r.regime||'simples';
+  const notas=r.notas||[];
+  const simples=(regime==='simples'||regime==='mei');
+  // Limpa sempre: senão o rodapé de PIS/COFINS de uma empresa do Presumido
+  // fica pendurado ao trocar para uma do Simples, que não tem esses tributos
+  // por fora do DAS.
+  const rr=document.getElementById('retResumo'); if(rr) rr.innerHTML='';
+
+  if(simples){
+    thNotas.innerHTML='<tr><th>Data</th><th>Nº</th><th>Tomador</th><th>cTribNac</th><th>Item</th>'+
+      '<th class="num">Valor</th><th>Anexo</th><th>Base</th></tr>';
+    tbNotas.innerHTML=notas.length?notas.slice(0,300).map(n=>`<tr>
+      <td>${fmtData(n.data)}</td><td>${n.numero||'—'}</td><td>${(n.tomador||'—').slice(0,26)}</td>
+      <td>${n.ctribnac||'—'}</td><td><b>${n.item_lc116||'—'}</b></td>
+      <td class="num">${BRL(n.valor)}</td>
+      <td class="${/CONFIGURAR|FATOR/.test(n.anexo||'')?'anexo cfg':'anexo'}">${n.anexo||'—'}</td>
+      <td style="font-size:11px;color:var(--tinta-suave)">${n.base_anexo||''}</td></tr>`).join('')
+      : '<tr><td colspan="8" class="vazio">Nenhuma nota emitida no período. (Só notas EMITIDAS são receita.)</td></tr>';
+    return;
+  }
+
+  // ── Presumido / Real ─────────────────────────────────────────────────────
+  const al=ALIQ[regime]||ALIQ.presumido;
+  thNotas.innerHTML='<tr><th>Data</th><th>Nº</th><th>Tomador</th><th class="num">Valor</th>'+
+    '<th class="num">PIS ret.</th><th class="num">COFINS ret.</th><th class="num">CSLL ret.</th>'+
+    '<th class="num">IRRF ret.</th><th>ISS</th></tr>';
+
+  // Três origens possíveis para o número, e a tela diz qual é:
+  //   normal   → veio discriminado no XML;
+  //   rateado  → veio somado, mas em 4,65% exatos: dividido pela lei;
+  //   consolidado → veio somado fora do padrão: não dá para dividir.
+  const cel=(v,cons,rat)=>cons
+    ? '<td class="num" style="color:var(--tinta-suave)" title="O emitente somou PIS, COFINS e CSLL num campo só, fora da alíquota de 4,65% — não há como dividir com respaldo">consolidado</td>'
+    : `<td class="num">${v>0?BRL(v):'—'}${rat?'<div style="font-size:9px;color:var(--aviso)" title="Retenção veio somada em 4,65%; dividida pela IN RFB 459/2004, art. 2º">rateio legal</div>':''}</td>`;
+
+  tbNotas.innerHTML=notas.length?notas.slice(0,300).map(n=>{
+    const c=n.ret_consolidado, rt=n.ret_rateado;
+    return `<tr>
+      <td>${fmtData(n.data)}</td><td>${n.numero||'—'}</td><td>${(n.tomador||'—').slice(0,26)}</td>
+      <td class="num">${BRL(n.valor)}</td>
+      ${cel(n.ret_pis,c,rt)}${cel(n.ret_cofins,c,rt)}
+      <td class="num">${(n.ret_csll||0)>0?BRL(n.ret_csll):'—'}${c?'<div style="font-size:9px;color:var(--tinta-suave)">os 3 juntos</div>':''}</td>
+      <td class="num">${(n.ret_irrf||0)>0?BRL(n.ret_irrf):'—'}</td>
+      <td>${n.iss_retido?`<span class="tag">retido ${BRL(n.valor_iss)}</span>`:'<span style="color:var(--tinta-suave)">não retido</span>'}</td>
+    </tr>`;}).join('')
+    : '<tr><td colspan="9" class="vazio">Nenhuma nota emitida no período.</td></tr>';
+
+  // Rodapé por competência: devido × retido × a recolher
+  const porComp={};
+  notas.forEach(n=>{
+    if(n.cancelada) return;
+    const k=(n.competencia||'').slice(0,7); if(!k) return;
+    porComp[k]=porComp[k]||{receita:0,pis:0,cofins:0,csll:0,irrf:0,cons:0};
+    const a=porComp[k];
+    a.receita+=n.valor||0; a.pis+=n.ret_pis||0; a.cofins+=n.ret_cofins||0;
+    a.csll+=n.ret_csll||0; a.irrf+=n.ret_irrf||0; if(n.ret_consolidado) a.cons++;
+  });
+  const linhas=Object.keys(porComp).sort().map(k=>{
+    const a=porComp[k];
+    const pd=a.receita*al.pis, cd=a.receita*al.cofins;
+    return `<tr>
+      <td><b>${k.slice(5,7)}/${k.slice(0,4)}</b>${a.cons?`<div style="font-size:9px;color:var(--aviso)">${a.cons} nota(s) consolidada(s)</div>`:''}</td>
+      <td class="num">${BRL(a.receita)}</td>
+      <td class="num">${BRL(pd)}</td><td class="num">${BRL(a.pis)}</td>
+      <td class="num"><b>${BRL(Math.max(0,pd-a.pis))}</b></td>
+      <td class="num">${BRL(cd)}</td><td class="num">${BRL(a.cofins)}</td>
+      <td class="num"><b>${BRL(Math.max(0,cd-a.cofins))}</b></td>
+      <td class="num">${BRL(a.csll)}</td><td class="num">${BRL(a.irrf)}</td></tr>`;
+  }).join('');
+
+  const rot = regime==='real' ? 'Lucro Real (não cumulativo)' : 'Lucro Presumido (cumulativo)';
+  document.getElementById('retResumo').innerHTML = linhas ? `
+    <div class="painel" style="margin-top:12px">
+      <h2>🧾 PIS e COFINS por competência <span class="tag">${rot}</span></h2>
+      <div class="corpo">
+        <div style="overflow-x:auto"><table>
+          <thead><tr><th>Competência</th><th class="num">Receita</th>
+            <th class="num">PIS devido<br><span style="font-weight:400">${(al.pis*100).toFixed(2)}%</span></th>
+            <th class="num">PIS retido</th><th class="num">PIS a recolher</th>
+            <th class="num">COFINS devido<br><span style="font-weight:400">${(al.cofins*100).toFixed(2)}%</span></th>
+            <th class="num">COFINS retido</th><th class="num">COFINS a recolher</th>
+            <th class="num">CSLL retida</th><th class="num">IRRF retido</th></tr></thead>
+          <tbody>${linhas}</tbody></table></div>
+        <div class="aviso">O XML só traz o que foi <b>retido</b>. O "não retido" é o
+          <b>devido menos o retido</b> — calculado aqui sobre a receita, pela alíquota do regime.
+          ${regime==='real'?'<br><b>Lucro Real:</b> o devido acima é <b>débito bruto</b> — os créditos de PIS/COFINS que não vêm de nota fiscal não estão descontados.':''}
+          <br>Nota marcada como <b>consolidada</b> é aquela em que o emitente somou PIS, COFINS e CSLL
+          num campo só: o total está correto, mas a divisão por tributo precisa vir do comprovante.</div>
+      </div>
+    </div>` : '';
+}
+
+function renderDas(das){
+  if(!das.length){ dasWrap.style.display='none'; return; }
+  const fmtComp = c => c ? c.slice(5,7)+'/'+c.slice(0,4) : '';
+  let total=0, linhas=[], avisos=[];
+  das.forEach(d=>{
+    total += d.das_estimado||0;
+    d.linhas.forEach((l,idx)=>{
+      const calc = l.efetiva!=null;
+      linhas.push(`<tr>
+        <td>${idx===0?'<b>'+fmtComp(d.competencia)+'</b>':''}</td>
+        <td class="num">${idx===0?BRL(d.rbt12):''}</td>
+        <td class="${/CONFIGURAR|FATOR/.test(l.anexo)?'anexo cfg':'anexo'}">${l.anexo}${l.iss_retido?` <span style="font-size:10px;font-weight:400" title="${(l.motivo||'').replace(/"/g,'')}">(${/fixo/i.test(l.motivo||'')?'ISS fixo':'ISS retido'})</span>`:''}</td>
+        <td class="num">${l.faixa?l.faixa+'ª':'—'}</td>
+        <td class="num">${BRL(l.receita)}</td>
+        <td class="num">${calc?(l.efetiva*100).toFixed(4)+'%':'—'}</td>
+        <td class="num"><b>${calc?BRL(l.das):'—'}</b></td>
+        <td style="font-size:11px;color:var(--tinta-suave)">${l.obs||(calc?`nominal ${(l.nominal*100).toFixed(2)}% − PD ${BRL(l.pd)}`:'')}</td></tr>`);
+    });
+    // detalhamento por tributo, como o PGDAS-D
+    if(d.tributos && Object.keys(d.tributos).length){
+      const det = Object.entries(d.tributos).map(([t,v])=>`${t} <b>${BRL(v)}</b>`).join(' · ');
+      linhas.push(`<tr><td></td><td colspan="7" style="font-size:11.5px;color:var(--tinta-suave);padding-top:0">
+        ↳ tributos: ${det}</td></tr>`);
+    }
+    if(d.iss_retido_no_mes) linhas.push(`<tr><td></td><td colspan="7" style="font-size:11px;color:var(--tinta-suave);padding-top:0">
+      ↳ ISS retido na fonte em ${fmtComp(d.competencia)}: <b>${BRL(d.iss_retido_no_mes)}</b> — já abatido acima (fatia do ISS fora do DAS)</td></tr>`);
+    (d.pendencias||[]).forEach(p=>avisos.push(fmtComp(d.competencia)+' — '+p));
+    if(d.acima_sublimite) avisos.push(fmtComp(d.competencia)+' — RBT12 acima do sublimite: ICMS/ISS fora do DAS.');
+  });
+  // aviso de RBT12 incompleto: consolida os meses faltantes numa única linha
+  const faltando = [...new Set(das.flatMap(d=>d.rbt12_sem_dados||[]))].sort();
+  if(faltando.length){
+    avisos.unshift(`RBT12 incompleto — sem receita para: <b>${faltando.map(fmtComp).join(', ')}</b>.
+      Nesses meses o RBT12 fica subestimado (e o DAS, menor que o real). Use
+      <b>⬇ Baixar histórico municipal</b> (se for do Recife) ou informe as receitas abaixo.`);
+  }
+  thDas.innerHTML='<tr><th>Competência</th><th class="num">RBT12 (12m ant.)</th><th>Anexo</th><th class="num">Faixa</th><th class="num">Receita do mês</th><th class="num">Alíq. efetiva</th><th class="num">Prévia do DAS</th><th>Base</th></tr>';
+  tbDas.innerHTML=linhas.join('');
+  dasTotalTag.textContent='Total no período: '+BRL(total);
+  dasAvisos.innerHTML = avisos.length
+    ? '<div class="aviso alerta">⚠️ '+[...new Set(avisos)].join('<br>⚠️ ')+'</div>' : '';
+  dasWrap.style.display='block';
+}
+
+async function exportar(){
+  if(!emp.value){ alert('Selecione a empresa.'); return; }
+  const c=cfgAtual();
+  try{
+    const r=await api('/api/classificador/exportar',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id:emp.value, data_ini:ini.value||null, data_fim:fim.value||null,
+        fator_r:!!c.fatorR, folha12m:c.folha12m?parseFloat(c.folha12m):null,
+        anexo_servico:c.anexoServico||null, iss_fixo:!!c.issFixo,
+        regime:null, inicio_atividade:c.inicioAtividade||null,
+        base_data:c.baseData||'competencia', receitas_manuais:parseManuais(c.manuais),
+        lancamentos:c.lancamentos||[]})});
+    alertas.innerHTML='<div class="aviso">✓ CSV com '+r.quantidade+' nota(s): '+r.arquivo+'</div>';
+    api('/api/abrir-pasta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({caminho:r.pasta})}).catch(()=>{});
+  }catch(e){ alertas.innerHTML='<div class="aviso alerta">'+e.message+'</div>'; }
+}
+
+async function iniciar(){
+  try{ certs=await api('/api/certificados'); }catch(e){ certs=[]; }
+  emp.innerHTML='<option value="">— selecione —</option>'+certs.map(c=>`<option value="${c.id}">${c.apelido?c.apelido+' — ':''}${c.nome}</option>`).join('');
+  try{ tipos=await api('/api/classificador/tipos'); }catch(e){ tipos=[]; }
+  $('#lc_tipo').innerHTML = tipos.map(t=>`<option value="${t.id}">${t.rotulo}</option>`).join('');
+  $('#lc_tipo').onchange = mostrarNotaTipo; mostrarNotaTipo();
+  const s=await Fiscale.carregar('classificador'); if(s&&s.cfgs) cfgs=s.cfgs;
+  renderLancs();
+  // QUEM ABRIU MANDA. Vindo do NFS-e com a empresa em tela (?id=), é ela que
+  // aparece — e não a última empresa consultada aqui, guardada no navegador.
+  // Sem parâmetro, continua retomando de onde a pessoa parou.
+  const q=new URLSearchParams(location.search);
+  if(!abrirEmpresa(q.get('id'), q.get('ini'), q.get('fim'))) restaurarUltimo();
+}
+
+/* Abre a Classificação numa empresa, sem precisar procurar de novo.
+   Chamada pelo parâmetro ?id= na primeira abertura e, com o quadro já
+   carregado, direto pelo NFS-e (mesma origem). Devolve false se a empresa não
+   existe entre os certificados — aí nada muda na tela. */
+function abrirEmpresa(id, dIni, dFim){
+  if(!id || !certs.some(c=>c.id===id)) return false;
+  emp.value=id;
+  if(dIni) ini.value=String(dIni).slice(0,10);
+  if(dFim) fim.value=String(dFim).slice(0,10);
+  aoTrocar();                                    // carrega a config e apura
+  guardarUltimo();
+  return true;
+}
+window.abrirEmpresa=abrirEmpresa;
+
+/* Retoma onde você parou: empresa e período da última consulta.
+   Evita reescolher tudo a cada abertura — o uso real é voltar à mesma empresa. */
+const ULT='classificador_ultimo';
+function guardarUltimo(){
+  try{ localStorage.setItem(ULT, JSON.stringify({emp:emp.value, ini:ini.value, fim:fim.value})); }catch(e){}
+}
+function restaurarUltimo(){
+  let u=null;
+  try{ u=JSON.parse(localStorage.getItem(ULT)||'null'); }catch(e){}
+  if(!u || !u.emp) return;
+  if(!certs.some(c=>c.id===u.emp)) return;      // empresa foi removida
+  emp.value=u.emp; if(u.ini) ini.value=u.ini; if(u.fim) fim.value=u.fim;
+  aoTrocar();                                    // já carrega a config e apura
+}
+/* ── MEMÓRIA DE CÁLCULO ───────────────────────────────────────────────────
+   De onde veio cada valor. Manda os MESMOS parâmetros da apuração que está na
+   tela (`cfgAtual()`), senão a memória descreveria um cálculo diferente do que
+   está logo acima dela.
+
+   Nada é somado aqui: o que aparece é o que o backend devolveu, com o motor de
+   origem em `de_onde` e os documentos que formaram cada base. */
+const EST_ROT = {CALCULADO:'calculado', NAO_APLICAVEL:'não se aplica',
+                 DEPENDE_DE:'falta informação'};
+
+async function rastrear(){
+  if(!emp.value) return;
+  const c=cfgAtual();
+  memCorpo.innerHTML='<p class="dica">Lendo…</p>';
+  try{
+    const m=await api('/api/classificador/memoria',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id:emp.value, data_ini:ini.value||null,
+        data_fim:fim.value||null, base_data:c.baseData||'competencia',
+        fator_r:!!c.fatorR, folha12m:c.folha12m?parseFloat(c.folha12m):null,
+        anexo_servico:c.anexoServico||null, iss_fixo:!!c.issFixo,
+        inicio_atividade:c.inicioAtividade||null, regime:null,
+        lancamentos:c.lancamentos||[],
+        competencia:(memComp.value||'')||null})});
+    pintarMemoria(m);
+  }catch(e){
+    memCorpo.innerHTML='<p class="erro">Não consegui montar a memória: '+
+      (e.message||'')+'</p>';
+  }
+}
+
+function pintarMemoria(m){
+  memTag.textContent=m.periodo.competencia;
+  const esc = s => String(s==null?'':s).replace(/[&<>"]/g,
+    x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[x]));
+
+  /* 1 · as FONTES, e por onde cada uma é lida. É o que responde "este número
+     veio do acervo ou de uma pasta solta?". */
+  let h='<h3 class="sub">Fontes dos documentos</h3><table><thead><tr>'
+    + '<th>Fonte</th><th>Lida de</th><th class="num">Documentos</th>'
+    + '<th>Entra na base</th></tr></thead><tbody>'
+    + m.fontes.map(f=>`<tr><td><b>${esc(f.fonte)}</b></td>
+        <td style="font-size:11px">${esc(f.como_lido)}
+          ${f.indisponivel?`<div class="erro" style="font-size:11px">${esc(f.indisponivel)}</div>`:''}
+          ${f.observacao?`<div style="font-size:10px;color:var(--tinta-suave)">${esc(f.observacao)}</div>`:''}</td>
+        <td class="num">${f.documentos}</td>
+        <td>${f.entra_na_base?'sim':'<span style="color:var(--tinta-suave)">não</span>'}</td>
+      </tr>`).join('')+'</tbody></table>';
+
+  /* 2 · a RECEITA identificada, por fonte. */
+  h+=`<h3 class="sub" style="margin-top:14px">Receita identificada</h3>
+    <p><b>${BRL(m.receita.identificada)}</b> em ${m.receita.documentos}
+    documento(s) — NFS-e ${BRL(m.receita.por_fonte['NFS-e'])} ·
+    NF-e ${BRL(m.receita.por_fonte['NF-e'])} (conferência)</p>`;
+
+  /* 3 · os TRIBUTOS, cada um com estado e motor de origem. Nenhum estado é
+     inferido pela tela: vem do backend. */
+  h+='<h3 class="sub" style="margin-top:14px">Tributos</h3><table><thead><tr>'
+    + '<th>Tributo</th><th>Estado</th><th class="num">Valor</th>'
+    + '<th>Apurado por</th><th>Observação</th></tr></thead><tbody>';
+  for(const t of ['SIMPLES','PIS','COFINS','IRPJ','CSLL']){
+    const x=m.tributos[t]||{};
+    const val = x.valor!=null ? BRL(x.valor)
+              : (x.a_pagar!=null ? BRL(x.a_pagar) : '—');
+    const obs = x.falta || x.motivo || (x.avisos||[]).join(' ') || '';
+    h+=`<tr><td><b>${t}</b></td>
+      <td>${esc(EST_ROT[x.estado]||x.estado||'—')}</td>
+      <td class="num">${x.estado==='CALCULADO'?val:'—'}</td>
+      <td style="font-size:11px">${esc(x.de_onde||'—')}</td>
+      <td style="font-size:11px">${obs}</td></tr>`;
+  }
+  h+='</tbody></table>';
+
+  /* 4 · o RASTRO: documento por documento, com o motivo que o motor escreveu.
+     É a parte que permite ir do valor até o papel. */
+  const tabela = (titulo, linhas, cols) => {
+    if(!linhas.length) return `<h3 class="sub" style="margin-top:14px">${titulo}</h3>
+      <p class="vazio">Nenhum documento.</p>`;
+    return `<h3 class="sub" style="margin-top:14px">${titulo}
+      <span class="tag">${linhas.length}</span></h3>
+      <div class="tbl-fixa"><table><thead><tr>${cols.map(c=>
+        `<th${c[2]?' class="num"':''}>${c[0]}</th>`).join('')}</tr></thead><tbody>`
+      + linhas.slice(0,300).map(l=>'<tr>'+cols.map(c=>
+          `<td${c[2]?' class="num"':''}>${c[2]?BRL(l[c[1]]):esc(l[c[1]]||'—')}</td>`
+        ).join('')+'</tr>').join('')
+      + `</tbody></table></div>${linhas.length>300
+          ? '<p class="dica">mostrando as 300 primeiras</p>':''}`;
+  };
+
+  h+=tabela('NFS-e na receita', m.nfse.linhas,
+            [['Documento','documento'],['Data','data'],['Tomador','contraparte'],
+             ['Item LC 116','item_lc116'],['Anexo','anexo'],
+             ['Por que este anexo','motivo'],['Valor','valor',1]]);
+  h+=tabela('NF-e do acervo (conferência)', m.nfe.linhas,
+            [['Chave (final)','documento'],['Competência','competencia'],
+             ['Natureza','natureza'],['Valor','valor',1]]);
+  h+=tabela('Fora da receita — com o motivo', m.excluidos,
+            [['Fonte','fonte'],['Documento','documento'],
+             ['Motivo','motivo'],['Valor','valor',1]]);
+
+  h+=`<p class="dica" style="margin-top:12px">${esc(m.nada_inventado)}</p>`;
+  memCorpo.innerHTML=h;
+}
+
+btnMemoria.onclick=rastrear;
+
+iniciar();
+</script>
+<script src="fiscale-nav.js"></script>
+</body>
+</html>

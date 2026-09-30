@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#B3382C">
+<title>Consulta Optantes — Simples Nacional · Fiscale</title>
+<style>
+  :root{
+    --fundo:#EFF2F3; --superficie:#FFFFFF; --tinta:#1B2328; --tinta-suave:#5C6B72;
+    --borda:#C7CDD1; --petroleo:#10444E; --cor:#B07D10; --cor-claro:#FDF3DF;
+    --ok:#0F8A5F;
+    --raio:16px; --sombra:0 1px 2px rgba(27,35,40,.06), 0 6px 18px rgba(27,35,40,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Roboto,-apple-system,Arial,sans-serif;background:var(--fundo);color:var(--tinta);-webkit-tap-highlight-color:transparent}
+  header{background:var(--superficie);border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:20}
+  .barra{max-width:1000px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:12px 20px}
+  .voltar{font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta);
+          background:var(--superficie);border:2px solid var(--borda);border-radius:11px;padding:9px 16px;cursor:pointer}
+  .voltar:hover{border-color:var(--petroleo);color:var(--petroleo)}
+  .modulo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+  .modulo .ponto{width:12px;height:12px;border-radius:4px;background:var(--cor)}
+  main{max-width:1000px;margin:0 auto;padding:20px}
+  .painel{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra);margin-bottom:16px}
+  .painel h2{font-size:14px;padding:14px 16px;border-bottom:1px solid var(--borda)}
+  .painel .corpo{padding:16px}
+  label{display:block;font-size:12px;font-weight:600;color:var(--tinta-suave);margin:0 0 5px}
+  .linha{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}.linha>*{flex:1;min-width:120px}
+  input,select{width:100%;font-size:14px;padding:10px 12px;border:1px solid var(--borda);border-radius:9px;background:#fff;color:var(--tinta)}
+  input:focus,select:focus{outline:none;border-color:var(--cor);box-shadow:0 0 0 3px rgba(176,125,16,.15)}
+  .btn{font-size:14px;font-weight:700;padding:11px 16px;border-radius:10px;border:none;cursor:pointer}
+  .btn-primario{background:var(--cor);color:#fff}.btn-primario:hover{background:#8a620c}
+  .btn-sec{background:#fff;border:1px solid var(--borda);color:var(--tinta)}.btn-sec:hover{border-color:var(--cor);color:var(--cor)}
+  .btn-mini{padding:7px 11px;font-size:12.5px}.btn-full{width:100%}
+  .aviso{font-size:11.5px;color:var(--tinta-suave);line-height:1.45;margin-top:12px;background:#F7F9FA;border:1px solid var(--borda);border-radius:10px;padding:10px 12px}
+  .aviso b{color:var(--tinta)}
+  .vazio{color:var(--tinta-suave);font-size:13px;padding:16px}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--cor-claro);color:var(--cor)}
+  .emp{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid #EDF1F2}
+  .emp:last-child{border-bottom:none}
+  .emp .av{width:38px;height:38px;border-radius:10px;background:var(--cor-claro);color:var(--cor);display:flex;align-items:center;justify-content:center;font-weight:800;flex:0 0 auto}
+  .emp .info{flex:1;min-width:0}.emp .nome{font-weight:700;font-size:14px}.emp .cnpj{font-size:12.5px;color:var(--tinta-suave)}
+  .copiado{font-size:12px;color:var(--ok);font-weight:700;opacity:0;transition:.2s}.copiado.on{opacity:1}
+  /* resposta da consulta */
+  .cert{flex:0 0 auto;text-align:right;min-width:120px}
+  .sit{flex:0 0 auto;text-align:right;min-width:190px}
+  .selo{display:inline-block;font-size:11.5px;font-weight:800;padding:4px 10px;border-radius:999px}
+  .selo.sim{background:#E8F5EF;color:#0b5c40}
+  .selo.nao{background:#FBE9E7;color:#B3382C}
+  .selo.mei{background:#EAF1FB;color:#17457F}
+  .selo.na {background:#F0F2F3;color:#5C6B72}
+  .det{font-size:11px;color:var(--tinta-suave);margin-top:3px}
+  .fonte-orig{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .resumo{display:flex;gap:8px;flex-wrap:wrap;margin:0 16px 14px}
+  .chip{font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px;background:#F0F2F3;color:var(--tinta-suave)}
+  .chip.sim{background:#E8F5EF;color:#0b5c40}.chip.nao{background:#FBE9E7;color:#B3382C}
+  .girando{display:inline-block;width:11px;height:11px;border:2px solid var(--borda);border-top-color:var(--cor);
+           border-radius:50%;animation:gira .7s linear infinite;vertical-align:-1px}
+  @keyframes gira{to{transform:rotate(360deg)}}
+  .orig{font-size:10.5px;color:var(--tinta-suave);background:#F7F9FA;border:1px solid var(--borda);
+        border-radius:6px;padding:1px 6px;margin-left:6px}
+</style>
+</head>
+<body>
+<script src="fiscale.js"></script>
+<header>
+  <div class="barra">
+    <button class="voltar" onclick="location.href='home_portal.html'">◄ Home</button>
+    <div class="modulo"><span class="ponto"></span> Consulta Optantes — Simples Nacional</div>
+  </div>
+</header>
+
+<main>
+  <div class="painel">
+    <h2>Consultar se a empresa é optante do Simples Nacional <span class="tag">consulta pública</span></h2>
+    <div class="corpo">
+      <div class="linha">
+        <div class="campo" style="margin:0"><label>Empresa</label>
+          <select id="sel_emp" onchange="aoTrocar()"><option value="">— selecione uma empresa —</option></select></div>
+        <div class="campo" style="flex:0 0 220px;margin:0"><label>CNPJ</label>
+          <input id="cnpj" placeholder="informe ou selecione a empresa"></div>
+      </div>
+      <div class="linha" style="margin-top:12px">
+        <button class="btn btn-primario" onclick="consultarUm()">✓ Consultar agora</button>
+        <button class="btn btn-sec" style="flex:0 0 auto" onclick="abrir()">
+          ↗ Abrir a consulta oficial <span id="copiadoMsg" class="copiado">✓ CNPJ copiado</span></button>
+      </div>
+      <div id="respUm"></div>
+      <div class="aviso">O sistema <b>responde na hora</b>, sem CAPTCHA, usando os
+        <b>Dados Abertos do CNPJ da Receita Federal</b> (via os serviços públicos BrasilAPI /
+        Minha Receita). <b>Atenção:</b> essa base é atualizada <b>uma vez por mês</b> — uma opção
+        feita nos últimos dias pode ainda não constar. Em caso de dúvida, use
+        <b>“Abrir a consulta oficial”</b> (ela copia o CNPJ) para conferir em tempo real.</div>
+    </div>
+  </div>
+
+  <div class="painel">
+    <h2>Suas empresas <span id="qtd" class="tag"></span>
+      <span style="float:right;font-weight:400;font-size:12px;display:flex;gap:8px;align-items:center">
+        <label style="margin:0;font-size:11px">Ordenar por</label>
+        <select id="ordem" onchange="render()" style="width:auto;font-size:12px;padding:5px 8px">
+          <option value="nome">Nome (A→Z)</option>
+          <option value="nome_desc">Nome (Z→A)</option>
+          <option value="situacao">Situação (optantes primeiro)</option>
+          <option value="cidade">Cidade</option>
+        </select>
+        <button class="btn btn-primario btn-mini" onclick="consultarTodas()" id="btnTodas">✓ Consultar todas</button>
+        <button class="btn btn-sec btn-mini" onclick="exportar('exportar')" id="btnCsv"
+          title="Planilha com todas as colunas e a referencia da base">⬇ CSV</button>
+        <button class="btn btn-sec btn-mini" onclick="exportar('relatorio')" id="btnPdf"
+          title="Consolidado em PDF, com a data de referencia da base no cabecalho">⬇ PDF</button>
+        <button class="btn btn-sec btn-mini" onclick="aplicarAoCadastro()" id="btnAplicar"
+          style="display:none" title="Grava no cadastro de Clientes o que a consulta trouxe">⤵ Aplicar ao cadastro</button>
+      </span></h2>
+    <div id="resumo" class="resumo"></div>
+    <div id="lista"></div>
+  </div>
+</main>
+
+<script>
+const URL_OPT = "https://www8.receita.fazenda.gov.br/simplesnacional/aplicacoes.aspx?id=21";
+let empresas = [];          // {chave, nome, cnpj, origem[]}
+let resp = {};              // cnpj (só dígitos) -> resposta da consulta
+const soDig = s => (s||'').replace(/\D/g,'');
+const fmtCnpj = c => { const d=soDig(c);
+  if(d.length===14) return d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5');
+  if(d.length===11) return d.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/,'$1.$2.$3-$4');
+  return c||''; };
+const fmtData = d => (d||'').slice(0,10).split('-').reverse().join('/');
+async function copiar(t){ try{ await navigator.clipboard.writeText(t); return true;}catch(e){return false;} }
+
+function aoTrocar(){ const c=empresas.find(x=>x.chave===sel_emp.value); cnpj.value = c?(c.cnpj||''):''; }
+
+async function abrir(){
+  const so=soDig(cnpj.value);
+  if(so){ await copiar(so); const m=document.getElementById('copiadoMsg'); m.classList.add('on'); setTimeout(()=>m.classList.remove('on'),2500); }
+  window.open(URL_OPT,'_blank','noopener');
+}
+
+/* ---- consulta ---- */
+async function pedir(lista){
+  const r = await fetch('/api/optantes',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({cnpjs:lista})});
+  if(!r.ok) throw new Error('Erro '+r.status);
+  return await r.json();
+}
+async function consultarUm(){
+  const d0 = soDig(cnpj.value);
+  if(!d0){ respUm.innerHTML='<div class="aviso">Informe um CNPJ ou selecione uma empresa.</div>'; return; }
+  respUm.innerHTML='<div class="aviso"><span class="girando"></span> Consultando…</div>';
+  try{
+    const [d] = await pedir([d0]);
+    resp[d0]=d; respUm.innerHTML='<div class="aviso">'+cartao(d)+'</div>'; render();
+  }catch(e){ respUm.innerHTML='<div class="aviso">Não deu para consultar: '+e.message+'</div>'; }
+}
+/* Regime tributário a partir da base pública — MESMA regra do módulo Clientes.
+   MEI e optante são inequívocos; "não optante" não é, porque a base não separa
+   Lucro Presumido de Lucro Real. Nesse caso não se escolhe nada: marca-se a
+   pendência para uma pessoa decidir. */
+function regimeDaBasePublica(r, atual){
+  if(r && r.mei) return {valor:'MEI', conflito:false};
+  if(r && r.optante_simples) return {valor:'Simples Nacional', conflito:false};
+  const achaQueEhSimples = (atual === 'Simples Nacional' || atual === 'MEI');
+  return {valor: atual, conflito: achaQueEhSimples};
+}
+
+/* Escreve no cadastro o que a consulta descobriu.
+
+   Até aqui esta tela consultava a carteira inteira e só MOSTRAVA o resultado:
+   quem quisesse corrigir o regime tinha de abrir cliente por cliente no outro
+   módulo, de memória. O regime decide se a empresa tem prévia de DAS, então
+   deixá-lo desatualizado não é detalhe de cadastro.
+
+   Só grava o que é seguro concluir sozinho — regime inequívoco, início de
+   atividade e município/UF quando o campo está VAZIO. Nada é sobrescrito por
+   cima de dado digitado, e o conflito de regime vira pendência visível em vez
+   de um palpite. Mostra a lista do que vai mudar antes de mudar. */
+async function aplicarAoCadastro(){
+  const estado = await Fiscale.carregar('clientes');
+  const lista = (estado && estado.clientes) || [];
+  if(!lista.length){ alert('O cadastro de Clientes está vazio.'); return; }
+
+  const mudancas = [], pendentes = [];
+  lista.forEach(c => {
+    const d = resp[soDig(c.cnpj)];
+    if(!d || !d.ok) return;
+    const antes = [];
+    const dec = regimeDaBasePublica(d, c.regime);
+    if(dec.conflito){
+      if(!c.regimeConflito){
+        c.regimeConflito = 'A Receita diz que NÃO é optante do Simples. Defina Presumido ou Real.';
+        pendentes.push(c.nome);
+      }
+    } else {
+      if(c.regimeConflito){ delete c.regimeConflito; }
+      if(dec.valor !== c.regime){ antes.push(`regime ${c.regime||'—'} → ${dec.valor}`); c.regime = dec.valor; }
+    }
+    if(d.inicio_atividade && !c.inicioAtividade){
+      c.inicioAtividade = d.inicio_atividade.slice(0,7);
+      antes.push('início '+fmtData(d.inicio_atividade));
+    }
+    if(d.municipio && !(c.mun||'').trim()){ c.mun = d.municipio; antes.push('município '+d.municipio); }
+    if(d.uf && !(c.uf||'').trim()){ c.uf = d.uf; antes.push('UF '+d.uf); }
+    if(antes.length) mudancas.push(`• ${c.nome}: ${antes.join(', ')}`);
+  });
+
+  if(!mudancas.length && !pendentes.length){
+    alert('Nada a atualizar: o cadastro já está de acordo com a base pública.');
+    return;
+  }
+  const NL = String.fromCharCode(10);
+  const texto = (mudancas.length ? mudancas.join(NL) : '(nenhuma alteração automática)')
+    + (pendentes.length
+       ? NL + NL + 'PRECISAM DE DECISÃO SUA (não optantes do Simples ainda '
+         + 'marcados como Simples/MEI — a base não diz se é Presumido ou Real):'
+         + NL + '• ' + pendentes.join(NL + '• ')
+       : '');
+  if(!confirm('Gravar no cadastro de Clientes?' + NL + NL + texto)) return;
+
+  await Fiscale.salvar('clientes', {clientes: lista, seq: estado.seq});
+  alert(`Cadastro atualizado: ${mudancas.length} empresa(s) alterada(s)`
+        + (pendentes.length ? `, ${pendentes.length} marcada(s) para você decidir o regime.` : '.'));
+}
+
+async function consultarTodas(){
+  const alvos = empresas.map(e=>soDig(e.cnpj)).filter(Boolean);
+  if(!alvos.length) return;
+  btnTodas.disabled=true; btnTodas.innerHTML='<span class="girando"></span> Consultando '+alvos.length+'…';
+  try{
+    (await pedir(alvos)).forEach(d=>{ if(d && d.cnpj) resp[d.cnpj]=d; });
+  }catch(e){ resumo.innerHTML='<span class="chip nao">Falhou: '+e.message+'</span>'; }
+  btnTodas.disabled=false; btnTodas.textContent='✓ Consultar todas';
+  btnAplicar.style.display = Object.keys(resp).length ? '' : 'none';
+  render();
+}
+function cartao(d){
+  if(!d) return '';
+  if(!d.ok) return '<b>'+fmtCnpj(d.cnpj)+'</b> — '+d.erro;
+  const s = d.optante_simples
+    ? 'É <b>OPTANTE</b> do Simples Nacional desde '+fmtData(d.data_opcao_simples)
+    : (d.data_exclusao_simples ? '<b>NÃO</b> é optante — excluído em '+fmtData(d.data_exclusao_simples)
+                               : '<b>NÃO</b> é optante do Simples Nacional');
+  return `<b>${d.razao_social}</b><br>${s}${d.mei?' · <b>MEI</b>':''}<br>
+    Situação cadastral: <b>${d.situacao}</b> · ${d.municipio}/${d.uf} · ${d.porte}
+    <span class="orig">fonte: ${d.fonte}</span>`;
+}
+function selo(d){
+  if(!d) return '<span class="selo na">não consultado</span>';
+  if(!d.ok) return `<span class="selo na">${d.tipo==='cpf'?'CPF — não se aplica':'não deu'}</span>
+                    <div class="det">${d.erro}</div>`;
+  if(d.mei) return `<span class="selo mei">MEI</span><div class="det">desde ${fmtData(d.data_opcao_simples)} · ${d.situacao}</div>`;
+  if(d.optante_simples) return `<span class="selo sim">OPTANTE</span>
+    <div class="det">desde ${fmtData(d.data_opcao_simples)} · ${d.situacao}</div>`;
+  return `<span class="selo nao">NÃO optante</span><div class="det">${
+    d.data_exclusao_simples?'excluído em '+fmtData(d.data_exclusao_simples):'sem opção registrada'} · ${d.situacao}</div>`;
+}
+function ordenar(lista){
+  const modo=(document.querySelector('#ordem')||{}).value||'nome';
+  const nome=c=>(c.nome||'').toLowerCase();
+  const cidade=c=>{ const d=resp[soDig(c.cnpj)]; return d&&d.ok?(d.municipio||'zzz'):'zzz'; };
+  // situação: optante(0) < não optante(1) < sem consultar/erro(2)
+  const rank=c=>{ const d=resp[soDig(c.cnpj)]; if(!d||!d.ok) return 2; return d.optante_simples?0:1; };
+  const arr=[...lista];
+  if(modo==='nome_desc') arr.sort((a,b)=>nome(b).localeCompare(nome(a),'pt-BR'));
+  else if(modo==='situacao') arr.sort((a,b)=>rank(a)-rank(b) || nome(a).localeCompare(nome(b),'pt-BR'));
+  else if(modo==='cidade') arr.sort((a,b)=>cidade(a).localeCompare(cidade(b),'pt-BR') || nome(a).localeCompare(nome(b),'pt-BR'));
+  else arr.sort((a,b)=>nome(a).localeCompare(nome(b),'pt-BR'));
+  return arr;
+}
+/* A COLUNA DO CERTIFICADO, em tres estados.
+   "nao tem" e "cadastrado mas o arquivo sumiu" sao problemas diferentes: o
+   primeiro e cadastro a fazer, o segundo e certificado a reenviar. Mostrar os
+   dois como o mesmo "-" faria alguem procurar o arquivo que nunca existiu. */
+function seloCert(estado){
+  if(estado==='sim') return '<span class="chip sim" title="o .pfx esta no cofre">certificado</span>';
+  if(estado==='cadastrado, arquivo ausente')
+    return '<span class="chip nao" title="a empresa esta cadastrada, mas o .pfx nao esta no disco">arquivo ausente</span>';
+  return '<span class="chip" title="nenhum certificado cadastrado">sem certificado</span>';
+}
+
+/* A EXPORTACAO BAIXA DO SERVIDOR, nao monta nada aqui.
+   O PDF obedece a regra white-label (sem marca do sistema em byte nenhum), e
+   isso so e verificavel no lado que o gera. Montar PDF no navegador poria a
+   regra em dois lugares. */
+async function exportar(qual){
+  const b = document.getElementById(qual==='relatorio'?'btnPdf':'btnCsv');
+  const t0 = b.textContent; b.disabled = true; b.innerHTML = '<span class="girando"></span> Gerando…';
+  try{
+    const r = await fetch('/api/optantes/'+qual);
+    if(!r.ok){
+      let m = 'Erro '+r.status;
+      try{ m = (await r.json()).erro || m; }catch(e){}
+      resumo.innerHTML = '<span class="chip nao">'+m+'</span>';
+      return;
+    }
+    // A REFERENCIA VEM NO CABECALHO porque a tela precisa avisar, e nao da
+    // para ler isso de dentro de um PDF ja montado.
+    const ref = r.headers.get('X-Referencia') || '';
+    const retaguarda = parseInt(r.headers.get('X-Retaguarda') || '0', 10);
+    const falhas = parseInt(r.headers.get('X-Falhas') || '0', 10);
+    const nome = (r.headers.get('Content-Disposition')||'').split('filename=')[1];
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = (nome||'').replace(/"/g,'') || ('optantes.'+(qual==='relatorio'?'pdf':'csv'));
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    const avisos = [];
+    avisos.push(ref
+      ? '<span class="chip">referência da base: '+ref+'</span>'
+      : '<span class="chip nao">a base não informou a referência</span>');
+    if(retaguarda) avisos.push('<span class="chip nao">'+retaguarda+' linha(s) da fonte de retaguarda</span>');
+    if(falhas) avisos.push('<span class="chip nao">'+falhas+' não consultada(s)</span>');
+    resumo.innerHTML = avisos.join('');
+  }catch(e){
+    resumo.innerHTML = '<span class="chip nao">Falhou: '+(e.message||e)+'</span>';
+  }finally{ b.disabled = false; b.textContent = t0; }
+}
+
+function render(){
+  qtd.textContent = empresas.length;
+  const ordenadas = ordenar(empresas);
+  sel_emp.innerHTML='<option value="">— selecione uma empresa —</option>'+
+    ordenadas.map(c=>`<option value="${c.chave}">${c.nome}</option>`).join('');
+  if(!empresas.length){
+    lista.innerHTML='<div class="vazio">Nenhuma empresa encontrada. Cadastre no módulo <b>Clientes</b> '+
+      'ou adicione um certificado no módulo <b>NFS-e</b> — as duas fontes aparecem aqui.</div>';
+    resumo.innerHTML=''; return;
+  }
+  const ds = empresas.map(e=>resp[soDig(e.cnpj)]).filter(Boolean);
+  const sim = ds.filter(d=>d.ok&&d.optante_simples).length;
+  const nao = ds.filter(d=>d.ok&&!d.optante_simples).length;
+  resumo.innerHTML = ds.length
+    ? `<span class="chip sim">${sim} optante(s)</span><span class="chip nao">${nao} não optante(s)</span>
+       <span class="chip">${empresas.length-ds.length} sem consultar</span>` : '';
+  lista.innerHTML=ordenadas.map(c=>{
+    const d=resp[soDig(c.cnpj)];
+    return `<div class="emp">
+      <div class="av">${(c.nome||'?').trim().charAt(0).toUpperCase()}</div>
+      <div class="info"><div class="nome">${c.nome}</div>
+        <div class="cnpj">${fmtCnpj(c.cnpj)||'sem CNPJ'} ${(c.origem||[]).map(o=>'<span class="orig">'+o+'</span>').join('')}</div></div>
+      <div class="cert">${seloCert(c.certificado)}</div>
+      <div class="sit">${selo(d)}</div>
+    </div>`;}).join('');
+}
+
+/* Empresas = módulo Clientes  +  certificados do NFS-e (une pelo CNPJ).
+   Antes só lia o Clientes, e as empresas que só têm certificado ficavam de fora. */
+/* A CARTEIRA VEM DO SERVIDOR, e nao e mais montada aqui.
+   Antes esta tela juntava Clientes + certificados no proprio JavaScript. O
+   relatorio em PDF monta a MESMA carteira no servidor, e duas montagens da
+   mesma lista divergem no dia em que uma das duas for corrigida — com a
+   coluna "certificado" da tela dizendo uma coisa e a do PDF outra. Agora ha
+   uma implementacao (`optantes.universo`) e dois consumidores. */
+async function iniciar(){
+  try{
+    const r = await fetch('/api/optantes/universo');
+    const d = r.ok ? await r.json() : {};
+    empresas = (d.empresas||[]).map(e=>({
+      chave: e.documento, nome: e.nome || e.documento, cnpj: e.documento,
+      origem: e.cadastros || [], certificado: e.certificado,
+      consultavel: e.consultavel, motivo: e.motivo || ''}));
+  }catch(e){ empresas = []; }
+  render();
+  const qc=new URLSearchParams(location.search).get('cliente');
+  if(qc){ const e=empresas.find(x=>x.chave===qc||soDig(x.cnpj)===soDig(qc));
+          if(e){ sel_emp.value=e.chave; aoTrocar(); } }
+}
+iniciar();
+</script>
+<script src="fiscale-nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10444E">
+<title>Usuários — Fiscale</title>
+<style>
+  :root{
+    --fundo:#EFF2F3; --superficie:#FFFFFF; --tinta:#1B2328; --tinta-suave:#5C6B72;
+    --borda:#C7CDD1; --petroleo:#10444E; --ok:#0F8A5F; --alerta:#B3382C;
+    --raio:16px; --sombra:0 1px 2px rgba(27,35,40,.06), 0 6px 18px rgba(27,35,40,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Roboto,-apple-system,Arial,sans-serif;background:var(--fundo);color:var(--tinta)}
+  header{background:var(--superficie);border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:20}
+  .barra{max-width:1160px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:12px 20px}
+  .voltar{font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta);
+          background:var(--superficie);border:2px solid var(--borda);border-radius:11px;padding:9px 16px;cursor:pointer}
+  .voltar:hover{border-color:var(--petroleo);color:var(--petroleo)}
+  .modulo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+  .modulo .ponto{width:12px;height:12px;border-radius:4px;background:var(--petroleo)}
+
+  main{max-width:900px;margin:0 auto;padding:20px}
+  .cols{display:grid;grid-template-columns:5fr 7fr;gap:16px}
+  @media(max-width:820px){.cols{grid-template-columns:1fr}}
+  .painel{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra)}
+  .painel h2{font-size:14px;padding:14px 16px;border-bottom:1px solid var(--borda)}
+  .painel .corpo{padding:16px}
+  label{display:block;font-size:12px;font-weight:600;color:var(--tinta-suave);margin:0 0 5px}
+  .campo{margin-bottom:12px}
+  input{width:100%;font-size:14px;padding:9px 11px;border:1px solid var(--borda);border-radius:9px}
+  input:focus{outline:none;border-color:var(--petroleo);box-shadow:0 0 0 3px rgba(16,68,78,.15)}
+  .btn{font-size:13.5px;font-weight:700;padding:9px 14px;border-radius:9px;border:none;cursor:pointer}
+  .btn-primario{background:var(--petroleo);color:#fff}.btn-primario:hover{background:#0b3138}
+  .btn-sec{background:#fff;border:1px solid var(--borda);color:var(--tinta)}
+  .btn-perigo{background:#fff;border:1px solid #E7C3C0;color:#B3382C}.btn-perigo:hover{background:#FBE9E7}
+  .btn-mini{padding:6px 10px;font-size:12px}.btn-full{width:100%;margin-top:4px}
+  .aviso{font-size:11.5px;color:var(--tinta-suave);line-height:1.45;margin-top:10px;background:#F7F9FA;
+         border:1px solid var(--borda);border-radius:10px;padding:10px 12px}
+  .aviso b{color:var(--tinta)}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:#E8F0F1;color:var(--petroleo)}
+  .u-item{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid #EDF1F2}
+  .u-item .av{width:36px;height:36px;border-radius:10px;background:#E8F0F1;color:var(--petroleo);
+    display:flex;align-items:center;justify-content:center;font-weight:800}
+  .u-item b{font-size:14px}
+  .msg{display:none;font-size:13px;border-radius:10px;padding:10px 12px;margin-bottom:12px}
+  .msg.ok{display:block;background:#E5F4EC;color:var(--ok)}
+  .msg.err{display:block;background:#FBE9E7;color:var(--alerta)}
+</style>
+</head>
+<body>
+<header>
+  <div class="barra">
+    <button class="voltar" onclick="location.href='home_portal.html'">◄ Home</button>
+    <div class="modulo"><span class="ponto"></span> Usuários do sistema</div>
+  </div>
+</header>
+
+<main>
+  <div class="cols">
+    <div class="painel">
+      <h2>Cadastrar / redefinir usuário</h2>
+      <div class="corpo">
+        <div id="msg" class="msg"></div>
+        <div class="campo"><label>Usuário (letras e números, sem espaço)</label>
+          <input id="u_nome" placeholder="ex.: maria" autocomplete="off">
+          <div class="dica">É a identidade interna e <b>não muda nunca</b>. Sessões,
+            permissões e a integração com o ELO apontam para ela.</div></div>
+        <div class="campo"><label>Nome da pessoa</label>
+          <input id="u_pessoa" placeholder="ex.: Maria Rodrigues" autocomplete="off"></div>
+        <div class="campo"><label>E-mail profissional</label>
+          <input id="u_email" type="email" placeholder="ex.: maria@seuescritorio.com.br"
+                 autocomplete="off" spellcheck="false">
+          <div class="dica">Com ele a pessoa entra no lugar do login antigo — os
+            dois continuam valendo.</div></div>
+        <div class="campo"><label>Senha</label>
+          <input id="u_senha" type="password" placeholder="mínimo 8 caracteres"
+                 autocomplete="new-password" minlength="8" maxlength="128">
+          <div class="dica">Use pelo menos 8 caracteres. Para maior segurança, recomendamos uma frase com 12 caracteres ou mais.
+            Em branco ao editar, a senha atual é <b>mantida</b>.</div></div>
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;color:var(--tinta);margin-bottom:8px">
+          <input id="u_admin" type="checkbox" style="width:auto"> Este usuário também é administrador
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;color:var(--tinta);margin-bottom:12px">
+          <input id="u_ativo" type="checkbox" style="width:auto" checked> Ativo (pode entrar no sistema)
+        </label>
+        <button class="btn btn-primario btn-full" onclick="salvarUsuario()">Salvar usuário</button>
+        <div class="aviso">Cada pessoa entra com o <b>login antigo ou o e-mail</b>,
+          em qualquer máquina da rede — os dois valem. Se o usuário já existir e você
+          deixar a senha em branco, ela é <b>mantida</b>; preenchida, é <b>redefinida</b>.
+          Desmarcar <b>Ativo</b> tira o acesso na hora e encerra as sessões abertas.
+          <br><br>
+          O <b>operador</b> faz o trabalho fiscal inteiro: consulta notas, apura, baixa da SEFAZ,
+          importa XML e exporta. O que ele <b>não</b> faz é cadastrar empresa ou certificado,
+          informar senha de certificado ou de portal, mexer em usuários, backup, pasta vigiada
+          e integração — isso é do <b>administrador</b>.</div>
+      </div>
+    </div>
+    <div class="painel">
+      <h2>Usuários cadastrados</h2>
+      <div id="lista"></div>
+    </div>
+  </div>
+</main>
+
+<style>
+  .dica{font-size:11.5px;color:var(--tinta-suave);margin-top:3px;line-height:1.35}
+  .u-item .sub{font-size:11.5px;color:var(--tinta-suave)}
+  .tag.off{background:#FEF3C7;color:#92400E}
+</style>
+<script>
+function msg(t, tipo){ const m=document.getElementById('msg'); m.textContent=t; m.className='msg '+tipo;
+  setTimeout(()=>m.className='msg', 4000); }
+
+async function carregar(){
+  const quem = await fetch('/api/quem').then(r=>r.json());
+  if(!quem.admin){ location.href='home_portal.html'; return; }
+  const us = await fetch('/api/usuarios').then(r=>r.json());
+  lista.innerHTML = us.map(u=>`
+    <div class="u-item">
+      <div class="av">${esc((u.nome||u.usuario).charAt(0).toUpperCase())}</div>
+      <div style="flex:1">
+        <b>${esc(u.nome || u.usuario)}</b>
+        <span class="tag">${u.admin?'administrador':'operador'}</span>
+        ${u.ativo===false?'<span class="tag off">inativo</span>':''}
+        <div class="sub">${esc(u.usuario)}${u.email?' · '+esc(u.email):' · sem e-mail'}</div>
+      </div>
+      <button class="btn btn-mini" onclick='editar(${JSON.stringify(u)})'>✎ Editar</button>
+      ${u.usuario!==quem.usuario?`<button class="btn btn-perigo btn-mini" onclick="excluir('${esc(u.usuario)}')">🗑 Excluir</button>`
+        :'<span style="font-size:11.5px;color:var(--tinta-suave)">você</span>'}
+    </div>`).join("");
+}
+
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* Editar traz o registro para o formulário. A senha fica VAZIA de propósito:
+   em branco, o servidor mantém a que já existe — trocar o e-mail de alguém
+   não pode obrigar a inventar uma senha nova para ela. */
+function editar(u){
+  u_nome.value = u.usuario;
+  u_pessoa.value = u.nome || '';
+  u_email.value = u.email || '';
+  u_senha.value = '';
+  u_admin.checked = !!u.admin;
+  u_ativo.checked = u.ativo !== false;
+  u_pessoa.focus();
+  msg('Editando "' + (u.nome || u.usuario) + '". Senha em branco mantém a atual.', 'ok');
+}
+
+async function salvarUsuario(){
+  const nome=u_nome.value.trim().toLowerCase(), senha=u_senha.value;
+  if(!nome){ msg("Informe o usuário.","err"); return; }
+  const r = await fetch('/api/usuarios',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({usuario:nome, senha,
+                         nome:u_pessoa.value.trim(),
+                         email:u_email.value.trim(),
+                         admin:u_admin.checked,
+                         ativo:u_ativo.checked})});
+  const d = await r.json();
+  if(d.ok){
+    msg(d.criado ? `Usuário "${nome}" criado.`
+                 : (senha ? `"${nome}" salvo e senha redefinida.`
+                          : `"${nome}" salvo. A senha continua a mesma.`), "ok");
+    u_nome.value=u_pessoa.value=u_email.value=u_senha.value="";
+    u_admin.checked=false; u_ativo.checked=true; carregar();
+  }
+  else msg(d.erro||"Erro ao salvar.","err");
+}
+
+async function excluir(nome){
+  if(!confirm(`Excluir o usuário "${nome}"?\n\nEle perde o acesso imediatamente.`)) return;
+  const r = await fetch('/api/usuarios/excluir',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({usuario:nome})});
+  const d = await r.json();
+  if(d.ok){ msg(`Usuário "${nome}" excluído.`,"ok"); carregar(); }
+  else msg(d.erro||"Erro ao excluir.","err");
+}
+carregar();
+</script>
+<script src="fiscale-nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pendências cadastrais da NF-e — Fiscale</title>
+<!--
+  A fila de reconciliação entre o acervo NF-e e o cadastro de Clientes.
+
+  POR QUE ESTA TELA EXISTE
+    O seletor da NF-e mostra só empresa com Inscrição Estadual cadastrada. A
+    regra é certa, mas ela esconde empresa — e empresa escondida sem aviso é
+    empresa que some. Esta tela é o aviso: quem ficou de fora, por quê, e com
+    quantos documentos parados.
+
+  O QUE ELA NÃO FAZ
+    Não grava nada. A IE que aparece aqui foi LIDA dos XML da própria empresa
+    e é sugestão para conferência — gravar sozinho seria pôr no cadastro um
+    número que ninguém olhou, e esse número passa a valer para apuração.
+    Quem confirma é o usuário, em Clientes, com o botão de salvar de lá.
+-->
+<style>
+  :root{
+    --tinta:#12212A; --tinta-suave:#5A6B72; --borda:#DDE4E7;
+    --superficie:#fff; --cor:#B45309; --cor-claro:#FFF7ED; --raio:18px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    color:var(--tinta);background:#EAEFF1}
+  .capa{max-width:1180px;margin:0 auto;padding:20px 16px 60px}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:var(--tinta-suave);font-size:13.5px;margin:0 0 18px}
+  .painel{background:var(--superficie);border:1px solid var(--borda);
+    border-radius:var(--raio);padding:16px 18px;margin-bottom:14px}
+  .aviso{background:var(--cor-claro);border:1px solid #F0C4BE;
+    border-radius:var(--raio);padding:14px 16px;margin-bottom:16px;font-size:13.5px}
+  .cartao{background:var(--superficie);border:1px solid var(--borda);
+    border-radius:var(--raio);padding:16px 18px;margin-bottom:12px}
+  .cartao h2{font-size:16.5px;margin:0 0 3px}
+  .linhas{display:grid;grid-template-columns:max-content 1fr;gap:5px 16px;
+    margin-top:11px;font-size:13.5px;align-items:baseline}
+  .linhas dt{color:var(--tinta-suave);white-space:nowrap}
+  .linhas dd{margin:0;word-break:break-word}
+  .mono{font-family:ui-monospace,Consolas,"Courier New",monospace}
+  .selo{display:inline-block;padding:2px 10px;border-radius:999px;
+    font-size:11.5px;font-weight:800;letter-spacing:.02em}
+  .selo.alerta{background:#FEF3C7;color:#92400E}
+  .selo.info{background:#E0F2FE;color:#075985}
+  .selo.neutro{background:#EEF2F4;color:#41535B}
+  .btn{border:1px solid var(--borda);background:#fff;border-radius:999px;
+    padding:7px 15px;font-size:13px;font-weight:800;cursor:pointer;
+    color:var(--tinta);text-decoration:none;display:inline-block}
+  .btn:hover{background:#F2F6F7}
+  .btn.primario{background:#10444E;border-color:#10444E;color:#fff}
+  .btn.primario:hover{background:#0C3038}
+  .acoes{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px;align-items:center}
+  .vazio{padding:34px 18px;text-align:center;color:var(--tinta-suave)}
+  .vazio .emoji{font-size:34px;display:block;margin-bottom:8px}
+  .nota{font-size:12.5px;color:var(--tinta-suave);margin-top:10px}
+  h2.secao{font-size:17px;margin:26px 0 3px}
+  .fila{background:var(--superficie);border:1px solid var(--borda);
+    border-radius:var(--raio);padding:6px 4px}
+  .fila .linha{display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+    padding:9px 13px;border-bottom:1px solid #EDF1F2}
+  .fila .linha:last-child{border-bottom:0}
+  .fila .nome{flex:1;min-width:230px;font-weight:700;font-size:13.5px}
+  .fila .resposta{flex:1 1 100%;font-size:12.5px;padding:0 13px 4px}
+  .esqueleto{background:linear-gradient(90deg,#EDF1F2,#F6F9FA,#EDF1F2);
+    border-radius:9px;height:70px;animation:brilho 1.2s infinite}
+  @keyframes brilho{0%{opacity:.7}50%{opacity:1}100%{opacity:.7}}
+  @media (prefers-reduced-motion:reduce){.esqueleto{animation:none}}
+</style>
+</head>
+<body>
+<div class="capa">
+  <h1>Pendências da NF-e</h1>
+  <p class="sub">O que precisa de uma decisão sua antes de a captura funcionar
+    sozinha.</p>
+
+  <h2 class="secao">Empresas que nunca sincronizaram</h2>
+  <p class="sub">Elas têm certificado, mas nunca falaram com a SEFAZ — por
+    isso não têm documento nenhum. A primeira consulta exige um clique
+    consciente.</p>
+  <div id="onboarding">
+    <div class="esqueleto"></div>
+  </div>
+
+  <h2 class="secao">Empresas fora da automação</h2>
+  <p class="sub">Revisão de sequência e divergência externa. A decisão aqui
+    <b>não consulta a SEFAZ</b>: ela devolve a empresa à fila de elegibilidade,
+    e a consulta seguinte continua sendo outra decisão.</p>
+  <div id="travadas">
+    <div class="esqueleto"></div>
+  </div>
+
+  <h2 class="secao">Cadastro incompleto</h2>
+  <p class="sub">Empresas com documentos no acervo que não atendem ao cadastro
+    exigido pelo módulo.</p>
+  <div id="corpo">
+    <div class="esqueleto"></div>
+  </div>
+</div>
+
+<script src="fiscale-nav.js"></script>
+<script>
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const NUM = n => (n==null?'—':Number(n).toLocaleString('pt-BR'));
+
+/* `opcoes.corpo` existe para o POST da primeira sincronização. O tratamento
+   de erro fica um só: a mensagem do backend (`detail`) é escrita para o
+   usuário — inclusive o 409, que não é erro, é a política falando. */
+async function pedir(rota, opcoes){
+  const o = opcoes || {};
+  const r = await fetch(rota, o.corpo === undefined ? undefined : {
+    method: o.metodo || 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(o.corpo)});
+  if(!r.ok){
+    let m = `Erro ${r.status}`;
+    try{
+      const j = await r.json();
+      const d = j.detail;
+      /* O 409 devolve `detail` como OBJETO — estado, motivo, quanto falta.
+         `String(objeto)` viraria "[object Object]" na cara do usuário. */
+      m = (d && typeof d === 'object')
+        ? [d.motivo, d.detalhe, d.segundos_para_liberar
+            ? 'libera em ' + Math.ceil(d.segundos_para_liberar/60) + ' min' : '']
+          .filter(Boolean).join(' · ')
+        : (d || j.erro || m);
+    }catch(e){}
+    throw new Error(m);
+  }
+  return r.json();
+}
+
+/* "Revisar cadastro" leva ao cadastro que já existe, com o que sabemos
+   preenchido — e PARA por lá. Quem salva é o usuário, no botão de Clientes.
+   Passar por querystring é de propósito: nada aqui escreve, então não há o
+   que um POST desta tela pudesse fazer. */
+function linkRevisar(p){
+  const q = new URLSearchParams({revisar: '1', cnpj: p.cnpj || ''});
+  if(p.nome) q.set('nome', p.nome);
+  if(p.ie_sugerida) q.set('ie_sugerida', p.ie_sugerida);
+  return 'clientes.html?' + q.toString();
+}
+
+function cartao(p){
+  return `
+  <article class="cartao">
+    <h2>${esc(p.nome)}</h2>
+    <div>
+      <span class="selo alerta">${esc(p.situacao_rotulo)}</span>
+      ${p.rotulo_sugestao
+        ? `<span class="selo info" style="margin-left:5px">${esc(p.rotulo_sugestao)}</span>`
+        : ''}
+      <span class="selo neutro" style="margin-left:5px">${NUM(p.documentos_no_acervo)} documentos</span>
+    </div>
+    <dl class="linhas">
+      <dt>CNPJ</dt><dd class="mono">${esc(p.cnpj || '—')}</dd>
+      <dt>Razão social encontrada</dt>
+      <dd>${esc(p.nome)} <span style="color:var(--tinta-suave)">(${esc(p.origem_do_nome||'—')})</span></dd>
+      <dt>Documentos no acervo</dt><dd><b>${NUM(p.documentos_no_acervo)}</b></dd>
+      <dt>IE cadastrada hoje</dt>
+      <dd>${p.ie_cadastrada
+            ? `<span class="mono">${esc(p.ie_cadastrada)}</span>`
+            : '<span style="color:var(--tinta-suave)">nenhuma</span>'}</dd>
+      <dt>IE encontrada nos XMLs</dt>
+      <dd>${p.ie_sugerida
+            ? `<b class="mono">${esc(p.ie_sugerida)}</b>
+               <span style="color:var(--tinta-suave)">— sugestão, confira antes de salvar</span>
+               ${(p.ie_vistas_nos_xml||[]).length > 1
+                 ? `<div class="nota">Os XMLs trazem mais de uma:
+                    ${(p.ie_vistas_nos_xml||[]).map(x=>`<span class="mono">${esc(x)}</span>`).join(' · ')}
+                    — escolha a certa.</div>` : ''}`
+            : '<span style="color:var(--tinta-suave)">nenhuma encontrada nos documentos</span>'}</dd>
+      <dt>Por que ficou de fora</dt>
+      <dd>${esc(p.explicacao||'')}</dd>
+    </dl>
+    <div class="acoes">
+      <a class="btn primario" href="${linkRevisar(p)}">Revisar cadastro</a>
+      <span class="nota" style="margin:0">Abre o cadastro de Clientes com estes
+        dados preenchidos. <b>Nada é salvo até você confirmar lá.</b></span>
+    </div>
+  </article>`;
+}
+
+/* ── Primeira sincronização ──────────────────────────────────────────────
+   Uma empresa por clique, de propósito. A primeira consulta puxa a fila
+   inteira que a SEFAZ guarda e AVANÇA o contador (NSU), que não volta. Um
+   botão "sincronizar todas" transformaria um engano de ambiente em vinte
+   enganos antes de alguém perceber. */
+async function carregarOnboarding(){
+  const alvo = document.getElementById('onboarding');
+  let r;
+  try{ r = await pedir('/api/nfe/onboarding'); }
+  catch(e){
+    alvo.innerHTML = `<div class="painel"><b>Não consegui listar.</b>
+      <div class="nota">${esc(e.message)}</div></div>`;
+    return;
+  }
+  if(!r.total){
+    alvo.innerHTML = `<div class="painel nota">Nenhuma. Todas as empresas com
+      certificado já fizeram a primeira sincronização.</div>`;
+    return;
+  }
+  alvo.innerHTML = `
+    <div class="fila">
+      ${r.empresas.map(e => `
+        <div class="linha" data-empresa="${esc(e.id)}">
+          <span class="nome">${esc(e.nome)}</span>
+          <span class="mono nota">${esc(e.cnpj)}</span>
+          ${e.tem_senha ? '' : '<span class="selo alerta">sem senha guardada</span>'}
+          ${e.certificado_no_lugar ? '' : '<span class="selo alerta">certificado ausente</span>'}
+          <button class="btn primario" data-sincronizar="${esc(e.id)}"
+            ${(e.tem_senha && e.certificado_no_lugar) ? '' : 'disabled'}>
+            Sincronizar pela primeira vez</button>
+          <div class="resposta"></div>
+        </div>`).join('')}
+    </div>
+    <p class="nota" style="margin:8px 0 0">${esc(r.observacao || '')}</p>`;
+
+  alvo.querySelectorAll('[data-sincronizar]').forEach(b => b.onclick = async ()=>{
+    const linha = b.closest('.linha');
+    const saida = linha.querySelector('.resposta');
+    const nome = linha.querySelector('.nome').textContent;
+    if(!confirm('Primeira sincronização de ' + nome + '.\n\n'
+        + 'Isso traz a fila inteira que a SEFAZ guarda para esta empresa e '
+        + 'avança o contador (NSU), que não retrocede.\n\nConfirmar?')) return;
+    const rot = b.textContent;
+    b.disabled = true; b.textContent = 'Sincronizando…';
+    saida.innerHTML = '<div class="esqueleto" style="height:18px"></div>';
+    try{
+      const d = await pedir('/api/nfe/onboarding', {corpo:{id: b.dataset.sincronizar}});
+      saida.innerHTML = `<span class="selo info">${NUM(d.novos || 0)}
+        documento${d.novos===1?'':'s'} capturado${d.novos===1?'':'s'}</span>
+        <span class="nota" style="margin-left:6px">estado ${esc(d.estado||'')}
+        · contador ${esc(d.checkpoint_antes||'')} → ${esc(d.checkpoint_depois||'')}</span>`;
+      b.remove();
+    }catch(e){
+      /* 409 não é erro: é a política dizendo que o ESTADO não permite agora.
+         Misturar os dois foi o que fez "tentar de novo" virar hábito. */
+      saida.innerHTML = `<span class="selo alerta">${esc(e.message)}</span>`;
+      b.disabled = false; b.textContent = rot;
+    }
+  });
+}
+
+/* ── Empresas fora da automação ───────────────────────────────────────────
+   Três decisões, todas do domínio e nenhuma delas conversando com a SEFAZ:
+   encerrar a revisão de sequência, marcar o início de cobertura e MANTER o
+   bloqueio por falta de evidência. A tela NÃO manda NSU, checkpoint nem
+   caminho de arquivo — o servidor recusa esses campos, e é assim que fica
+   impossível "consertar" posição de fila pelo formulário.
+
+   A terceira é a que faltava: ela não muda nada, e é justamente esse o ponto.
+   Sem ela, uma empresa analisada e uma que ninguém abriu há meses ficavam
+   idênticas na fila. */
+let CSRF = '';
+
+async function pegarCsrf(){
+  try{
+    const r = await fetch('/api/csrf');
+    if(r.ok){ CSRF = (await r.json()).csrf || ''; }
+  }catch(e){ CSRF = ''; }
+  return CSRF;
+}
+
+async function decidir(rota, corpo){
+  if(!CSRF) await pegarCsrf();
+  const r = await fetch(rota, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-Fiscale-Csrf': CSRF},
+    body: JSON.stringify(corpo)});
+  let j = {};
+  try{ j = await r.json(); }catch(e){}
+  if(!r.ok) throw new Error(j.erro || ('Erro ' + r.status));
+  return j;
+}
+
+function cartaoTravada(e){
+  /* A hipótese é mostrada COMO hipótese. Não há campo para o operador
+     "confirmar" quem consome a fila: o FISCALE não sabe, e uma caixa de
+     seleção transformaria um palpite em registro permanente. */
+  const hip = e.diagnostico_e_hipotese
+    ? `<div class="aviso" style="margin:8px 0">
+         <b>Hipótese, não conclusão.</b> ${esc(e.diagnostico_texto)}
+       </div>` : '';
+  const selos = [
+    e.em_revisao ? '<span class="selo alerta">revisão de sequência</span>' : '',
+    e.divergencia_externa ? '<span class="selo info">divergência externa</span>' : '',
+    e.tem_marco_cobertura ? '<span class="selo neutro">marco de cobertura registrado</span>' : '',
+    e.decisao_pendente
+      ? '<span class="selo alerta">sem decisão registrada</span>'
+      : '<span class="selo neutro">bloqueada por decisão administrativa</span>',
+  ].join(' ');
+  const avisos = (e.avisos || []).map(a =>
+    `<li class="nota" style="margin:0">${esc(a)}</li>`).join('');
+
+  /* A decisão de manter o bloqueio, quando existe, aparece por inteiro: quem,
+     quando e por quê. Sem isto, "ninguém olhou ainda" e "olhado e mantido"
+     seriam o mesmo cartão — que era exatamente o problema. */
+  const b = e.bloqueio_mantido || {};
+  const decisao = e.decisao_pendente ? '' : `
+    <div class="aviso" style="margin:8px 0">
+      <b>Mantida bloqueada por falta de evidência.</b>
+      Decidido por <b>${esc(b.operador || '—')}</b> em
+      ${esc((b.em || '').slice(0, 19).replace('T', ' '))}${
+        b.reafirmacoes ? ' · reafirmada ' + esc(String(b.reafirmacoes))
+          + 'x, desde ' + esc((b.primeira_em || '').slice(0, 10)) : ''}.
+      <div style="margin-top:4px">${esc(b.justificativa || '')}</div>
+      <div class="nota" style="margin:4px 0 0">A empresa continua fora da
+        automação. Esta decisão não consulta a SEFAZ, não libera consulta e não
+        altera posse, checkpoint nem cobertura.</div>
+    </div>`;
+
+  return `<article class="painel" data-empresa="${esc(e.identidade)}">
+    <h2 style="margin:0 0 6px;font-size:17px">${esc(e.empresa)}</h2>
+    <div>${selos}</div>
+    <dl class="linhas" style="margin:10px 0">
+      <dt>Posse (ult_nsu)</dt><dd class="mono">${esc(e.ult_nsu)}</dd>
+      <dt>Informado pela SEFAZ</dt><dd class="mono">${esc(e.nsu_observado_sefaz || '—')}</dd>
+      <dt>Distância</dt><dd>${NUM(e.distancia)}</dd>
+      <dt>Último 656</dt><dd>${esc(e.ultimo_656_subtipo || '—')} ${esc((e.ultimo_656_em||'').slice(0,19))}</dd>
+      <dt>Cobertura anterior</dt><dd>${esc(e.cobertura_anterior || '—')}</dd>
+    </dl>
+    ${avisos ? `<ul style="margin:6px 0 0 16px;padding:0">${avisos}</ul>` : ''}
+    ${hip}
+    ${decisao}
+    <div class="acoes" style="display:grid;gap:8px;margin-top:10px">
+      <label class="nota" style="margin:0">Justificativa (obrigatória, mínimo
+        15 caracteres) — fica na auditoria com o seu nome e a data.
+        <textarea class="just" rows="2" style="width:100%;margin-top:4px"
+          placeholder="Por que esta decisão está sendo tomada?"></textarea></label>
+      ${e.pode_marcar_cobertura ? `<label class="nota" style="margin:0">De onde
+        veio a informação
+        <select class="origem" style="margin-left:6px">
+          <option value="">escolha…</option>
+          <option value="INFORMADO_PELO_CLIENTE">informado pelo cliente</option>
+          <option value="INFORMADO_PELO_CONTADOR_ANTERIOR">informado pelo contador anterior</option>
+          <option value="DOCUMENTO_RECEBIDO_DE_OUTRA_FONTE">documento recebido de outra fonte</option>
+          <option value="ANALISE_INTERNA_DO_ESCRITORIO">análise interna do escritório</option>
+        </select></label>` : ''}
+      <div>
+        ${e.pode_encerrar_revisao
+          ? '<button class="btn primario" data-acao="encerrar">Encerrar revisão de sequência</button>'
+          : '<span class="nota">Não está em revisão de sequência.</span>'}
+        ${e.pode_marcar_cobertura
+          ? '<button class="btn" data-acao="cobertura">Marcar início de cobertura</button>'
+          : ''}
+        ${e.pode_manter_bloqueio
+          ? `<button class="btn" data-acao="manter">${e.decisao_pendente
+              ? 'Manter bloqueada por falta de evidência'
+              : 'Reafirmar o bloqueio (motivo novo)'}</button>`
+          : ''}
+      </div>
+      <div class="resposta nota"></div>
+    </div>
+  </article>`;
+}
+
+async function carregarTravadas(){
+  const alvo = document.getElementById('travadas');
+  let r;
+  try{ r = await pedir('/api/nfe/admin/pendencias'); }
+  catch(e){
+    alvo.innerHTML = `<div class="painel"><b>Não consegui listar.</b>
+      <div class="nota">${esc(e.message)}</div></div>`;
+    return;
+  }
+  if(!r.total){
+    alvo.innerHTML = `<div class="painel nota">Nenhuma empresa fora da
+      automação.</div>`;
+    return;
+  }
+  alvo.innerHTML = r.empresas.map(cartaoTravada).join('')
+    + `<p class="nota" style="margin:8px 0 0">${esc(r.observacao||'')}</p>`;
+
+  alvo.querySelectorAll('[data-acao]').forEach(b => b.onclick = async ()=>{
+    const cartao = b.closest('[data-empresa]');
+    const saida = cartao.querySelector('.resposta');
+    const just = (cartao.querySelector('.just').value || '').trim();
+    const origem = cartao.querySelector('.origem');
+    if(just.length < 15){
+      saida.innerHTML = '<span class="selo alerta">Escreva a justificativa '
+        + '(mínimo 15 caracteres).</span>';
+      return;
+    }
+    const acao = b.dataset.acao;
+    const cobertura = acao === 'cobertura';
+    const manter = acao === 'manter';
+    if(cobertura && (!origem || !origem.value)){
+      saida.innerHTML = '<span class="selo alerta">Informe de onde veio a '
+        + 'informação.</span>';
+      return;
+    }
+    const texto = cobertura
+      ? 'Marcar o início de cobertura desta empresa.\n\nIsto registra que os '
+        + 'documentos ANTERIORES à posição informada pela SEFAZ podem não estar '
+        + 'no acervo e só entram por importação de XML de outra origem.\n\n'
+        + 'NÃO TEM DESFAZER, e NÃO libera a consulta enquanto houver '
+        + 'divergência.\n\nConfirmar?'
+      : manter
+        ? 'Registrar que esta empresa foi analisada e CONTINUA fora da '
+          + 'automação por falta de evidência.\n\nNada é alterado: nem posse, '
+          + 'nem checkpoint, nem cobertura, nem revisão. Nenhuma consulta é '
+          + 'disparada.\n\nConfirmar?'
+        : 'Encerrar a revisão de sequência desta empresa.\n\nIsto NÃO consulta a '
+          + 'SEFAZ: devolve a empresa à fila de elegibilidade.\n\nConfirmar?';
+    if(!confirm(texto)) return;
+
+    const rot = b.textContent;
+    b.disabled = true; b.textContent = 'Registrando…';
+    try{
+      const corpo = {id: cartao.dataset.empresa, justificativa: just};
+      if(cobertura) corpo.origem_informacao = origem.value;
+      const d = await decidir(cobertura ? '/api/nfe/admin/cobertura/marco'
+        : manter ? '/api/nfe/admin/bloqueio/manter'
+        : '/api/nfe/admin/revisao/encerrar', corpo);
+      saida.innerHTML = `<span class="selo info">${esc(d.tipo)}</span>
+        <span class="nota" style="margin-left:6px">registrado por
+        ${esc(d.operador)} · nenhuma consulta foi disparada</span>`;
+      carregarTravadas();
+    }catch(e){
+      saida.innerHTML = `<span class="selo alerta">${esc(e.message)}</span>`;
+      b.disabled = false; b.textContent = rot;
+    }
+  });
+}
+
+async function iniciar(){
+  carregarOnboarding();
+  pegarCsrf();
+  carregarTravadas();
+  const corpo = document.getElementById('corpo');
+  let r;
+  try{ r = await pedir('/api/nfe/pendencias-cadastrais'); }
+  catch(e){
+    corpo.innerHTML = `<div class="painel"><b>Não consegui carregar as
+      pendências.</b><div class="nota">${esc(e.message)}</div></div>`;
+    return;
+  }
+  if(!r.total){
+    corpo.innerHTML = `<div class="painel vazio"><span class="emoji">✅</span>
+      <h2 style="margin:0 0 4px;font-size:17px">Nenhuma pendência</h2>
+      <p style="margin:0">Toda empresa com documentos NF-e no acervo tem
+        cadastro e Inscrição Estadual. Elas aparecem normalmente no
+        <a href="nfe_documentos.html">módulo NF-e</a>.</p></div>`;
+    return;
+  }
+  corpo.innerHTML = `
+    <div class="aviso">
+      <b>${NUM(r.total)} empresa${r.total===1?'':'s'} com
+        ${NUM(r.documentos_parados)} documento${r.documentos_parados===1?'':'s'}
+        no acervo não aparece${r.total===1?'':'m'} no seletor da NF-e.</b>
+      <div style="margin-top:6px">Os XMLs, o índice, o acervo e o checkpoint
+        continuam <b>intactos</b> — a empresa saiu da lista de trabalho, não do
+        sistema. Cadastre a Inscrição Estadual em Clientes e ela volta sozinha.</div>
+      <div class="nota">${esc(r.observacao||'')}</div>
+    </div>
+    ${r.pendencias.map(cartao).join('')}
+    <div class="painel nota" style="margin-top:4px">
+      Esta tela é somente leitura. A Inscrição Estadual mostrada foi lida dos
+      XML que a própria empresa recebeu ou emitiu, e serve para conferência —
+      o Fiscale não a grava no cadastro por conta própria, e não consulta a
+      SEFAZ para validá-la.
+    </div>`;
+}
+
+iniciar();
+</script>
+</body>
+</html>

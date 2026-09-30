@@ -1,0 +1,9 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+requests==2.32.3
+requests-pkcs12==1.25
+cryptography==44.0.0
+fpdf2==2.8.7
+qrcode==8.2
+pillow==12.3.0
+pystray==0.19.5

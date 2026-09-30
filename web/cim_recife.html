@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#8A5A0F">
+<title>CIM — Acesso ao portal · Fiscale</title>
+<style>
+  :root{
+    --fundo:#EFF2F3; --superficie:#FFFFFF; --tinta:#1B2328; --tinta-suave:#5C6B72;
+    --borda:#C7CDD1; --petroleo:#10444E; --cim:#8A5A0F; --cim-claro:#F5EDDD;
+    --ok:#0F8A5F; --alerta:#B3382C;
+    --raio:16px; --sombra:0 1px 2px rgba(27,35,40,.06), 0 6px 18px rgba(27,35,40,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Roboto,-apple-system,Arial,sans-serif;background:var(--fundo);color:var(--tinta);-webkit-tap-highlight-color:transparent}
+  header{background:var(--superficie);border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:20}
+  .barra{max-width:1000px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:12px 20px}
+  .voltar{font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta);
+          background:var(--superficie);border:2px solid var(--borda);border-radius:11px;padding:9px 16px;cursor:pointer}
+  .voltar:hover{border-color:var(--petroleo);color:var(--petroleo)}
+  .modulo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+  .modulo .ponto{width:12px;height:12px;border-radius:4px;background:var(--cim)}
+
+  main{max-width:1000px;margin:0 auto;padding:20px}
+  .painel{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra);margin-bottom:16px}
+  .painel h2{font-size:14px;padding:14px 16px;border-bottom:1px solid var(--borda);display:flex;align-items:center;justify-content:space-between}
+  .painel .corpo{padding:16px}
+  label{display:block;font-size:12px;font-weight:600;color:var(--tinta-suave);margin:0 0 5px}
+  .campo{margin-bottom:12px}
+  .linha{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}.linha>*{flex:1;min-width:120px}
+  input,select{width:100%;font-size:14px;padding:10px 12px;border:1px solid var(--borda);border-radius:9px;background:#fff;color:var(--tinta)}
+  input:focus,select:focus{outline:none;border-color:var(--cim);box-shadow:0 0 0 3px rgba(138,90,15,.15)}
+  .btn{font-size:14px;font-weight:700;padding:11px 16px;border-radius:10px;border:none;cursor:pointer}
+  .btn-primario{background:var(--cim);color:#fff}.btn-primario:hover{background:#6f480c}
+  .btn-sec{background:#fff;border:1px solid var(--borda);color:var(--tinta)}.btn-sec:hover{border-color:var(--cim);color:var(--cim)}
+  .btn-mini{padding:7px 11px;font-size:12.5px}
+  .btn-full{width:100%}
+  .aviso{font-size:11.5px;color:var(--tinta-suave);line-height:1.45;margin-top:12px;background:#F7F9FA;border:1px solid var(--borda);border-radius:10px;padding:10px 12px}
+  .aviso b{color:var(--tinta)}
+  .vazio{color:var(--tinta-suave);font-size:13px;padding:16px}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--cim-claro);color:var(--cim)}
+
+  .emp{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid #EDF1F2}
+  .emp:last-child{border-bottom:none}
+  .emp .av{width:38px;height:38px;border-radius:10px;background:var(--cim-claro);color:var(--cim);
+    display:flex;align-items:center;justify-content:center;font-weight:800;flex:0 0 auto}
+  .emp .info{flex:1;min-width:0}
+  .emp .nome{font-weight:700;font-size:14px}
+  .emp .cim{font-size:12.5px;color:var(--tinta-suave)}
+  .emp .semcim{font-size:12px;color:var(--alerta)}
+  .copiado{font-size:12px;color:var(--ok);font-weight:700;margin-left:8px;opacity:0;transition:.2s}
+  .copiado.on{opacity:1}
+</style>
+</head>
+<body>
+<script src="fiscale.js"></script>
+<header>
+  <div class="barra">
+    <button class="voltar" onclick="location.href='home_portal.html'">◄ Home</button>
+    <div class="modulo"><span class="ponto"></span> CIM — Acesso ao portal</div>
+  </div>
+</header>
+
+<main>
+  <div class="painel">
+    <h2>Abrir o Extrato de Débitos / DAM (Inscrição Mercantil) <span class="tag">Recife</span></h2>
+    <div class="corpo">
+      <div class="linha">
+        <div class="campo" style="margin:0"><label>Empresa</label>
+          <select id="sel_emp" onchange="aoTrocarEmpresa()"><option value="">— selecione uma empresa —</option></select></div>
+        <div class="campo" style="flex:0 0 220px;margin:0"><label>Inscrição Municipal (CIM)</label>
+          <input id="insc" placeholder="informe ou selecione a empresa"></div>
+      </div>
+      <button class="btn btn-primario btn-full" style="margin-top:12px" onclick="abrirPortal()">
+        🏦 Abrir portal — inscrição copiada <span id="copiadoMsg" class="copiado">✓ copiada</span></button>
+      <div class="aviso">O sistema <b>copia a inscrição</b> e abre o <b>Extrato de Débitos e Emissão de Guias
+        (DAM) por Inscrição Mercantil</b> da Prefeitura do Recife. No portal, é só <b>colar (Ctrl+V)</b>,
+        resolver o CAPTCHA da imagem e consultar/emitir a guia. As empresas vêm do módulo
+        <b>Clientes</b> (as que têm CIM ou são do Recife).</div>
+    </div>
+  </div>
+
+  <div class="painel">
+    <h2>Suas empresas do Recife / com CIM <span id="qtd" class="tag"></span></h2>
+    <div id="lista"></div>
+  </div>
+</main>
+
+<script>
+const PORTAL = "https://recifeemdia.recife.pe.gov.br/extratoDebitos/2";  // Extrato de Débitos / DAM — Inscrição Mercantil
+let empresas = [];   // vindas do módulo Clientes
+
+const soDig = s => (s||'').replace(/\D/g,'');
+const ehRecife = c => (c.mun||'').trim().toLowerCase().startsWith('recife');
+
+async function copiar(txt){ try{ await navigator.clipboard.writeText(txt); return true; }catch(e){ return false; } }
+
+function aoTrocarEmpresa(){
+  const c = empresas.find(x=>String(x.id)===sel_emp.value);
+  insc.value = c ? (c.im||'') : '';
+}
+
+async function abrirPortal(){
+  const so = soDig(insc.value);
+  if(so){ await copiar(so);
+    const m=document.getElementById('copiadoMsg'); m.classList.add('on'); setTimeout(()=>m.classList.remove('on'),2500);
+  }
+  window.open(PORTAL, "_blank", "noopener");
+}
+
+async function abrirDaEmpresa(id, btn){
+  const c = empresas.find(x=>String(x.id)===String(id)); if(!c) return;
+  sel_emp.value = String(id); insc.value = c.im||'';
+  if(c.im){ await copiar(soDig(c.im));
+    const s=btn.parentElement.querySelector('.copiado'); if(s){ s.classList.add('on'); setTimeout(()=>s.classList.remove('on'),2500); }
+  }
+  window.open(PORTAL, "_blank", "noopener");
+}
+
+function renderLista(){
+  const doRecife = empresas.filter(c=>ehRecife(c) || c.im);
+  qtd.textContent = doRecife.length;
+  if(!empresas.length){ lista.innerHTML='<div class="vazio">Nenhuma empresa cadastrada. Cadastre no módulo <b>Clientes</b> (card na Home).</div>'; return; }
+  if(!doRecife.length){ lista.innerHTML='<div class="vazio">Nenhuma empresa do Recife (ou com CIM) cadastrada ainda.</div>'; return; }
+  lista.innerHTML = doRecife.map(c=>`
+    <div class="emp">
+      <div class="av">${(c.nome||'?').trim().charAt(0).toUpperCase()}</div>
+      <div class="info">
+        <div class="nome">${c.nome}</div>
+        ${c.im ? `<div class="cim">CIM ${c.im}${c.cnpj?` · CNPJ ${c.cnpj}`:''}</div>`
+               : `<div class="semcim">sem CIM cadastrado — informe no módulo Clientes</div>`}
+      </div>
+      <button class="btn btn-sec btn-mini" onclick="abrirDaEmpresa('${c.id}', this)">🏦 Abrir portal</button>
+      <span class="copiado">✓ copiada</span>
+    </div>`).join("");
+}
+
+function preencherSelect(){
+  const doRecife = empresas.filter(c=>ehRecife(c) || c.im);
+  sel_emp.innerHTML = '<option value="">— selecione uma empresa —</option>' +
+    doRecife.map(c=>`<option value="${c.id}">${c.nome}${c.im?` — CIM ${c.im}`:''}</option>`).join("");
+}
+
+async function iniciar(){
+  const cm = await Fiscale.carregar('clientes');
+  if(cm && cm.clientes) empresas = cm.clientes;
+  preencherSelect(); renderLista();
+  // veio do módulo Clientes? (clientes.html → cim_recife.html?cliente=ID)
+  const qc = new URLSearchParams(location.search).get('cliente');
+  if(qc && empresas.some(x=>String(x.id)===qc)){ sel_emp.value = qc; aoTrocarEmpresa(); }
+}
+iniciar();
+</script>
+<script src="fiscale-nav.js"></script>
+</body>
+</html>

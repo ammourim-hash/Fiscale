@@ -1,0 +1,2163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema NFS-e — Somador e Download</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* A COR DA ACAO PRINCIPAL continua se chamando `--verde` de proposito:
+       trocar o valor alinha a tela toda com o resto do Fiscale sem mexer em
+       nenhuma das ~90 regras que a usam. Renomear seria uma varredura grande
+       para nao mudar um pixel. */
+    --verde:#0E7490; --verde-esc:#0b5d74; --verde-cl:#DFF1F5;
+    --petroleo:#10444E; --ok:#0F8A5F;
+    --bg:#EAEFF1; --card:#fff; --txt:#1B2328; --mut:#5C6B72; --borda:#DDE4E7;
+    --azul:#2563eb; --roxo:#7c3aed; --laranja:#ea580c; --ciano:#0891b2; --teal:#0d9488;
+    --vermelho:#dc2626; --amarelo:#f59e0b;
+    --sombra:0 1px 2px rgba(15,23,42,.04),0 4px 16px rgba(15,23,42,.06);
+    --raio:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);
+    line-height:1.45;padding:14px clamp(14px,1.6vw,32px);-webkit-font-smoothing:antialiased;
+    /* Base 10% menor que o padrão (16px): os textos sem tamanho próprio
+       acompanham a redução geral das fontes da tela. */
+    font-size:14.5px}
+  /* TELA CHEIA. O módulo foi limitado a 1320px e depois a 1680px — e numa
+     tela de 1920px ainda sobravam 240px de margem enquanto os nomes da tabela
+     quebravam linha. Agora usa a largura toda; o teto de 2400px só existe para
+     monitor ultrawide não esticar a tabela até ficar ilegível. */
+  .wrap{max-width:2400px;margin:0 auto}
+  .card{background:var(--card);border:1px solid var(--borda);border-radius:var(--raio);padding:16px;
+    box-shadow:var(--sombra)}
+  .card h2{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);
+    margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700}
+  label{display:block;font-size:11.5px;font-weight:600;margin-bottom:6px;color:var(--txt)}
+  input,select{width:100%;padding:8px 11px;border:1px solid var(--borda);border-radius:10px;
+    font-size:11.5px;background:#fff;color:var(--txt);transition:.15s}
+  input:focus,select:focus{outline:none;border-color:var(--verde);box-shadow:0 0 0 3px rgba(14,116,144,.15)}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .row>*{flex:1;min-width:150px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 13px;border:none;
+    border-radius:10px;font-size:11.5px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap}
+  .btn:active{transform:translateY(1px)}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn-primary{background:var(--verde);color:#fff}.btn-primary:hover:not(:disabled){background:var(--verde-esc)}
+  .btn-azul{background:var(--azul);color:#fff}.btn-azul:hover:not(:disabled){background:#1d4ed8}
+  .btn-ghost{background:#eef2f7;color:var(--txt)}.btn-ghost:hover:not(:disabled){background:#e2e8f0}
+  .btn-sm{padding:7px 11px;font-size:11px}
+  .cert-list{display:flex;flex-direction:column;gap:9px;margin-top:12px}
+  .cert{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--borda);
+    border-radius:13px;cursor:pointer;transition:.15s}
+  .cert:hover{border-color:var(--verde);background:#F2FAFC}
+  .cert.sel{border-color:var(--verde);background:var(--verde-cl);box-shadow:0 0 0 2px rgba(14,116,144,.18)}
+  .cert .av{width:40px;height:40px;border-radius:11px;background:var(--verde-cl);color:var(--verde-esc);
+    display:grid;place-items:center;font-weight:800;flex-shrink:0}
+  .cert .info{flex:1;min-width:0}
+  .cert .nome{font-weight:700;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cert .cnpj{font-size:11px;color:var(--mut)}
+  #certSelBox{margin-top:12px}
+  .badge{font-size:10px;padding:2px 9px;border-radius:20px;font-weight:700;display:inline-block}
+  .badge.warn{background:#fef3c7;color:#92400e}
+  .badge.lock{background:var(--verde-cl);color:var(--verde-esc)}
+  .b-teal{background:#ccfbf1;color:#0f766e}
+  .b-ciano{background:#cffafe;color:#155e75}
+  .b-roxo{background:#ede9fe;color:#5b21b6}
+  .b-laranja{background:#ffedd5;color:#9a3412}
+  .b-verm{background:#fee2e2;color:#991b1b}
+  .muted{color:var(--mut);font-size:11.5px}
+  .hidden{display:none!important}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;
+    padding:12px 20px;border-radius:12px;font-size:12.5px;box-shadow:0 8px 28px rgba(0,0,0,.28);opacity:0;
+    transition:.25s;z-index:50;max-width:90vw}
+  .toast.show{opacity:1;bottom:34px}
+  .toast.err{background:var(--vermelho)}.toast.ok{background:var(--verde)}
+  /* competência chips */
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;align-items:center}
+  .chip{background:#eef2f7;border:1px solid var(--borda);color:var(--txt);font-size:11px;font-weight:600;
+    padding:5px 11px;border-radius:20px;cursor:pointer;transition:.15s;width:auto;margin:0}
+  .chip:hover{background:var(--verde-cl);border-color:var(--verde)}
+  /* totais */
+  .totais{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px;margin-bottom:12px}
+  .stat{border-radius:11px;padding:10px 12px;border:1px solid var(--borda);background:#fff}
+  .stat .lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:var(--mut)}
+  .stat .val{font-size:15.5px;font-weight:800;margin-top:2px;letter-spacing:-.02em}
+  /* tabela */
+  table{width:100%;border-collapse:separate;border-spacing:0 0;font-size:11px;table-layout:auto}
+  th,td{padding:8px 8px;text-align:left;border-bottom:1px solid var(--borda);vertical-align:top}
+  th{font-size:9px;text-transform:uppercase;letter-spacing:.3px;color:var(--mut);font-weight:700;border-bottom:none;padding:4px}
+  .th-chip{display:inline-block;background:var(--verde-cl);color:var(--verde-esc);border:none;
+    border-radius:8px;padding:6px 9px;white-space:nowrap}
+  td{white-space:nowrap}
+  /* Prestador/tomador: a largura mínima ACOMPANHA a tela. Fixa em 260px, num
+     notebook de 1366px a tabela rolava 350px para o lado; sem mínimo, o nome
+     quebrava em até 5 linhas. Em 1920px o nome cabe numa linha; em 1366px
+     quebra no máximo em duas, sem rolagem. */
+  td.wcell,th.wcell{white-space:normal;overflow-wrap:break-word;word-break:normal;min-width:clamp(120px,10vw,280px)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  th.num .th-chip{width:100%;text-align:right}
+  tbody tr:hover{background:#f8fafc}
+  .spin{width:15px;height:15px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;
+    animation:r .7s linear infinite;display:inline-block}
+  .spin2{width:17px;height:17px;border:2px solid rgba(0,0,0,.15);border-top-color:currentColor;border-radius:50%;
+    animation:r .7s linear infinite;flex:0 0 auto}
+  @keyframes r{to{transform:rotate(360deg)}}
+  .status-op{margin-top:14px;padding:12px 14px;border-radius:12px;font-size:12.5px;display:flex;align-items:center;
+    gap:10px;font-weight:500}
+  .status-op.load{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}
+  .status-op.ok{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+  .status-op.err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+  .step-num{width:22px;height:22px;border-radius:50%;background:var(--verde);color:#fff;display:inline-grid;
+    place-items:center;font-size:11px;font-weight:700}
+  .tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--borda)}
+  .tab{background:none;border:none;width:auto;margin:0;padding:10px 16px;font-size:12.5px;font-weight:600;
+    color:var(--mut);cursor:pointer;border-bottom:2px solid transparent;border-radius:0}
+  .tab:hover{color:var(--txt);background:none}
+  .tab.ativo{color:var(--verde-esc);border-bottom-color:var(--verde)}
+  /* acesso por certificado + modal sobreposto */
+  .link-mut{color:var(--azul);font-size:11px;cursor:pointer;display:inline-block;margin-top:6px}
+  .link-mut:hover{text-decoration:underline}
+  .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.5);display:flex;align-items:flex-start;
+    justify-content:center;padding:40px 16px;z-index:1000;overflow:auto;animation:fade .15s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .modal-card{background:var(--card);border-radius:var(--raio);padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.3);
+    width:100%;max-width:min(820px,94vw)}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .modal-x{background:#eef2f7;border:none;width:32px;height:32px;border-radius:8px;cursor:pointer;
+    font-size:13.5px;font-weight:700;color:var(--mut)}
+  .modal-x:hover{background:#e2e8f0}
+  /* Prefeituras e Classificacao pedem largura: sao telas, nao formularios. */
+  .modal-card.largo{max-width:min(1600px,96vw)}
+  .modal-card.largo .quadro{width:100%;height:74vh;border:1px solid var(--borda);
+    border-radius:12px;background:#fff}
+  .modal-nota{font-size:10.5px;color:var(--mut);margin-top:10px;line-height:1.5}
+  .modal-nota a{color:var(--azul)}
+  /* certificado + sincronização lado a lado; Resultado abaixo, em largura total */
+  /* Uma coluna so: o cartao de acesso saiu do centro, e quem escolhe o
+     certificado agora e a lateral. */
+  .tri{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:stretch}
+
+  /* ── Casca: lateral fixa + conteudo ──────────────────────────────────── */
+  /* A lateral cresce com a tela, dentro de limites: estreita demais quebrava
+     "Mapeamento de Atividades" em duas linhas; larga demais rouba a tabela. */
+  .app{display:grid;grid-template-columns:clamp(320px,22vw,400px) minmax(0,1fr);gap:20px;align-items:start}
+  .conteudo{min-width:0}
+
+  .lateral{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px}
+
+  .lat-bloco{background:var(--card);border:1px solid var(--borda);border-radius:var(--raio);
+    padding:10px 10px 8px;box-shadow:var(--sombra)}
+  .lat-tit{font-size:9px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;
+    color:var(--mut);padding:9px 10px 6px}
+  .lat-item{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+    padding:10px 12px;border:none;background:none;border-radius:11px;cursor:pointer;white-space:nowrap;
+    font-size:11.5px;font-weight:600;color:var(--txt);font-family:inherit;
+    transition:background .14s ease,color .14s ease}
+  .lat-item .li{flex:0 0 18px;font-size:12.5px;line-height:1;text-align:center;opacity:.85}
+  .lat-item:hover{background:#F1F6F8;color:var(--petroleo)}
+  .lat-item.on{background:var(--verde-cl);color:var(--verde-esc);font-weight:800}
+  .lat-item.on .li{opacity:1}
+  .lat-item[disabled]{opacity:.42;cursor:default}
+  .lat-item[disabled]:hover{background:none;color:var(--txt)}
+
+  /* Cada bloco tem titulo: a lateral deixou de ser um menu e virou tres
+     assuntos. O primeiro deles CARREGA ESTADO, e nao so um botao. */
+  .lat-cab{display:flex;align-items:center;gap:9px;padding:10px 12px 9px;
+    font-size:11px;font-weight:800;color:var(--petroleo);white-space:nowrap}
+  .lat-cab .pt{width:7px;height:7px;border-radius:50%;background:var(--verde);flex:0 0 7px}
+  .lat-linha{display:flex;align-items:center;gap:10px;padding:8px 12px;font-size:11px;
+    color:var(--txt);line-height:1.45}
+  .lat-linha .li{flex:0 0 16px;font-size:11.5px;line-height:1;text-align:center;opacity:.7}
+  /* UMA LINHA POR INFORMACAO. Com a coluna em 236px o valor quebrava ("Valida
+     ate" numa linha, a data na outra) e o cartao ficava alto e torto. Agora a
+     coluna tem no minimo 320px e o valor nao quebra; se um texto ainda assim
+     passar do espaco, termina em reticencias e o `title` (posto por linhaLat)
+     mostra o texto inteiro ao passar o mouse. O detalhe em <small> continua
+     podendo ir para a linha de baixo. */
+  .lat-linha .v{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lat-linha .v.corta{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lat-linha .v small{display:block;font-size:9.5px;color:var(--mut);white-space:normal;overflow:visible}
+  .selo{flex:0 0 auto;font-size:9px;font-weight:800;letter-spacing:.4px;border-radius:999px;
+    padding:3px 8px;text-transform:uppercase}
+  .selo.ok{background:#E4F4EC;color:var(--ok)}
+  .selo.aviso{background:#FDF3DF;color:#8a5a0f}
+  .selo.ruim{background:#FBE9E7;color:var(--vermelho)}
+  .selo.neutro{background:#EEF1F2;color:var(--mut)}
+
+
+  /* ── A SELEÇÃO DO CERTIFICADO MORA NA LATERAL ─────────────────────────
+     Antes ela só abria numa janela sobreposta, e a coluna da esquerda era três
+     cartões pequenos com uma faixa cinza vazia até o fim da tela. Agora o
+     cartão do certificado CRESCE até preencher a altura e traz a busca e a
+     lista de empresas; os outros dois cartões ficam compactos embaixo.
+
+     SEM ROLAGEM, EM LUGAR NENHUM. A lista mostra quantas empresas cabem na
+     altura livre (renderCertsLateral mede) e avisa quantas ficaram de fora
+     para refinar a busca — nunca uma barra de rolagem escondida no cartão. */
+  .lat-cert{border:2px solid var(--verde);display:flex;flex-direction:column;gap:4px;min-height:0}
+  .lat-cert .lat-cab{font-size:12.5px;padding-top:12px}
+  .lat-cert .lat-linha{font-size:11.5px}
+  .lat-cert .lat-linha b{font-size:12.5px}
+  .lat-sel{display:flex;flex-direction:column;gap:8px;padding:8px 10px 4px;min-height:0;
+    border-top:1px solid var(--borda);margin-top:4px}
+  .lat-sel-tit{font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--mut)}
+  .lat-sel input{font-size:12px;padding:10px 12px;border-radius:10px}
+  .lat-lista{display:flex;flex-direction:column;gap:6px;overflow:hidden;min-height:0;max-height:292px}
+  .lat-opc{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--borda);
+    background:#fff;border-radius:11px;padding:8px 10px;cursor:pointer;font-family:inherit;
+    transition:background .14s ease,border-color .14s ease;flex:0 0 auto}
+  .lat-opc:hover{background:#F1F6F8;border-color:#BFD7DD}
+  .lat-opc.on{background:var(--verde-cl);border-color:var(--verde)}
+  .lat-opc .av{flex:0 0 30px;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+    font-weight:800;font-size:11.5px;background:#E6F0F2;color:var(--petroleo)}
+  .lat-opc.on .av{background:var(--verde);color:#fff}
+  .lat-opc .tx{flex:1;min-width:0}
+  .lat-opc .nm{font-size:11px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lat-opc .cj{font-size:9.5px;color:var(--mut);font-variant-numeric:tabular-nums}
+  .lat-mais{font-size:10px;color:var(--mut);text-align:center;padding:2px 0}
+  .lat-btn{margin:6px 10px 8px;justify-content:center;font-size:11.5px;padding:10px 12px}
+
+  /* Tela larga: a lateral ocupa a altura toda e o cartão do certificado estica. */
+  @media(min-width:1501px){
+    .lateral{height:calc(100vh - 28px)}
+    .lat-cert{flex:1 1 auto}
+    .lat-cert .lat-sel{flex:1 1 auto}
+    .lat-lista{flex:1 1 auto;max-height:none}
+  }
+
+  /* Até 1500px os cartões sobem para uma faixa no topo: a tabela de notas
+     ganha a largura inteira e as colunas de retenção (Contrib., IRRF, INSS,
+     ISS) cabem sem rolar para o lado — antes, em 1366px, sobravam 48px. */
+  @media(max-width:1500px){
+    .app{grid-template-columns:1fr}
+    /* Faixa BAIXA: o certificado ocupa duas colunas por dentro (status à
+       esquerda, busca e lista à direita) e Prefeituras/Classificação ficam
+       empilhadas ao lado. Empilhar tudo fazia a faixa passar de 600px de
+       altura num notebook de 1366px e jogava as retenções para baixo. */
+    .lateral{position:static;display:grid;grid-template-columns:minmax(0,3fr) minmax(210px,1fr);
+      align-items:start;gap:12px}
+    .lat-cert{grid-row:span 2;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);
+      column-gap:14px;align-items:start}
+    .lat-cert .lat-cab{grid-column:1 / -1}
+    .lat-cert #latCert{grid-column:1;grid-row:2}
+    .lat-cert .lat-btn{grid-column:1;grid-row:3;margin-top:4px}
+    .lat-cert .lat-sel{grid-column:2;grid-row:2 / span 2;border-top:none;margin-top:0;
+      border-left:1px solid var(--borda);padding-top:0}
+    .lat-lista{max-height:196px}
+    /* os dois cartões da direita dividem a altura: sem faixa cinza entre eles */
+    .lateral > .lat-bloco:not(.lat-cert){align-self:stretch}
+  }
+  @media(max-width:1000px){
+    .lateral{grid-template-columns:1fr}
+    .lat-cert{grid-template-columns:1fr}
+    .lat-cert #latCert,.lat-cert .lat-btn,.lat-cert .lat-sel{grid-column:1;grid-row:auto}
+    .lat-cert .lat-sel{border-left:none;border-top:1px solid var(--borda);padding-top:8px}
+  }
+
+  /* ── Cabecalho do modulo ─────────────────────────────────────────────── */
+  .mod-cabeca{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--card);
+    border:1px solid var(--borda);border-radius:var(--raio);padding:16px 20px;margin-bottom:14px;
+    box-shadow:var(--sombra)}
+  .mod-cabeca .tile{flex:0 0 46px;width:46px;height:46px;border-radius:14px;display:grid;
+    place-items:center;font-size:20px;background:var(--verde);color:#fff;
+    box-shadow:0 8px 18px -8px var(--verde)}
+  .mod-cabeca .quem{flex:1;min-width:200px}
+  .mod-cabeca h1{font-size:20.5px;font-weight:800;letter-spacing:-.02em;color:var(--petroleo);
+    line-height:1.15}
+  .mod-cabeca p{font-size:11px;color:var(--mut);margin-top:2px}
+  .mod-cabeca .atalhos{display:flex;gap:9px;flex-wrap:wrap}
+
+  /* ── Cards de KPI ────────────────────────────────────────────────────── */
+  /* O VALOR TEM DE CABER. Com 168px por cartão e fonte fixa de 19px,
+     "R$ 204.012,54" vazava para fora do cartão (visto em 13/09/2026). O cartão
+     agora tem no mínimo 200px, o valor encolhe com a tela (clamp) e não quebra;
+     se ainda assim faltar espaço, termina em reticências e o title mostra o
+     número inteiro — nunca um número pela metade sem aviso. */
+  .totais{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
+  .stat{border-radius:14px;padding:13px 14px;border:1px solid var(--borda);background:#fff;
+    display:flex;align-items:flex-start;gap:10px;min-width:0;
+    box-shadow:0 1px 2px rgba(18,33,42,.04);transition:transform .16s ease,box-shadow .16s ease}
+  .stat:hover{transform:translateY(-2px);box-shadow:0 2px 6px rgba(18,33,42,.06),0 14px 28px -12px rgba(18,33,42,.28)}
+  .stat .ico{flex:0 0 30px;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;
+    font-size:13.5px;background:var(--sf,#EEF3F4)}
+  .stat .txt{flex:1 1 auto;min-width:0}
+  .stat .lbl{font-size:9px;text-transform:uppercase;letter-spacing:.6px;font-weight:800;color:var(--mut)}
+  .stat .val{font-size:clamp(13.5px,1.05vw,17px);font-weight:800;margin-top:3px;letter-spacing:-.02em;
+    font-variant-numeric:tabular-nums lining-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* ── Trilho de situacao ──────────────────────────────────────────────── */
+  #cardResultado{grid-column:1 / -1}
+  /* pesquisa por período: uma linha só, centralizada */
+  .periodo-row{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:10px}
+  .periodo-row label{font-size:10.5px;margin-bottom:4px}
+  .periodo-row input,.periodo-row select{font-size:11.5px;padding:8px 8px}
+  @media(max-width:920px){
+    .tri{grid-template-columns:1fr}
+    .mod-cabeca{padding:14px}
+    .mod-cabeca h1{font-size:18px}
+  }
+  /* Resultado: fonte otimizada para leitura de dados (Inter, com números tabulares) */
+  #cardResultado{font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif}
+  #cardResultado table{font-size:11px}
+  #cardResultado td{padding:5px 6px;font-variant-numeric:tabular-nums lining-nums}
+  /* Respiro maior só onde cabe: com 12 colunas, 4px a mais por lado em cada
+     célula faziam a tabela rolar para o lado num notebook de 1366px. */
+  @media(min-width:1700px){
+    #cardResultado table{font-size:11px}
+    #cardResultado td{padding:7px 10px}
+  }
+  #cardResultado th{font-size:9px;letter-spacing:.3px}
+  #cardResultado .th-chip{padding:5px 8px;border-radius:7px}
+  #cardResultado .btn-sm{padding:4px 8px;font-size:10px}
+  #cardResultado .stat .val{font-variant-numeric:tabular-nums lining-nums}
+  /* faixa do DAS estimado — mesma tela das notas */
+  #dasBox{margin:0 0 12px}
+  .das-faixa{border:1px solid #ddd6fe;background:#f5f3ff;border-radius:12px;padding:10px 12px}
+  .das-faixa .tit{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;font-weight:800;color:#6d28a8;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+  .das-faixa table{width:100%;font-size:10.5px;border-collapse:collapse}
+  .das-faixa th{font-size:9px;color:var(--mut);text-transform:uppercase;text-align:left;padding:3px 6px;border:none}
+  .das-faixa td{padding:3px 6px;border-bottom:1px solid #ece8f8;font-variant-numeric:tabular-nums}
+  .das-faixa td.num,.das-faixa th.num{text-align:right}
+  .das-faixa .tot{font-weight:800;color:#6d28a8}
+  .das-faixa .obs{font-size:9.5px;color:var(--mut);margin-top:6px;line-height:1.4}
+  .das-faixa .alerta{color:#9a3412;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:6px 8px;margin-top:6px;font-size:9.5px;line-height:1.45}
+  /* total incompleto: há receita sem Anexo fora da conta — não deixar passar batido */
+  .das-faixa.parcial{border-color:#fed7aa;background:#fffbf5}
+  .das-faixa.parcial .tit,.das-faixa.parcial .tot{color:#9a3412}
+  .das-faixa .pflag{font-size:9px;background:#9a3412;color:#fff;border-radius:5px;padding:1px 5px;margin-left:4px}
+  .das-faixa tr.semanexo td{background:#fff7ed;color:#9a3412;font-weight:700}
+  /* ── ISS a recolher (guia municipal) ────────────────────────────────────── */
+  #issBox{margin:0 0 12px}
+  .iss{background:#F5F3FF;border:1px solid #DDD6FE;border-radius:16px;padding:12px 14px}
+  .iss .itit{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;font-weight:800;color:#5B21B6;margin-bottom:8px}
+  .iss .itot{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;color:#4C1D95;
+    text-transform:none;letter-spacing:0}
+  .iss .iobs{font-size:10px;color:var(--mut);margin-top:8px;line-height:1.45}
+
+  /* ── Tributos federais (muda conforme o regime) ─────────────────────────── */
+  #fedBox{margin:0 0 12px}
+  .fed{border-radius:16px;padding:11px 13px;border:1px solid}
+  .fed-simples{background:#F0FDF9;border-color:#A7E8D2}
+  .fed-pres{background:#EFF6FF;border-color:#BFDBFE}
+  .fed-real{background:#FFFBEB;border-color:#FDE68A}
+  .fed .ftit{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;font-weight:800;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
+  .fed-simples .ftit{color:#0F6B52}.fed-pres .ftit{color:#1E40AF}.fed-real .ftit{color:#92400E}
+  .fed .ftot{font-weight:800;font-variant-numeric:tabular-nums}
+  .fgrade{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:8px}
+  .fcel{background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:12px;padding:8px 10px}
+  .frot{font-size:9px;text-transform:uppercase;letter-spacing:.4px;font-weight:800;color:var(--mut)}
+  .fval{font-size:13.5px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:1px}
+  .ftab{width:100%;font-size:10.5px;border-collapse:collapse;background:#fff;
+    border-radius:12px;overflow:hidden}
+  .ftab th{font-size:9px;text-transform:uppercase;letter-spacing:.3px;color:var(--mut);
+    font-weight:800;text-align:left;padding:6px 7px;background:rgba(0,0,0,.03)}
+  .ftab td{padding:6px 7px;border-top:1px solid rgba(0,0,0,.05);font-variant-numeric:tabular-nums}
+  .ftab td.num,.ftab th.num{text-align:right}
+  .ftab td.tot{font-weight:800}
+  .fmini{font-size:9px;color:var(--mut);font-weight:600}
+  .fobs{font-size:9.5px;color:var(--mut);margin-top:7px;line-height:1.45}
+  .falerta{font-size:9.5px;color:#92400E;background:#FEF3C7;border:1px solid #FDE68A;
+    border-radius:10px;padding:7px 9px;margin-top:7px;line-height:1.45}
+  /* competência que veio de fora da janela pesquisada: fica visível, mas
+     apagada, para não ser confundida com o mês que se está apurando */
+  .das-faixa tr.foraper td{background:#f8fafc;color:#64748b;font-style:italic}
+  .das-faixa .fflag{font-size:9px;background:#94a3b8;color:#fff;border-radius:4px;
+    padding:1px 4px;margin-left:4px;font-style:normal;vertical-align:middle}
+
+  /* ── Visualizador de nota (painel lateral) ────────────────────────────────
+     O PDF só é pedido ao servidor quando o painel abre — a listagem nunca
+     carrega PDF nenhum. Fechar o painel não recarrega a busca, então os
+     filtros e a página continuam exatamente onde estavam. */
+  /* Acima da barra de módulos (z-index 900): senão ela cobre o topo do painel e
+     engole o ✕, deixando o Esc como única saída. */
+  .vis-fundo{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1000;animation:fade .15s ease}
+  .vis{position:fixed;top:0;right:0;bottom:0;width:min(1440px,94vw);background:var(--card);
+    z-index:1001;display:flex;flex-direction:column;box-shadow:-16px 0 48px rgba(15,23,42,.22);
+    animation:visEntra .22s cubic-bezier(.22,.61,.36,1)}
+  @keyframes visEntra{from{transform:translateX(28px);opacity:.4}to{transform:none;opacity:1}}
+  .vis-topo{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--borda);
+    flex:0 0 auto;flex-wrap:wrap}
+  .vis-topo .num{font-weight:800;font-size:13.5px}
+  .vis-topo .sub{font-size:10.5px;color:var(--mut)}
+  .vis-corpo{flex:1 1 auto;display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,1fr);
+    min-height:0}
+  .vis-pdf{border-right:1px solid var(--borda);background:#f1f5f9;position:relative;min-height:0;
+    display:flex;flex-direction:column}
+  .vis-pdf iframe{width:100%;flex:1 1 auto;min-height:0;border:0;display:block}
+  /* Tarja do PDF montado aqui: o documento é igual ao do portal, mas quem
+     olha precisa saber que ele não veio assinado pela Receita. */
+  .vis-pdf .local{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:6px 10px;
+    background:#fef9c3;border-bottom:1px solid #fde047;color:#713f12;font-size:10.5px}
+  .vis-pdf .local a{color:#713f12;font-weight:700}
+  .vis-aviso{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:10px;text-align:center;padding:26px;color:var(--mut);font-size:11px}
+  /* SEM ROLAGEM: a coluna de dados é compacta o bastante para caber na altura
+     do painel (conferido em 1366×768, 1366×700 e 1280×650 com todas as
+     retenções e o alerta de 4,65% visíveis). */
+  .vis-lado{overflow:hidden;padding:10px 14px;min-height:0}
+  .vis-lado h3{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);
+    font-weight:800;margin:9px 0 4px}
+  .vis-lado h3:first-child{margin-top:0}
+  .vis-lado dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:11px;margin:0}
+  .vis-lado dt{color:var(--mut);white-space:nowrap}
+  .vis-lado dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+  .vis-ret{width:100%;font-size:11px;border-collapse:collapse}
+  .vis-ret td{padding:3px 2px;border-bottom:1px solid var(--borda);font-variant-numeric:tabular-nums}
+  .vis-ret td:last-child{text-align:right;font-weight:700}
+  .vis-ret tr.zero td{color:var(--mut);font-weight:400}
+  .vis-ret tr.comp td{padding:1px 2px 3px 12px;color:var(--mut);font-size:9.5px;text-align:left;font-weight:400}
+  /* Selo de situação: cancelada e substituída precisam gritar, tanto na lista
+     quanto aqui dentro. O documento nunca é apagado — fica para auditoria. */
+  .selo{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;
+    letter-spacing:.4px;padding:3px 9px;border-radius:6px;text-transform:uppercase}
+  .selo.can{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+  .selo.sub{background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd}
+  .selo.nova{background:#ccfbf1;color:#115e59;border:1px solid #5eead4}
+  .vis-tarja{padding:8px 12px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:9px}
+  .vis-tarja.can{background:#fee2e2;color:#991b1b;border-bottom:1px solid #fca5a5}
+  .vis-tarja.sub{background:#ede9fe;color:#5b21b6;border-bottom:1px solid #c4b5fd}
+  tr.linha-can td{background:#fff5f5}
+  tr.linha-can td:nth-child(2){text-decoration:line-through;text-decoration-color:#dc2626}
+  tr.linha-sub td{background:#faf7ff}
+  .vis-rodape{flex:0 0 auto;border-top:1px solid var(--borda);padding:9px 14px;display:flex;
+    align-items:center;gap:8px;flex-wrap:wrap;font-size:10.5px;color:var(--mut)}
+  @media(max-width:860px){
+    .vis-corpo{grid-template-columns:1fr;grid-template-rows:minmax(220px,1fr) auto}
+    .vis-pdf{border-right:none;border-bottom:1px solid var(--borda)}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- Barra do Fiscale: aparece só quando o módulo roda dentro do Fiscale (/nfse.html) -->
+  <div id="barraFiscale" class="hidden" style="margin-bottom:12px">
+    <a href="home_portal.html" style="display:inline-block;font-weight:800;font-size:11.5px;letter-spacing:.1em;
+      text-transform:uppercase;color:var(--txt);background:#fff;border:2px solid #C7CDD1;border-radius:11px;
+      padding:9px 16px;text-decoration:none">◄ Home</a>
+    <span style="font-size:11.5px;color:var(--mut);margin-left:10px;font-weight:600">Fiscale · módulo NFS-e</span>
+  </div>
+  <div class="app">
+
+  <!-- ── LATERAL ────────────────────────────────────────────────────────────
+       Sete itens, e os sete levam a algum lugar que ja existe. Os quatro do
+       desenho que ficaram de fora (Conciliacao, Relatorios, Configuracoes e
+       Retencoes) nao tem tela neste modulo: um menu que nao responde a tres
+       cliques faz o usuario parar de confiar no menu inteiro. -->
+  <aside class="lateral">
+    <!-- Tres portas, e as tres abrem SOBREPOSTO. O resto da tela continua
+         onde estava: a lateral e para escolher COM O QUE trabalhar, nao para
+         rolar a pagina. -->
+    <!-- 1. CERTIFICADO — o unico bloco que carrega estado. As linhas sao
+            preenchidas por `pintarCertificado()`; sem certificado escolhido
+            ele diz isso, em vez de mostrar campos vazios. -->
+    <div class="lat-bloco lat-cert">
+      <div class="lat-cab"><span class="pt"></span>Status do Certificado</div>
+      <div id="latCert"></div>
+      <div class="lat-sel">
+        <div class="lat-sel-tit">Selecionar empresa</div>
+        <input id="latBusca" placeholder="🔎  Nome, apelido ou CNPJ" oninput="renderCertsLateral()" autocomplete="off">
+        <div id="latLista" class="lat-lista"></div>
+      </div>
+      <button class="btn btn-primary lat-btn" onclick="abrirModalCert()">🔐 Gerenciar certificados</button>
+    </div>
+
+    <!-- 2. PREFEITURAS -->
+    <div class="lat-bloco">
+      <div class="lat-cab"><span class="pt" style="background:var(--azul)"></span>Gestão de Prefeituras</div>
+      <button class="lat-item" onclick="abrirPrefeituras()"><span class="li">🏛</span>Prefeituras</button>
+    </div>
+
+    <!-- 3. CLASSIFICACAO -->
+    <div class="lat-bloco">
+      <div class="lat-cab"><span class="pt" style="background:var(--roxo)"></span>Mapeamento de Atividades</div>
+      <button class="lat-item" onclick="abrirClassificacao()"><span class="li">📊</span>Classificação</button>
+    </div>
+  </aside>
+
+  <div class="conteudo">
+
+  <!-- Cabecalho do modulo. A marca saiu de dentro do cartao de acesso: ela
+       nomeava a TELA a partir de um cartao que fala de certificado, e o
+       modulo ficava sem titulo proprio. -->
+  <div class="mod-cabeca">
+    <div class="tile">🧾</div>
+    <div class="quem">
+      <h1>NFS-e · Serviços</h1>
+      <p>Capture, sincronize, valide e organize as notas fiscais de serviço por competência.</p>
+    </div>
+  </div>
+
+  <div class="tri">
+  <!-- DOWNLOAD -->
+  <div class="card">
+    <h2><span class="step-num">2</span> Sincronizar e escolher competência</h2>
+    <div id="semCert" class="muted">Clique em <b>"Certificado Digital"</b> acima e selecione um certificado para começar.</div>
+    <div id="painelSync" class="hidden">
+      <div id="rowSync">
+        <div class="row" style="align-items:flex-end">
+          <div style="flex:2"><label>Certificado selecionado</label><input id="certSelNome" readonly></div>
+          <div style="flex:2"><label>Senha do certificado</label><input id="senha" type="password" placeholder="Digite a senha"></div>
+          <div style="flex:0 0 auto"><button class="btn btn-primary" id="btnSync" onclick="sincronizar()">🔄 Sincronizar</button></div>
+        </div>
+        <p class="muted" style="margin-top:8px">Na primeira vez o sistema baixa seu histórico (uma vez); depois só o que é novo.</p>
+      </div>
+      <div id="statusOp" class="status-op hidden"></div>
+
+      <!-- Outras cidades: histórico anterior à adesão de cada município ao nacional -->
+      <div id="painelCidades" class="hidden" style="margin-top:12px;border-top:1px solid var(--borda);padding-top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <b style="font-size:12px">🏛 Outras cidades — histórico municipal</b>
+          <button class="btn" style="font-size:11px;padding:6px 11px" onclick="toggleCidades()" id="btnCidades">ver cidades ▾</button>
+        </div>
+        <!-- Aviso automático: o sistema descobre sozinho a cidade da empresa e
+             os meses que faltam no RBT12, e já oferece a busca. -->
+        <div id="pendBox" class="hidden" style="margin-top:10px"></div>
+        <div id="cidadesBox" class="hidden" style="margin-top:10px">
+          <p class="muted" style="margin:0 0 10px">A NFS-e Nacional só traz as notas <b>a partir da adesão</b> de cada
+            município. Para o RBT12 ficar completo, o que é anterior vem do sistema da prefeitura — com o
+            <b>mesmo certificado A1</b>, sem depender do login do portal.</p>
+          <div id="cidadesLista"></div>
+          <!-- Cidades sem web service liberado, mas cujo portal exporta XML -->
+          <div id="cidadeImport" class="hidden" style="margin-top:12px;border-top:1px dashed var(--borda);padding-top:12px">
+            <div id="importInfo" class="muted" style="font-size:11px;margin-bottom:8px"></div>
+            <div id="importDrop" style="border:2px dashed var(--borda);border-radius:12px;padding:18px;text-align:center;
+                 cursor:pointer;background:#FAFCFC" onclick="impXmlInput.click()"
+                 ondragover="event.preventDefault();this.style.borderColor='var(--cor,#0E7490)'"
+                 ondragleave="this.style.borderColor='var(--borda)'" ondrop="soltarXmlMunicipal(event)">
+              <b style="font-size:11.5px">Solte aqui os XML exportados pelo portal</b>
+              <div class="muted" style="font-size:10.5px;margin-top:4px">aceita vários .xml de uma vez, ou o .zip inteiro</div>
+              <input id="impXmlInput" type="file" accept=".xml,.zip,text/xml,application/zip" multiple hidden
+                     onchange="escolherXmlMunicipal(event)">
+            </div>
+            <div id="imp_status" class="status-op hidden" style="margin-top:10px"></div>
+          </div>
+
+          <div id="cidadeForm" class="hidden" style="margin-top:12px;border-top:1px dashed var(--borda);padding-top:12px">
+            <div class="row" style="align-items:flex-end;gap:10px;flex-wrap:wrap">
+              <div style="flex:0 0 150px"><label>De</label><input type="date" id="cid_ini"></div>
+              <div style="flex:0 0 150px"><label>Até</label><input type="date" id="cid_fim"></div>
+              <div style="flex:0 0 160px"><label>Inscrição Municipal</label><input id="cid_im" placeholder="obrigatória"></div>
+              <div style="flex:1 1 180px"><label>Senha do certificado</label><input id="cid_senha" type="password" placeholder="salva ✓ — deixe em branco"></div>
+              <div style="flex:0 0 auto"><button class="btn btn-primary" id="btnCidBaixar" onclick="baixarCidade()">⬇ Baixar</button></div>
+            </div>
+            <!-- Quem acessa a prefeitura: a própria empresa ou um PROCURADOR.
+                 Muitas prefeituras só liberam as notas a quem tem procuração —
+                 nesses casos quem assina é o e-CPF do contador, não o e-CNPJ da
+                 empresa (era a causa do erro E172 em Paulista). -->
+            <div class="row" style="align-items:flex-end;gap:10px;margin-top:8px">
+              <div style="flex:1 1 280px"><label>Acessar a prefeitura como</label>
+                <select id="cid_proc" onchange="aoTrocarProcurador()">
+                  <option value="">a própria empresa (certificado dela)</option>
+                </select></div>
+              <div style="flex:1 1 170px;display:none" id="cid_procSenhaBox">
+                <label>Senha do procurador</label>
+                <input id="cid_procSenha" type="password" placeholder="salva ✓ — deixe em branco"></div>
+            </div>
+            <!-- mesmos atalhos de período das outras pesquisas do sistema -->
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+              <button class="chip" onclick="cidMesAnterior()" title="Mês anterior ao período informado">◀ Mês anterior</button>
+              <button class="chip" onclick="cidAno(0)" title="1º de janeiro até 31 de dezembro deste ano">🗓 Ano vigente</button>
+              <button class="chip" onclick="cidAno(-1)" title="Ano inteiro anterior">🗓 Ano anterior</button>
+              <button class="chip" onclick="cidAteAdesao()" title="Do começo do ano anterior até o mês em que a cidade entrou na NFS-e Nacional">🗓 Até a adesão ao nacional</button>
+            </div>
+            <div id="cid_status" class="status-op hidden" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="painelComp" class="hidden" style="margin-top:12px;border-top:1px solid var(--borda);padding-top:12px">
+        <div class="tabs">
+          <button class="tab ativo" id="tabEmitidas" onclick="trocarModo('emitidas')">📤 Notas emitidas</button>
+          <button class="tab" id="tabRecebidas" onclick="trocarModo('recebidas')">📥 Notas recebidas</button>
+        </div>
+        <div class="periodo-row">
+          <div style="flex:0 0 auto">
+            <label>Período por</label>
+            <select id="baseData" onchange="carregarNotas()" style="width:140px">
+              <option value="emissao">Emissão</option>
+              <option value="competencia">Competência</option>
+            </select>
+          </div>
+          <div style="flex:0 0 auto"><label>De</label><input type="date" id="dataIni" onchange="carregarNotas()" style="width:150px"></div>
+          <div style="flex:0 0 auto"><label>Até</label><input type="date" id="dataFim" onchange="carregarNotas()" style="width:150px"></div>
+          <div style="flex:0 0 auto"><button class="btn btn-primary" id="btnPesquisar" onclick="carregarNotas()" style="font-size:11.5px;padding:8px 14px">🔎 Pesquisar</button></div>
+        </div>
+        <div class="chips" style="justify-content:center">
+          <span style="display:inline-flex;align-items:center;gap:6px">
+            <input type="checkbox" id="filtroCheck" checked onchange="carregarNotas()" style="width:auto">
+            <label for="filtroCheck" id="filtroCheckLabel" style="margin:0;font-size:11px">Somente válidas</label>
+          </span>
+          <button class="chip" onclick="mesAnterior()" title="Vê as notas do mês anterior ao período que está sendo pesquisado">◀ Mês anterior</button>
+          <button class="chip" onclick="anoVigente()" title="1º de janeiro até 31 de dezembro deste ano">🗓 Ano vigente</button>
+          <button class="chip" onclick="anoAnterior()" title="Ano inteiro anterior">🗓 Ano anterior</button>
+          <button class="chip" onclick="ultimos30dias()" title="Vê as notas dos últimos 30 dias (até hoje)">🗓 Últimos 30 dias</button>
+        </div>
+
+        <div class="row" id="linhaExportar" style="align-items:flex-end;margin-top:10px">
+          <div style="flex:3"><label>Pasta de saída dos arquivos</label>
+            <input id="pastaSaida" onchange="salvarPasta()" placeholder="Padrão: dentro do sistema (dados/.../exportados)"></div>
+          <div style="flex:0 0 auto"><button class="btn btn-ghost" onclick="escolherPasta()">📁 Escolher pasta</button></div>
+          <div style="flex:0 0 auto"><button class="btn btn-azul" id="btnExportar" onclick="exportar()">⬇ Exportar XMLs + CSV</button></div>
+          <div style="flex:0 0 auto"><button class="btn btn-primary" id="btnPdfs" onclick="baixarPdfs()" title="PDF oficial da Receita (DANFSE). Tem limite de download.">📄 PDFs oficiais</button></div>
+        </div>
+        <p class="muted" style="margin-top:8px">Os arquivos vão para <b>&lt;pasta&gt;/&lt;empresa&gt;</b> (XMLs direto na pasta da empresa).</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- RESULTADO -->
+  <div id="cardResultado" class="card hidden">
+    <h2><span class="step-num">3</span> Resultado</h2>
+    <div id="totais" class="totais"></div>
+    <div id="issBox"></div>
+    <div id="dasBox"></div>
+    <div id="fedBox"></div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+  </div><!-- /.tri -->
+  </div><!-- /.conteudo -->
+  </div><!-- /.app -->
+</div>
+
+<!-- MODAL DE PREFEITURAS (sobreposto) -->
+<!-- O corpo comeca vazio de proposito: o painel de cidades que ja existe e
+     MOVIDO para ca na partida da tela. Recria-lo aqui faria duas copias do
+     mesmo formulario, e a importacao de XML pararia de funcionar numa delas. -->
+<div id="modalPrefeituras" class="modal-overlay hidden" onclick="if(event.target===this)fecharPrefeituras()">
+  <div class="modal-card largo">
+    <div class="modal-head">
+      <h2 style="margin:0">🏛 Prefeituras — histórico municipal</h2>
+      <button class="modal-x" onclick="fecharPrefeituras()" title="Fechar">✕</button>
+    </div>
+    <div id="corpoPrefeituras"></div>
+  </div>
+</div>
+
+<!-- MODAL DE CLASSIFICAÇÃO (sobreposto) -->
+<!-- A tela original, num quadro. Reescrever a regra de anexo aqui criaria uma
+     segunda versao dela -- e o dia em que divergissem, o imposto sairia
+     diferente conforme a porta por onde se entrou. -->
+<div id="modalClass" class="modal-overlay hidden" onclick="if(event.target===this)fecharClassificacao()">
+  <div class="modal-card largo">
+    <div class="modal-head">
+      <h2 style="margin:0">📊 Classificação — anexo e Fator R</h2>
+      <button class="modal-x" onclick="fecharClassificacao()" title="Fechar">✕</button>
+    </div>
+    <iframe id="quadroClass" class="quadro" title="Classificador"></iframe>
+    <p class="modal-nota">Se o quadro não carregar, o Classificador continua acessível em
+      <a href="/classificador.html" target="_blank" rel="noopener">/classificador.html</a>.</p>
+  </div>
+</div>
+
+<!-- MODAL DE CERTIFICADOS (sobreposto) -->
+<div id="modalCert" class="modal-overlay hidden" onclick="if(event.target===this)fecharModalCert()">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 style="margin:0"><span class="step-num">1</span> Certificados</h2>
+      <button class="modal-x" onclick="fecharModalCert()" title="Fechar">✕</button>
+    </div>
+    <div class="row" style="align-items:center;margin-bottom:2px">
+      <input id="filtroCert" placeholder="🔎  Pesquise o certificado por nome ou apelido..." oninput="renderCerts()" style="flex:1">
+      <!-- CADASTRAR CERTIFICADO É SÓ NO MÓDULO CLIENTES. Lá o .pfx é lido e
+           vira cadastro da empresa (nome, CNPJ, validade, regime); aqui ele
+           entrava só como conta NFS-e, e a mesma empresa podia nascer com dois
+           cadastros que não conversavam. -->
+      <a class="btn btn-ghost" style="flex:0 0 auto;text-decoration:none" href="clientes.html"
+         title="Certificados são cadastrados no módulo Clientes">👥 Cadastrar em Clientes</a>
+    </div>
+    <div id="certSelBox"></div>
+    <div id="certList" class="cert-list hidden"></div>
+    <p id="certVazio" class="muted hidden" style="margin-top:10px">Nenhum certificado cadastrado ainda.
+      Cadastre no <a href="clientes.html">módulo Clientes</a>.</p>
+    <!-- Veio do cartão de acesso que saiu do centro da tela. Sem ele, quem
+         ainda NÃO tem certificado ficava sem caminho nenhum. -->
+    <p style="margin-top:12px"><span class="link-mut"
+      onclick="window.open('https://www.gov.br/governodigital/pt-br/identidade/certificado-digital','_blank')"
+      >Saiba como obter o certificado digital</span></p>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let certs = [];
+let certSel = null;
+let modo = 'emitidas';        // 'emitidas' | 'recebidas'
+let forcarLista = false;      // força mostrar a lista de certificados (botão "trocar")
+let availableComps = [];      // competências disponíveis (chips)
+
+const BRL = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const fmtComp = c => c ? c.slice(5,7)+'/'+c.slice(0,4) : '';
+const fmtData = d => (d||'').slice(0,10).split('-').reverse().join('/');
+// data curta dd/mm/aa (economiza largura na tabela)
+const fmtDataCurta = d => { const s=(d||'').slice(0,10).split('-');
+  return s.length===3 ? `${s[2]}/${s[1]}/${s[0].slice(2)}` : ''; };
+
+function toast(msg, tipo=''){
+  const t=$('#toast'); t.textContent=msg; t.className='toast show '+tipo;
+  setTimeout(()=>t.className='toast',3200);
+}
+function setOp(msg, tipo){
+  const el=$('#statusOp');
+  if(!tipo){ el.className='status-op hidden'; el.innerHTML=''; return; }
+  el.className='status-op '+tipo;
+  el.innerHTML=(tipo==='load'?'<span class="spin2"></span>':'')+`<span>${msg}</span>`;
+}
+async function api(url, opts){
+  const r = await fetch(url, opts);
+  if(!r.ok){ let d; try{d=await r.json()}catch{ d={} } throw new Error(d.detail||('Erro '+r.status)); }
+  return r.json();
+}
+
+// ── Modal de certificados (sobreposto) ──
+function abrirModalCert(){
+  forcarLista = true;                 // no modal, sempre mostra a lista
+  $('#modalCert').classList.remove('hidden');
+  renderCerts();
+  const f=$('#filtroCert'); if(f) setTimeout(()=>f.focus(),100);
+}
+function fecharModalCert(){
+  $('#modalCert').classList.add('hidden');
+}
+document.addEventListener('keydown', e=>{
+  if(e.key!=='Escape') return;
+  fecharModalCert();
+});
+
+// ── Certificados ──
+async function carregarCerts(){
+  certs = await api('/api/certificados');
+  if(certSel && !certs.find(c=>c.id===certSel)) certSel=null;
+  renderCerts();
+  renderCertsLateral();
+}
+
+/* A lista de empresas da lateral. Mostra SÓ as que cabem na altura do cartão
+   (mede depois de desenhar e tira do fim até caber) e diz quantas ficaram de
+   fora — a pessoa refina a busca em vez de rolar. A escolhida vem primeiro. */
+function renderCertsLateral(){
+  const alvo=$('#latLista'); if(!alvo) return;
+  const termo=(($('#latBusca')||{}).value||'').trim().toLowerCase();
+  const dig=termo.replace(/\D/g,'');
+  const lista=(certs||[]).filter(c=>!termo ||
+      (c.nome||'').toLowerCase().includes(termo) || (c.apelido||'').toLowerCase().includes(termo) ||
+      (dig && (c.cnpj||'').includes(dig)))
+    .sort((a,b)=>(b.id===certSel)-(a.id===certSel) ||
+      String(a.apelido||a.nome).localeCompare(String(b.apelido||b.nome),'pt-BR'));
+  if(!(certs||[]).length){ alvo.innerHTML='<div class="lat-mais">Nenhum certificado cadastrado. '+
+      'Cadastre no <a href="clientes.html">módulo Clientes</a>.</div>'; return; }
+  if(!lista.length){ alvo.innerHTML='<div class="lat-mais">Nenhuma empresa corresponde à busca.</div>'; return; }
+  const item=c=>{
+    const nome=(c.apelido?c.apelido+' — ':'')+(c.nome||'');
+    const ini=(c.apelido||c.nome||'?').trim().charAt(0).toUpperCase();
+    return `<button class="lat-opc${c.id===certSel?' on':''}" title="${esc(nome)}"
+      onclick="selecionar('${esc(c.id)}')"><span class="av">${esc(ini)}</span>
+      <span class="tx"><span class="nm" style="display:block">${esc(nome)}</span>
+      <span class="cj">${esc(formatCnpj(c.cnpj)||'')}</span></span></button>`;
+  };
+  let n=lista.length;
+  const desenhar=()=>{
+    const resto=lista.length-n;
+    alvo.innerHTML=lista.slice(0,n).map(item).join('')+
+      (resto>0?`<div class="lat-mais">+ ${resto} empresa${resto>1?'s':''} — refine a busca</div>`:'');
+  };
+  desenhar();
+  while(n>1 && alvo.scrollHeight>alvo.clientHeight+1){ n--; desenhar(); }
+}
+let _latRedim=null;
+window.addEventListener('resize',()=>{ clearTimeout(_latRedim); _latRedim=setTimeout(renderCertsLateral,120); });
+function formatCnpj(c){return c?.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5')||c;}
+
+function renderCerts(){
+  const termo=($('#filtroCert').value||'').trim().toLowerCase();
+  const lista=$('#certList');
+  $('#certVazio').classList.toggle('hidden', certs.length>0);
+  const mostrar = termo!=='' || forcarLista;
+  if(!mostrar){
+    lista.classList.add('hidden'); lista.innerHTML='';
+    renderCertSelChip();
+    return;
+  }
+  $('#certSelBox').innerHTML=''; $('#certSelBox').classList.add('hidden');
+  lista.classList.remove('hidden'); lista.innerHTML='';
+  const filtrados=certs.filter(c=>!termo ||
+    (c.nome||'').toLowerCase().includes(termo) || (c.apelido||'').toLowerCase().includes(termo));
+  if(certs.length && !filtrados.length){
+    lista.innerHTML='<p class="muted">Nenhum certificado corresponde à busca.</p>'; return;
+  }
+  filtrados.forEach(c=>{
+    const div=document.createElement('div');
+    div.className='cert'+(certSel===c.id?' sel':'');
+    div.onclick=()=>selecionar(c.id);
+    const ini=(c.apelido||c.nome||'?').trim().charAt(0).toUpperCase();
+    div.innerHTML=`<div class="av">${ini}</div>
+      <div class="info">
+        <div class="nome">${c.apelido?c.apelido+' — ':''}${c.nome}</div>
+        <div class="cnpj">CNPJ ${formatCnpj(c.cnpj)}</div>
+      </div>
+      ${c.senha_salva?'<span class="badge lock">🔒 senha salva</span>':''}
+      ${c.existe?'':'<span class="badge warn">arquivo não encontrado</span>'}
+      <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();remover('${c.id}')">remover</button>`;
+    lista.appendChild(div);
+  });
+}
+function renderCertSelChip(){
+  const box=$('#certSelBox');
+  const c=certs.find(x=>x.id===certSel);
+  if(c){
+    box.classList.remove('hidden');
+    const ini=(c.apelido||c.nome||'?').trim().charAt(0).toUpperCase();
+    box.innerHTML=`<div class="cert sel" style="cursor:default">
+      <div class="av">${ini}</div>
+      <div class="info">
+        <div class="nome">${c.apelido?c.apelido+' — ':''}${c.nome}</div>
+        <div class="cnpj">CNPJ ${formatCnpj(c.cnpj)}</div>
+      </div>
+      ${c.senha_salva?'<span class="badge lock">🔒 senha salva</span>':''}
+      <button class="btn btn-ghost btn-sm" onclick="trocarCert()">trocar</button></div>`;
+  } else if(certs.length){
+    box.classList.remove('hidden');
+    box.innerHTML='<p class="muted" style="padding:6px 2px">🔎 Pesquise um certificado pelo nome ou apelido no campo acima.</p>';
+  } else {
+    box.classList.add('hidden'); box.innerHTML='';
+  }
+}
+function trocarCert(){ forcarLista=true; $('#filtroCert').value=''; renderCerts(); $('#filtroCert').focus(); }
+
+function selecionar(id){
+  certSel=id; forcarLista=false; $('#filtroCert').value='';
+  const c=certs.find(x=>x.id===id);
+  fecharModalCert();
+  // Quem mostra o certificado ativo agora é a lateral (`pintarCertificado`),
+  // no fim desta função. `#certAtivo` era filho do cartão que saiu do centro:
+  // escrever nele aqui lançaria TypeError e pararia a seleção no meio, depois
+  // de `certSel` já ter mudado -- o pior ponto possível para parar.
+  $('#semCert').classList.add('hidden');
+  $('#painelSync').classList.remove('hidden');
+  $('#rowSync').classList.remove('hidden');
+  $('#certSelNome').value=(c.apelido?c.apelido+' — ':'')+c.nome;
+  $('#painelComp').classList.add('hidden');
+  $('#painelCidades').classList.remove('hidden');   // outras cidades: sempre à mão
+  verificarPendencias();                            // já diz o que falta no RBT12
+  $('#cardResultado').classList.add('hidden');
+  setOp('', '');
+  $('#senha').value='';
+  $('#senha').placeholder = c.senha_salva ? 'Senha salva ✓ — deixe em branco' : 'Digite a senha';
+  if(!c.senha_salva) $('#senha').focus();
+  modo='emitidas';
+  $('#tabEmitidas').classList.add('ativo'); $('#tabRecebidas').classList.remove('ativo');
+  $('#filtroCheckLabel').textContent='Somente válidas'; $('#filtroCheck').checked=true;
+  $('#dataIni').value=''; $('#dataFim').value=''; $('#baseData').value='emissao';
+  renderCerts();
+  pintarCertificado();
+  renderCertsLateral();
+}
+
+async function remover(id){
+  if(!confirm('Remover este certificado do sistema? (o arquivo .pfx não é apagado)')) return;
+  await api('/api/certificados/'+id,{method:'DELETE'});
+  if(certSel===id){certSel=null;$('#painelSync').classList.add('hidden');$('#semCert').classList.remove('hidden');}
+  toast('Certificado removido.'); carregarCerts();
+}
+
+// ── Sincronizar ──
+async function sincronizar(){
+  const senha=$('#senha').value;
+  const c=certs.find(x=>x.id===certSel);
+  if(!senha && !(c && c.senha_salva)){ toast('Digite a senha do certificado.','err'); return; }
+  const b=$('#btnSync'); b.disabled=true; b.innerHTML='<span class="spin"></span> Sincronizando...';
+  try{
+    setOp('⏳ Baixando suas notas da Receita... (pode demorar na primeira vez)','load');
+    const r=await api('/api/sincronizar',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id:certSel,senha:senha||null})});
+    setOp(r.novos>0?`✓ ${r.novos} documento(s) baixado(s).`:'✓ Notas atualizadas.','ok');
+    $('#painelComp').classList.remove('hidden');
+    const tem=await recarregarCompetencias();
+    if(tem){
+      // pré-preenche o período com o mês da competência mais recente (base Emissão)
+      preencherMes(availableComps[0]);
+      setOp('⏳ Carregando...','load'); await carregarNotas(); setOp('', '');
+    }
+    // some com a linha de sincronização (certificado/senha/botão) depois de concluir —
+    // ela só reaparece quando outro certificado for selecionado (ver selecionar())
+    $('#rowSync').classList.add('hidden');
+  }catch(e){ setOp(e.message,'err'); }
+  finally{ b.disabled=false; b.innerHTML='🔄 Sincronizar'; }
+}
+
+async function recarregarCompetencias(){
+  const r=await api(`/api/competencias?id=${encodeURIComponent(certSel)}&papel=${modo}`);
+  availableComps = r.competencias || [];
+  if(!availableComps.length){
+    $('#cardResultado').classList.add('hidden');
+    toast(modo==='recebidas'?'Nenhuma nota recebida encontrada.':'Nenhuma nota emitida encontrada.','err');
+    return false;
+  }
+  return true;
+}
+// preenche o período (De/Até) com o mês inteiro da competência informada
+function preencherMes(c){
+  const [y,m]=c.split('-').map(Number);
+  const ultimo=new Date(y,m,0).getDate();
+  $('#dataIni').value=`${c}-01`;
+  $('#dataFim').value=`${c}-${String(ultimo).padStart(2,'0')}`;
+}
+// data local (não UTC) em "AAAA-MM-DD"
+function isoLocal(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+// ── Atalhos de período ──
+// Mês anterior AO PERÍODO PESQUISADO: se o "De" está em 06/2026, mostra 05/2026
+// inteiro; clicando de novo, 04/2026, e assim por diante. Sem período definido,
+// parte do mês atual.
+function mesAnterior(){
+  const ref=($('#dataIni').value||'').slice(0,7) || isoLocal(new Date()).slice(0,7);
+  let [y,m]=ref.split('-').map(Number);
+  m--; if(m===0){ m=12; y--; }
+  preencherMes(`${y}-${String(m).padStart(2,'0')}`);
+  carregarNotas();
+}
+// Últimos 30 dias: de 30 dias atrás até hoje
+function ultimos30dias(){
+  const hoje=new Date(), ini=new Date();
+  ini.setDate(hoje.getDate()-30);
+  $('#dataIni').value=isoLocal(ini);
+  $('#dataFim').value=isoLocal(hoje);
+  carregarNotas();
+}
+// Ano inteiro: vigente (delta 0) ou anterior (delta -1)
+function _anoPeriodo(delta){
+  const y=new Date().getFullYear()+delta;
+  $('#dataIni').value=`${y}-01-01`; $('#dataFim').value=`${y}-12-31`;
+  carregarNotas();
+}
+function anoVigente(){ _anoPeriodo(0); }
+function anoAnterior(){ _anoPeriodo(-1); }
+
+async function trocarModo(m){
+  if(!certSel) return;
+  modo=m;
+  $('#tabEmitidas').classList.toggle('ativo', m==='emitidas');
+  $('#tabRecebidas').classList.toggle('ativo', m==='recebidas');
+  $('#filtroCheckLabel').textContent = m==='recebidas' ? 'Somente retidas' : 'Somente válidas';
+  $('#filtroCheck').checked = m!=='recebidas';
+  // APAGA o que está na tela ANTES de buscar o outro papel. Quando a busca não
+  // acontecia — sem competência no papel novo, ou sem período preenchido — os
+  // cartões e a tabela do papel anterior FICAVAM. Numa empresa do Lucro
+  // Presumido isso punha as retenções das notas EMITIDAS (IRRF, contribuições
+  // sociais, que são dela) em cima da aba de notas RECEBIDAS, onde a retenção é
+  // de terceiro. Total do papel errado na tela é pior que tela vazia.
+  limparResultado();
+  const tem=await recarregarCompetencias();
+  if(tem && ($('#dataIni').value || $('#dataFim').value)) await carregarNotas();
+}
+
+// Zera cartões, tabela e a lista que o visualizador navega.
+function limparResultado(){
+  notasAtuais=[];
+  const t=$('#totais');  if(t)  t.innerHTML='';
+  const ib=$('#issBox'); if(ib) ib.innerHTML='';
+  const th=$('#thead');  if(th) th.innerHTML='';
+  const tb=$('#tbody');  if(tb) tb.innerHTML='';
+}
+
+// ── Notas ──
+// Notas da busca atual, na ordem da tela. O visualizador navega por índice,
+// então "anterior/próxima" segue exatamente o que está listado.
+let notasAtuais=[];
+
+// abre o PDF (DANFSE) oficial da nota numa nova aba
+function verPdf(chave){
+  if(!certSel || !chave) return;
+  window.open(`/api/danfse?id=${encodeURIComponent(certSel)}&chave=${encodeURIComponent(chave)}`,'_blank');
+}
+function pdfBtn(n,i){
+  return n.chave ? `<button class="btn btn-ghost btn-sm" title="Visualizar nota (PDF, dados e retenções)" onclick="verNota(${i})">📄 Ver</button>`
+                 : '<span class="muted">—</span>';
+}
+const SVG_SUB='<svg width="18" height="18" viewBox="0 0 24 24" style="flex:0 0 auto">'+
+  '<circle cx="12" cy="12" r="11" fill="#8b5cf6"/>'+
+  '<g stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">'+
+  '<path d="M9 16 V8 M6.5 10.5 L9 8 L11.5 10.5"/><path d="M15 8 V16 M12.5 13.5 L15 16 L17.5 13.5"/></g></svg>';
+const SVG_CAN='<svg width="18" height="18" viewBox="0 0 24 24" style="flex:0 0 auto">'+
+  '<circle cx="12" cy="12" r="11" fill="#8b5cf6"/>'+
+  '<path d="M8 8 L16 16 M16 8 L8 16" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>';
+function situacaoBadge(n){
+  const s=n.situacao||'Normal';
+  const ico=(svg,txt)=>`<span title="${txt}" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap">${svg}<span>${txt}</span></span>`;
+  if(s==='Substituída') return ico(SVG_SUB,'Substituída');
+  if(s==='Cancelada')   return ico(SVG_CAN,'Cancelada');
+  if(s==='Substituta')  return '<span class="badge b-ciano">Substituta</span>';
+  return '<span class="muted">Normal</span>';
+}
+function renderTotais(r){
+  // Os MESMOS numeros de antes, com icone e respiro. Nenhum card ganhou
+  // comparacao com o mes anterior: isso exigiria uma segunda consulta ao
+  // periodo anterior, e um "+18%" que ninguem calculou e so enfeite com cara
+  // de informacao. Quando for pedido, sai de uma consulta de verdade.
+  const cards=[];
+  cards.push({lbl: modo==='recebidas'?'Notas':'Notas válidas', val:r.quantidade, ic:'🧾', cor:'#DFF1F5'});
+  cards.push({lbl:'Total serviço', val:BRL(r.total_servico), ic:'💠', cor:'#EEF3F4'});
+  if(modo!=='recebidas') cards.push({lbl:'Total líquido', val:BRL(r.total_liquido), ic:'💵', cor:'#EFF6FF'});
+  if((r.total_retido||0)>0)     cards.push({lbl:'Contrib. sociais retidas', val:BRL(r.total_retido), ic:'🏛', cor:'#F0FDFA'});
+  if((r.qtd_alerta_csrf||0)>0)  cards.push({lbl:'Retenção fora dos 4,65%', val:r.qtd_alerta_csrf+' nota'+(r.qtd_alerta_csrf>1?'s':''), ic:'⚠', cor:'#FEF3C7'});
+  if((r.total_inss||0)>0)       cards.push({lbl:'INSS retido', val:BRL(r.total_inss), ic:'👥', cor:'#ECFEFF'});
+  if((r.total_irrf||0)>0)       cards.push({lbl:'IRRF retido', val:BRL(r.total_irrf), ic:'📐', cor:'#F5F3FF'});
+  if((r.total_iss_retido||0)>0) cards.push({lbl:'ISS retido', val:BRL(r.total_iss_retido), ic:'🏙', cor:'#FFF7ED'});
+  $('#totais').innerHTML=cards.map(c=>
+    `<div class="stat"><div class="ico" style="--sf:${c.cor}">${c.ic}</div>
+       <div class="txt"><div class="lbl">${c.lbl}</div><div class="val" title="${c.val}">${c.val}</div></div></div>`).join('');
+}
+
+/* ── Status do certificado, na lateral ────────────────────────────────────
+   Três fatos, três fontes, e nenhum inventado:
+
+     • empresa, arquivo e senha  → `/api/certificados` (o que esta tela já lê);
+     • validade                  → cadastro de Clientes, casando pelo CNPJ.
+
+   A validade NÃO está no `/api/certificados`. Ela é lida do próprio .pfx
+   quando a empresa é cadastrada em Clientes, e é de lá que a tela de Clientes
+   tira o aviso de vencimento. Buscá-la num terceiro lugar criaria uma
+   terceira verdade sobre a mesma data.
+
+   Sem cadastro, ou com cadastro sem a data, a linha diz "não cadastrada".
+   Nunca verde: um certificado vencido pintado de válido é pior do que a tela
+   não dizer nada. */
+let cadastroClientes = null;
+
+async function carregarCadastro(){
+  if(cadastroClientes !== null) return cadastroClientes;
+  try{
+    const r = await fetch('/api/state/clientes');
+    cadastroClientes = r.ok ? ((await r.json()).clientes || []) : false;
+  }catch(e){ cadastroClientes = false; }
+  return cadastroClientes;
+}
+
+const soDigitos = t => (t||'').replace(/\D/g,'');
+
+function diasAte(iso){
+  if(!iso) return null;
+  const d = new Date(iso + 'T00:00:00');
+  if(isNaN(d)) return null;
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  return Math.round((d - hoje) / 86400000);
+}
+
+function linhaLat(ic, valor, selo, texto){
+  const inteiro = String(valor).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+                    .replace(/"/g, '&quot;');
+  return `<div class="lat-linha"><span class="li">${ic}</span>
+    <span class="v" title="${inteiro}">${valor}</span>
+    ${selo ? `<span class="selo ${selo}">${texto}</span>` : ''}</div>`;
+}
+
+async function pintarCertificado(){
+  const alvo = document.getElementById('latCert');
+  if(!alvo) return;
+  const c = certs && certs.find(x => x.id === certSel);
+  if(!c){
+    alvo.innerHTML = linhaLat('○', '<span style="color:var(--mut)">Nenhum escolhido</span>',
+                              'neutro', '—');
+    return;
+  }
+
+  const linhas = [];
+  const quem = c.apelido || c.nome;
+  linhas.push(linhaLat('🏢', `<b class="corta" title="${quem}">${quem}</b>`, '', ''));
+  // O .pfx pode ter sido movido depois do cadastro: é falha silenciosa
+  // clássica, e só aparece na hora de assinar se ninguém avisar antes.
+  linhas.push(c.existe
+    ? linhaLat('📄', 'Arquivo do .pfx', 'ok', 'Presente')
+    : linhaLat('📄', 'Arquivo não encontrado', 'ruim', 'Ausente'));
+  linhas.push(linhaLat('🔑', c.senha_salva ? 'Senha protegida' : 'Senha a cada uso',
+                       c.senha_salva ? 'ok' : 'neutro', c.senha_salva ? 'Salva' : 'Manual'));
+
+  const lista = await carregarCadastro();
+  const cad = Array.isArray(lista)
+    ? lista.find(x => soDigitos(x.cnpj) === soDigitos(c.cnpj)) : null;
+  const val = cad && cad.certValidade;
+  const d = diasAte(val);
+  if(d === null){
+    linhas.push(linhaLat('📅',
+      'Validade <small>não cadastrada em Clientes</small>', 'neutro', '—'));
+  }else{
+    const br = val.split('-').reverse().join('/');
+    if(d < 0)       linhas.push(linhaLat('📅', `Venceu em ${br}`, 'ruim', 'Vencida'));
+    else if(d <= 30) linhas.push(linhaLat('📅', `Vence em ${br} <small>${d} dia(s)</small>`,
+                                          'aviso', `${d}d`));
+    else             linhas.push(linhaLat('📅', `Válida até ${br}`, 'ok', 'Válida'));
+  }
+  alvo.innerHTML = linhas.join('');
+}
+
+/* ── As tres sobreposições da lateral ─────────────────────────────────────
+   Certificado já tinha a sua (`abrirModalCert`). As outras duas seguem o
+   mesmo padrão — e nenhuma delas duplica o que já existe. */
+
+function abrirPrefeituras(){
+  const p = $('#painelCidades');
+  // `#painelCidades` sai do `hidden` quando um certificado é escolhido. Sem
+  // isso não há empresa, e o formulário de busca não teria a quem perguntar.
+  if(!p || p.classList.contains('hidden')){
+    toast('Escolha um certificado primeiro.','err'); return;
+  }
+  if($('#cidadesBox') && $('#cidadesBox').classList.contains('hidden')) toggleCidades();
+  $('#modalPrefeituras').classList.remove('hidden');
+}
+function fecharPrefeituras(){ $('#modalPrefeituras').classList.add('hidden'); }
+
+let classCarregado = false;
+function abrirClassificacao(){
+  const q = $('#quadroClass');
+  // A EMPRESA EM TELA VAI JUNTO. Antes o quadro abria sem saber qual empresa
+  // estava aberta aqui e retomava a última consultada lá dentro — quem via as
+  // notas da EMPRESA J caía em outra empresa e tinha de procurar de novo.
+  const di = ($('#dataIni')||{}).value || '', df = ($('#dataFim')||{}).value || '';
+  if(!classCarregado){
+    // Primeira abertura: carrega uma vez (o Classificador faz consultas
+    // próprias), já com a empresa e o período na URL.
+    const ps = new URLSearchParams();
+    if(certSel){ ps.set('id', certSel); if(di) ps.set('ini', di); if(df) ps.set('fim', df); }
+    q.src = '/classificador.html' + (ps.toString() ? '?' + ps.toString() : '');
+    classCarregado = true;
+  } else if(certSel){
+    // Quadro já carregado: troca a empresa lá dentro, sem recarregar.
+    try{
+      const w = q.contentWindow;
+      if(w && typeof w.abrirEmpresa === 'function') w.abrirEmpresa(certSel, di, df);
+    }catch(e){}                            // outra origem: segue com o que está
+  }
+  $('#modalClass').classList.remove('hidden');
+}
+function fecharClassificacao(){ $('#modalClass').classList.add('hidden'); }
+
+// A barra de módulos do Fiscale se injeta em toda tela — inclusive dentro do
+// quadro. Duas barras empilhadas dentro de um modal não ajudam ninguém.
+document.addEventListener('DOMContentLoaded', function(){
+  const q = document.getElementById('quadroClass');
+  if(!q) return;
+  q.addEventListener('load', function(){
+    try{
+      const d = q.contentDocument;
+      if(!d) return;                       // outra origem: nada a fazer
+      const st = d.createElement('style');
+      st.textContent = '#fscNav{display:none!important}body{padding-top:0!important}';
+      d.head.appendChild(st);
+    }catch(e){}                            // bloqueado: o quadro segue servindo
+  });
+});
+
+async function carregarNotas(){
+  if(!certSel) return;
+  const di=$('#dataIni').value, df=$('#dataFim').value, base=$('#baseData').value;
+  if(!di && !df){ toast('Informe o período (data inicial e/ou final).','err'); return; }
+  const check=$('#filtroCheck').checked;
+  const per=`data_ini=${di}&data_fim=${df}&base_data=${base}`;
+  const params = modo==='recebidas'
+    ? `papel=recebidas&somente_validas=true&somente_retidas=${check}`
+    : `papel=emitidas&somente_validas=${check}&somente_retidas=false`;
+  try{
+    const r=await api(`/api/notas?id=${encodeURIComponent(certSel)}&${per}&${params}`);
+    renderTotais(r.resumo);
+    // Colunas de impostos sempre visíveis; o valor só é preenchido quando a
+    // nota tem a retenção correspondente (senão mostra "—").
+    const th =t=>`<th><span class="th-chip">${t}</span></th>`;
+    const thn=t=>`<th class="num"><span class="th-chip">${t}</span></th>`;
+    let head='<tr>'+th('Competência')+th('Nº')+th('Situação')+
+      `<th class="wcell"><span class="th-chip">${modo==='recebidas'?'Prestador':'Tomador'}</span></th>`+
+      thn('Serviço')+thn('Contrib.')+thn('IRRF')+thn('INSS')+thn('ISS');
+    if(modo!=='recebidas') head+=thn('Líquido');
+    head+=th('Emissão')+th('PDF')+'</tr>';
+    $('#thead').innerHTML=head;
+    const tb=$('#tbody'); tb.innerHTML='';
+    notasAtuais=r.notas;
+    r.notas.forEach((n,i)=>{
+      const tr=document.createElement('tr');
+      const s=n.situacao||'Normal';
+      if(s==='Cancelada')        tr.className='linha-can';
+      else if(s==='Substituída') tr.className='linha-sub';
+      let tds=`<td>${fmtComp(n.competencia)}</td>
+        <td>${esc(n.numero||'-')}</td>
+        <td>${situacaoBadge(n)}</td>
+        <td class="wcell">${esc(modo==='recebidas'?(n.emit_nome||n.emit_cnpj||'-'):(n.toma_nome||n.toma_doc||'-'))}</td>
+        <td class="num">${BRL(n.valor_servico)}</td>
+        <td class="num">${(n.valor_retido||0)>0?BRL(n.valor_retido):'—'}${n.alerta_csrf?` <span class="badge b-laranja" title="${esc(n.alerta_csrf_msg||'')}">⚠ 4,65%</span>`:''}</td>
+        <td class="num">${(n.valor_irrf||0)>0?BRL(n.valor_irrf):'—'}</td>
+        <td class="num">${n.inss_retido?BRL(n.valor_inss):'—'}</td>
+        <td class="num">${n.iss_retido?BRL(n.valor_iss_retido):'—'}</td>`;
+      if(modo!=='recebidas') tds+=`<td class="num">${BRL(n.valor_liquido)}</td>`;
+      tds+=`<td>${fmtData(n.data_emissao)}</td><td>${pdfBtn(n,i)}</td>`;
+      tr.innerHTML=tds;
+      tb.appendChild(tr);
+    });
+    if(r.resumo.quantidade===0){
+      tb.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--mut);padding:20px">Nenhuma nota encontrada para esta(s) competência(s).</td></tr>';
+    }
+    $('#cardResultado').classList.remove('hidden');
+    carregarDas();
+    carregarFederal();     // em paralelo: um não espera nem derruba o outro
+    carregarIss();
+  }catch(e){ toast(e.message,'err'); }
+}
+
+// ── Visualizador de nota ───────────────────────────────────────────────────
+// Abre o DANFSe oficial num painel lateral, com os dados extraídos do XML ao
+// lado. O XML é a fonte; o PDF é a representação dela — por isso os dois
+// aparecem juntos e as retenções vêm sempre do XML, nunca lidas do PDF.
+let visIdx=-1;
+
+function fecharNota(){
+  visIdx=-1;
+  if(_visPdfUrl){ URL.revokeObjectURL(_visPdfUrl); _visPdfUrl=null; }
+  const f=$('#visFundo'), p=$('#visPainel');
+  if(f) f.remove();
+  if(p) p.remove();
+  document.removeEventListener('keydown', _visTecla);
+}
+function _visTecla(e){
+  if(e.key==='Escape'){ fecharNota(); return; }
+  if(e.key==='ArrowRight'){ navNota(1); }
+  if(e.key==='ArrowLeft'){ navNota(-1); }
+}
+function navNota(passo){
+  const alvo=visIdx+passo;
+  if(alvo<0 || alvo>=notasAtuais.length) return;
+  verNota(alvo);
+}
+function verNota(i){
+  const n=notasAtuais[i];
+  if(!n || !certSel) return;
+  visIdx=i;
+  if(!$('#visFundo')){
+    const f=document.createElement('div');
+    f.id='visFundo'; f.className='vis-fundo'; f.onclick=fecharNota;
+    document.body.appendChild(f);
+    const p=document.createElement('div');
+    p.id='visPainel'; p.className='vis';
+    document.body.appendChild(p);
+    document.addEventListener('keydown', _visTecla);
+  }
+  $('#visPainel').innerHTML=_visHtml(n,i);
+  if(n.chave && !n.origem) _carregarPdf(n, i);
+}
+
+// Busca o DANFSe e só então mostra. Se a Receita estiver fora do ar, explica em
+// português em vez de despejar o erro na tela.
+let _visPdfUrl=null;
+async function _carregarPdf(n, idx){
+  const alvo=`/api/danfse?id=${encodeURIComponent(certSel)}&chave=${encodeURIComponent(n.chave)}`;
+  const ctrl=new AbortController();
+  const limite=setTimeout(()=>ctrl.abort(), 45000);
+  let r;
+  try{
+    r=await fetch(alvo,{signal:ctrl.signal});
+  }catch(e){
+    clearTimeout(limite);
+    const curto = e.name==='AbortError' ? 'não respondeu a tempo'
+                                        : 'não deu para falar com o servidor';
+    if(visIdx===idx) _carregarLocal(n, idx, curto, e.name==='AbortError'
+      ? 'A Receita não respondeu a tempo. O serviço costuma estar sobrecarregado nesses casos.'
+      : 'Não foi possível falar com o servidor.', e.name==='AbortError');
+    return;
+  }
+  clearTimeout(limite);
+  if(visIdx!==idx) return;              // usuário já trocou de nota
+  if(!r.ok){
+    let msg='';
+    try{ msg=(await r.json()).detail||''; }catch{}
+    // Duas versões do mesmo motivo: a curta cabe na tarja amarela do PDF
+    // montado aqui; a longa é a explicação inteira, para quando nem o plano B
+    // funcionar.
+    const curto = r.status===503 ? 'serviço fora do ar'
+                : r.status===429 ? 'limite de requisições atingido'
+                : `erro ${r.status}`;
+    _carregarLocal(n, idx, curto, msg || `O serviço respondeu erro ${r.status}.`,
+                   r.status===503||r.status===429);
+    return;
+  }
+  const blob=await r.blob();
+  if(visIdx!==idx) return;
+  _mostrarPdf(blob, n);
+}
+
+// Plano B: o DANFSe montado aqui a partir do XML. O serviço de PDF da Receita
+// cai sozinho (503) enquanto o resto do ADN continua de pé, e sem isso a nota
+// simplesmente não podia ser vista. O documento é o mesmo, desenhado com a
+// mesma medida do oficial — só não vem do servidor deles, e a tarja diz isso.
+async function _carregarLocal(n, idx, curto, motivo, temporario){
+  const el=$('#visPdfMsg');
+  if(el) el.innerHTML=`<div style="font-size:27px">📄</div>
+    <div>Montando o PDF a partir do XML da nota...</div>`;
+  let r;
+  try{
+    r=await fetch(`/api/danfse-local?id=${encodeURIComponent(certSel)}`+
+                  `&chave=${encodeURIComponent(n.chave||'')}`);
+  }catch(e){
+    if(visIdx===idx) _pdfFalhou(n, motivo, temporario);
+    return;
+  }
+  if(visIdx!==idx) return;
+  if(!r.ok){ _pdfFalhou(n, motivo, temporario); return; }
+  const blob=await r.blob();
+  if(visIdx!==idx) return;
+  _mostrarPdf(blob, n, curto);
+}
+
+function _mostrarPdf(blob, n, motivoLocal){
+  if(_visPdfUrl) URL.revokeObjectURL(_visPdfUrl);
+  _visPdfUrl=URL.createObjectURL(blob);
+  const cx=$('#visPainel .vis-pdf'); if(!cx) return;
+  const tarja = motivoLocal
+    ? `<div class="local"><span>⚠</span><span><b>PDF montado pelo Fiscale a partir do XML</b>
+        — o serviço de DANFSe da Receita não respondeu (${esc(motivoLocal)}).
+        O conteúdo é o da nota; o documento oficial é o XML.
+        <a href="#" onclick="verNota(visIdx);return false">tentar o oficial de novo</a></span></div>`
+    : '';
+  // view=Fit: o leitor do navegador ajusta a PÁGINA INTEIRA ao quadro. Sem
+  // isso ele abria a folha na largura (95%) e mostrava só o topo do DANFSe —
+  // era preciso rolar dentro do quadro para ver valores e retenções.
+  cx.innerHTML=tarja+`<iframe src="${_visPdfUrl}#toolbar=1&navpanes=0&view=Fit" `+
+    `title="DANFSe da nota ${esc(n.numero||'')}"></iframe>`;
+  // "Abrir PDF em aba" tem que abrir o MESMO PDF que está na tela. Apontando
+  // sempre para o oficial, o botão devolvia a mensagem de erro da Receita
+  // justamente quando o painel já estava mostrando a nota.
+  const btn=$('#visAbrirPdf');
+  if(btn && motivoLocal){
+    btn.href=`/api/danfse-local?id=${encodeURIComponent(certSel)}`+
+             `&chave=${encodeURIComponent(n.chave||'')}`;
+    btn.textContent='↗ Abrir PDF em aba (montado aqui)';
+  }
+}
+function _pdfFalhou(n, msg, temporario){
+  const el=$('#visPdfMsg'); if(!el) return;
+  const urlXml=`/api/nfse/xml?id=${encodeURIComponent(certSel)}&chave=${encodeURIComponent(n.chave||'')}`;
+  el.innerHTML=`<div style="font-size:27px">${temporario?'⏸':'⚠'}</div>
+    <div><b>${temporario?'Serviço da Receita indisponível agora':'Não foi possível obter o PDF'}</b></div>
+    <div style="max-width:340px">${esc(msg)}</div>
+    <div style="max-width:340px;font-size:10px">
+      Os dados ao lado foram lidos do <b>XML</b>, que é o documento oficial —
+      eles continuam corretos e a apuração não depende do PDF.</div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-ghost btn-sm" onclick="verNota(visIdx)">↻ Tentar de novo</button>
+      <a class="btn btn-ghost btn-sm" href="${urlXml}" download="NFSe-${n.chave||''}.xml">⤓ Baixar XML</a>
+    </div>`;
+}
+// Nome, chave e origem vêm de dentro do XML — texto de fora. Escapar antes de
+// virar HTML: um XML com "<" no nome quebraria o painel, e nada garante que
+// todo emitente do país preencha o campo direito.
+function esc(v){
+  return String(v==null?'':v).replace(/[&<>"']/g, c=>(
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function _visHtml(n,i){
+  const s=n.situacao||'Normal';
+  const sel = s==='Cancelada'  ? '<span class="selo can">✕ Cancelada</span>'
+            : s==='Substituída'? '<span class="selo sub">⇅ Substituída</span>'
+            : s==='Substituta' ? '<span class="selo nova">Substituta</span>' : '';
+  const tarja = s==='Cancelada'
+      ? '<div class="vis-tarja can">✕ DOCUMENTO CANCELADO — mantido para auditoria; não compõe a receita.</div>'
+    : s==='Substituída'
+      ? '<div class="vis-tarja sub">⇅ DOCUMENTO SUBSTITUÍDO — a receita está na nota substituta.</div>' : '';
+
+  const urlPdf=`/api/danfse?id=${encodeURIComponent(certSel)}&chave=${encodeURIComponent(n.chave||'')}`;
+  const urlXml=`/api/nfse/xml?id=${encodeURIComponent(certSel)}&chave=${encodeURIComponent(n.chave||'')}`;
+  // O PDF oficial vem da Receita (ADN) e só existe para nota do Portal Nacional.
+  // Histórico municipal não tem DANFSe — dizer isso é melhor que um quadro vazio.
+  const temPdf=!!n.chave && !n.origem;
+  // O PDF é buscado por fetch, não direto no iframe: assim dá para tratar a
+  // falha. Antes, quando a Receita respondia erro, o iframe exibia o JSON cru
+  // do erro — com a chave de acesso inteira na tela.
+  const painelPdf = temPdf
+    ? `<div class="vis-aviso" id="visPdfMsg"><div style="font-size:27px">⏳</div>
+        <div>Carregando o PDF oficial na Receita...</div>
+        <div style="font-size:10px">Pode levar alguns segundos.</div></div>`
+    : `<div class="vis-aviso"><div style="font-size:27px">📄</div>
+        <div><b>Sem DANFSe oficial para esta nota.</b></div>
+        <div>Ela veio de <b>${esc(n.origem||'histórico municipal')}</b>. O PDF oficial só é
+        emitido pela Receita para as notas do Portal Nacional.<br>
+        Os dados ao lado foram lidos do próprio documento e continuam válidos.</div></div>`;
+
+  // ESPELHO DO XML/DANFSe: toda linha do documento aparece SEMPRE, com "—"
+  // quando o campo não tem valor — em saída e em entrada. Os rótulos são os
+  // do DANFSe, para conferir linha a linha contra o PDF ao lado.
+  const v=x=>Number(x)||0;
+  const linha=(rot,val)=> v(val)>0
+    ? `<tr><td>${rot}</td><td>${BRL(val)}</td></tr>`
+    : `<tr class="zero"><td>${rot}</td><td>—</td></tr>`;
+  // Nota de backend antigo (sem os campos xml_*): cai na leitura composta.
+  const temXml = ('xml_v_ret_csll' in n);
+  const tpPC = n.tp_ret_piscofins;
+  const vRetCSLL = temXml ? n.xml_v_ret_csll : n.valor_csll;
+  const vPis = temXml ? n.xml_v_pis : n.valor_pis;
+  const vCofins = temXml ? n.xml_v_cofins : n.valor_cofins;
+  const pisProprio = tpPC==='2' ? v(vPis) : 0;
+  const cofinsProprio = tpPC==='2' ? v(vCofins) : 0;
+  // Total das Retenções Federais = IRRF + CP + contribuições sociais compostas
+  // (a mesma conta do DANFSe local — retencao.compor, sem duplicar vRetCSLL).
+  const totFed = v(n.valor_irrf) + v(n.valor_inss) + v(n.valor_retido);
+  const mini=(r,x)=>`${r} ${v(x)>0?BRL(x):'—'}`;
+  const rets=[
+    linha('IRRF', n.valor_irrf),
+    linha('Contribuição Previdenciária - Retida', n.valor_inss),
+    linha('Contribuições Sociais - Retidas', vRetCSLL),
+    // Composição que o Fiscale usa (PIS/COFINS/CSLL retidos), sempre visível:
+    // vRetCSLL sozinho pode ser só a CSLL ou já o total.
+    `<tr class="comp"><td colspan="2">${mini('PIS',n.valor_pis)} · ${mini('COFINS',n.valor_cofins)} · ${mini('CSLL',n.valor_csll)}</td></tr>`,
+    // CONFERÊNCIA DOS 4,65% (Lei 10.833/2003): o valor lido fica como está; o
+    // alerta diz que ele não bate com a alíquota legal e quanto seria.
+    n.alerta_csrf ? `<tr><td colspan="2" style="color:#92400E;background:#FFFBEB;font-size:10px;padding:5px 8px">
+      ⚠ ${esc(n.alerta_csrf_msg||'Retenção fora dos 4,65%.')}</td></tr>` : '',
+    linha('PIS - Débito Apuração Própria', pisProprio),
+    linha('COFINS - Débito Apuração Própria', cofinsProprio),
+  ].join('');
+  const totais=[
+    linha('ISSQN Retido', n.iss_retido ? n.valor_iss_retido : 0),
+    linha('Total das Retenções Federais', totFed),
+    linha('PIS/COFINS - Débito Apur. Própria', pisProprio+cofinsProprio),
+  ].join('');
+  const somaRet=totFed+(n.iss_retido ? v(n.valor_iss_retido) : 0);
+
+  const dado=(r,v)=>`<dt>${r}</dt><dd>${v}</dd>`;
+  return `
+  <div class="vis-topo">
+    <div style="flex:1 1 auto;min-width:180px">
+      <div class="num">Nota ${esc(n.numero||'—')} ${sel}</div>
+      <div class="sub">${fmtComp(n.competencia)} · emitida em ${fmtData(n.data_emissao)}</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="navNota(-1)" ${visIdx<=0?'disabled':''} title="Nota anterior (←)">‹</button>
+    <span class="sub">${visIdx+1} de ${notasAtuais.length}</span>
+    <button class="btn btn-ghost btn-sm" onclick="navNota(1)" ${visIdx>=notasAtuais.length-1?'disabled':''} title="Próxima nota (→)">›</button>
+    <button class="modal-x" onclick="fecharNota()" title="Fechar (Esc)">✕</button>
+  </div>
+  ${tarja}
+  <div class="vis-corpo">
+    <div class="vis-pdf">${painelPdf}</div>
+    <div class="vis-lado">
+      <h3>Documento</h3>
+      <dl>
+        ${dado('Situação', esc(s))}
+        ${dado('Origem', esc(n.origem||'Portal Nacional'))}
+        ${dado('Chave', `<span style="font-size:9px;word-break:break-all">${esc(n.chave||'—')}</span>`)}
+      </dl>
+      <h3>${modo==='recebidas'?'Prestador':'Tomador'}</h3>
+      <dl>
+        ${dado('Nome', esc(modo==='recebidas'?(n.emit_nome||'—'):(n.toma_nome||'—')))}
+        ${dado('CNPJ/CPF', esc(modo==='recebidas'?(n.emit_cnpj||'—'):(n.toma_doc||'—')))}
+      </dl>
+      <h3>Valores</h3>
+      <dl>
+        ${dado('Serviço', BRL(n.valor_servico))}
+        ${dado('Líquido', BRL(n.valor_liquido))}
+      </dl>
+      <h3 data-secao="retencoes">Tributação federal ${somaRet>0?`<span class="selo sub" style="text-transform:none">retido ${BRL(somaRet)}</span>`:''}</h3>
+      <table class="vis-ret">${rets}</table>
+      <h3 data-secao="totais">Valor total da NFS-e</h3>
+      <table class="vis-ret">${totais}</table>
+      <div style="font-size:9.5px;color:var(--mut);margin-top:8px;line-height:1.45">
+        Valores lidos do XML da nota, que é o documento oficial. O PDF ao lado é
+        a representação dele.
+      </div>
+    </div>
+  </div>
+  <div class="vis-rodape">
+    ${temPdf?`<a class="btn btn-ghost btn-sm" id="visAbrirPdf" href="${urlPdf}" target="_blank" rel="noopener">↗ Abrir PDF em aba</a>`:''}
+    <a class="btn btn-ghost btn-sm" href="${urlXml}" download="NFSe-${n.chave||''}.xml">⤓ Baixar XML</a>
+    <span style="flex:1 1 auto"></span>
+    <span>Esc fecha · ← → navegam. Os filtros da busca continuam como estavam.</span>
+  </div>`;
+}
+
+// ── Tributos federais, na mesma tela das notas ─────────────────────────────
+// O quadro MUDA conforme o regime da empresa:
+//   Simples   → o tributo está dentro do DAS; aqui aparecem só as RETENÇÕES
+//               sofridas, que são o que se compensa e o que costuma passar batido;
+//   Presumido → PIS/COFINS do mês + IRPJ/CSLL do trimestre;
+//   Real      → PIS/COFINS do mês, marcado como débito bruto.
+/* ── ISS A RECOLHER ────────────────────────────────────────────────────────
+   O valor que vai para a guia municipal: ISS PRÓPRIO (saídas sem retenção de
+   não optante) + ISS RETIDO DE TERCEIROS (entradas em que a empresa reteve).
+   A regra é do backend (iss.py). Aparece só na aba de EMITIDAS — a aba de
+   serviços tomados não mostra apuração (a parcela retida de terceiros já está
+   no quadro de retenções de lá). */
+function quadroIss(d){
+  if(!d) return '';
+  const cel=(rot,val,sub)=>`<div class="fcel"><div class="frot">${rot}</div>
+    <div class="fval">${BRL(val)}</div>${sub?`<div class="frot" style="text-transform:none;font-weight:600;margin-top:2px">${sub}</div>`:''}</div>`;
+  const nn=q=>q+' nota'+(q===1?'':'s');
+  const muns=(d.por_municipio||[]).length>1
+    ? `<table class="ftab" style="margin-top:8px"><thead><tr><th>Município (IBGE)</th><th>Próprio</th><th>Retido</th><th>Guia</th></tr></thead><tbody>`+
+      d.por_municipio.map(m=>`<tr><td>${esc(m.municipio)}</td><td>${BRL(m.proprio)}</td><td>${BRL(m.retido_terceiros)}</td><td><b>${BRL(m.total)}</b></td></tr>`).join('')+
+      '</tbody></table>' : '';
+  return `<div class="iss" data-quadro="iss-a-recolher">
+    <div class="itit"><span>🏙 ISS a Recolher</span><span class="itot">${BRL(d.total)}</span></div>
+    <div class="fgrade">
+      ${cel('ISS próprio', d.proprio, nn(d.qtd_notas_proprio)+' de saída sem retenção')}
+      ${cel('ISS retido de terceiros', d.retido_terceiros, nn(d.qtd_notas_retido)+' de entrada retida pela empresa')}
+    </div>
+    ${muns}
+    ${(d.avisos||[]).map(a=>`<div class="iobs">⚠ ${esc(a)}</div>`).join('')}
+  </div>`;
+}
+
+async function carregarIss(){
+  const box=$('#issBox'); if(!box||!certSel) return;
+  box.innerHTML='';
+  const di=$('#dataIni').value, df=$('#dataFim').value, base=$('#baseData').value;
+  if(!di && !df) return;
+  if(modo!=='emitidas') return;          // entrada não tem apuração (ver acima)
+  const papel=modo;
+  let d;
+  try{
+    const r=await fetch(`/api/iss-recolher?id=${encodeURIComponent(certSel)}`+
+                        `&data_ini=${di||''}&data_fim=${df||''}&base_data=${base||'emissao'}`);
+    if(!r.ok) return;
+    d=await r.json();
+  }catch(e){ return; }
+  if(papel!==modo) return;
+  box.innerHTML=quadroIss(d);
+}
+
+/* O quadro tributário de uma aba de notas RECEBIDAS (serviços tomados).
+   Serviço tomado é despesa: aqui NUNCA há DAS, PIS/COFINS, IRPJ ou CSLL sobre
+   faturamento. Só as retenções na fonte que a empresa fez como tomadora — e,
+   sem nenhuma, string vazia: a seção fica limpa. */
+function quadroRetencoesEntrada(d){
+  if(!d || !d.tem_retencao) return '';
+  const ret=d.retencoes||{};
+  const itens=[['Contrib. sociais (CSRF)',ret.csrf],['IRRF',ret.irrf],
+               ['INSS retido',ret.inss],['ISS retido',ret.iss]].filter(x=>(x[1]||0)>0);
+  if(!itens.length) return '';
+  return `<div class="fed fed-simples" data-quadro="retencoes-entrada">
+    <div class="ftit"><span>🧾 Retenções na fonte — serviços tomados</span>
+      <span class="ftot">${BRL(d.total_retido)}</span></div>
+    <div class="fgrade">${itens.map(x=>`<div class="fcel">
+      <div class="frot">${x[0]}</div><div class="fval">${BRL(x[1])}</div></div>`).join('')}</div>
+    <div class="fobs">Valores retidos pela empresa, como <b>tomadora</b>, ao pagar
+      ${d.qtd_notas_com_retencao} nota${d.qtd_notas_com_retencao===1?'':'s'} do período.
+      Não é apuração sobre faturamento — conferir o recolhimento de cada retenção.</div>
+  </div>`;
+}
+
+async function carregarFederal(){
+  const box=$('#fedBox'); if(!box||!certSel) return;
+  box.innerHTML='';
+  const di=$('#dataIni').value, df=$('#dataFim').value, base=$('#baseData').value;
+  if(!di && !df) return;
+  // O papel é FIXADO no início: se a pessoa trocar de aba enquanto a resposta
+  // viaja, o quadro que chegar não pode cair na aba errada.
+  const papel=modo;
+  let d;
+  try{
+    const r=await fetch(`/api/federal-empresa?id=${encodeURIComponent(certSel)}`+
+                        `&data_ini=${di||''}&data_fim=${df||''}`+
+                        `&papel=${papel}&base_data=${base||'emissao'}`);
+    if(!r.ok) return;
+    d=await r.json();
+  }catch(e){ return; }
+  if(papel!==modo) return;
+
+  // ── NOTA DE ENTRADA: só retenções, ou nada. Nunca a apuração. ──────────
+  if(papel==='recebidas'){
+    box.innerHTML = d.papel==='recebidas' ? quadroRetencoesEntrada(d) : '';
+    return;
+  }
+  if(!d.meses || !d.meses.length) return;
+
+  const ret=d.retencoes||{};
+  const somaRet=(ret.pis||0)+(ret.cofins||0)+(ret.csll||0)+(ret.irrf||0);
+  const cel=(rot,val,cls)=>`<div class="fcel ${cls||''}">
+      <div class="frot">${rot}</div><div class="fval">${BRL(val)}</div></div>`;
+
+  // ── Simples: só retenções ────────────────────────────────────────────────
+  if(d.regime==='simples' || d.regime==='mei'){
+    if(somaRet<=0) return;                       // nada retido: não polui a tela
+    box.innerHTML=`<div class="fed fed-simples">
+      <div class="ftit"><span>🧾 Retenções sofridas no período</span>
+        <span class="ftot">${BRL(somaRet)}</span></div>
+      <div class="fgrade">
+        ${cel('PIS retido', ret.pis)}
+        ${cel('COFINS retido', ret.cofins)}
+        ${cel('CSLL retida', ret.csll)}
+        ${cel('IRRF retido', ret.irrf)}
+      </div>
+      <div class="fobs">A empresa é do <b>Simples Nacional</b>: PIS, COFINS, CSLL e IRPJ já estão
+        <b>dentro do DAS</b>, não se paga por fora. Estes valores foram <b>retidos na fonte</b> pelos
+        tomadores e podem ser deduzidos no PGDAS-D como retenção — conferir contra os comprovantes.</div>
+    </div>`;
+    return;
+  }
+
+  // ── Presumido / Real ─────────────────────────────────────────────────────
+  const t=d.totais||{};
+  const real = d.regime==='real';
+  const rotulo = real ? 'Lucro Real' : 'Lucro Presumido';
+  const linhasMes=d.meses.map(m=>`<tr>
+      <td>${fmtComp(m.competencia)}</td>
+      <td class="num">${BRL(m.receita)}</td>
+      <td class="num">${BRL(m.pis_devido||0)}<div class="fmini">${((m.aliquota_pis||0)*100).toFixed(2)}%</div></td>
+      <td class="num">${m.retido_pis?BRL(m.retido_pis):'—'}</td>
+      <td class="num tot">${BRL(m.pis_a_pagar||0)}</td>
+      <td class="num">${BRL(m.cofins_devido||0)}<div class="fmini">${((m.aliquota_cofins||0)*100).toFixed(2)}%</div></td>
+      <td class="num">${m.retido_cofins?BRL(m.retido_cofins):'—'}</td>
+      <td class="num tot">${BRL(m.cofins_a_pagar||0)}</td>
+    </tr>`).join('');
+
+  const blocoTri = (d.trimestres||[]).length ? `
+    <div class="ftit" style="margin-top:12px"><span>📐 IRPJ e CSLL — trimestral</span>
+      <span class="ftot">${BRL((t.irpj_a_pagar||0)+(t.csll_a_pagar||0))}</span></div>
+    <table class="ftab"><thead><tr><th>Trimestre</th><th class="num">Receita</th>
+      <th class="num">Base IRPJ</th><th class="num">IRPJ</th><th class="num">IRRF</th><th class="num">IRPJ a pagar</th>
+      <th class="num">CSLL</th><th class="num">Retida</th><th class="num">CSLL a pagar</th></tr></thead><tbody>
+      ${d.trimestres.map(q=>`<tr>
+        <td><b>${q.trimestre}º/${q.ano}</b>${q.presuncao_padrao?'<div class="fmini" style="color:#9a3412">presunção padrão</div>':''}</td>
+        <td class="num">${BRL(q.receita_bruta)}</td>
+        <td class="num">${BRL(q.base_irpj)}<div class="fmini">${q.presuncao_irpj}%</div></td>
+        <td class="num">${BRL(q.irpj_devido)}${q.irpj_adicional>0?`<div class="fmini" style="color:#9a3412">+${BRL(q.irpj_adicional)} adic.</div>`:''}</td>
+        <td class="num">${q.retido_irrf?BRL(q.retido_irrf):'—'}</td>
+        <td class="num tot">${BRL(q.irpj_a_pagar)}</td>
+        <td class="num">${BRL(q.csll_devido)}<div class="fmini">${q.presuncao_csll}%</div></td>
+        <td class="num">${q.retido_csll?BRL(q.retido_csll):'—'}</td>
+        <td class="num tot">${BRL(q.csll_a_pagar)}</td></tr>`).join('')}
+    </tbody></table>
+    <div class="fobs">IRPJ e CSLL do Presumido são <b>trimestrais</b> (Lei 9.430/1996, art. 1º) —
+      entram no MIT do mês que fecha o trimestre, não todo mês.</div>` : '';
+
+  box.innerHTML=`<div class="fed ${real?'fed-real':'fed-pres'}">
+    <div class="ftit"><span>🏛 ${rotulo} — PIS e COFINS mensais</span>
+      <span class="ftot">${BRL((t.pis_a_pagar||0)+(t.cofins_a_pagar||0))}</span></div>
+    <table class="ftab"><thead><tr><th>Competência</th><th class="num">Receita</th>
+      <th class="num">PIS devido</th><th class="num">Retido</th><th class="num">PIS a pagar</th>
+      <th class="num">COFINS devido</th><th class="num">Retido</th><th class="num">COFINS a pagar</th>
+      </tr></thead><tbody>${linhasMes}</tbody></table>
+    ${blocoTri}
+    ${real?`<div class="falerta"><b>Lucro Real: este é o débito bruto.</b> Os créditos de PIS/COFINS
+      que não vêm de nota fiscal — energia, aluguel, depreciação, arrendamento, mão de obra — não estão
+      descontados, porque o Fiscale não os enxerga. IRPJ e CSLL saem do lucro contábil ajustado no
+      LALUR e não são apurados aqui.</div>`:''}
+    <div class="fobs">Valores <b>para conferência</b>, alimentando o <b>MIT</b> da DCTFWeb —
+      que vence no último dia útil do mês seguinte. Quem declara e responde é você.</div>
+  </div>`;
+}
+
+// ── DAS estimado, na mesma tela das notas ──────────────────────────────────
+// Usa o mesmo motor do módulo Classificador. A configuração da empresa
+// (Fator R / Folha / meses informados) vem de lá; aqui é só leitura.
+// Mesmo parser do módulo Classificador (web/classificador.html) — os dois
+// precisam ler os meses informados igual, senão o DAS diverge entre as telas.
+// "15.000" em pt-BR é QUINZE MIL; parseFloat leria 15 e o RBT12 sairia mil vezes
+// menor, sem aviso nenhum.
+function _numBR(s){
+  let t=String(s||'').trim().replace(/\s|R\$/g,'');
+  if(!t) return null;
+  if(t.includes(',')) t=t.replace(/\./g,'').replace(',','.');
+  else if(/^-?\d{1,3}(\.\d{3})+$/.test(t)) t=t.replace(/\./g,'');
+  const v=parseFloat(t); return isNaN(v)?null:v;
+}
+function _manuaisDoTexto(txt){
+  const out={};
+  (txt||'').split(/\n+/).forEach(l=>{
+    const m=l.trim().match(/^(\d{1,2})[\/\-](\d{4})\s*[;= ]\s*(.+)$/) || l.trim().match(/^(\d{4})-(\d{2})\s*[;= ]\s*(.+)$/);
+    if(!m) return;
+    const comp = m[1].length===4 ? m[1]+'-'+m[2] : m[2]+'-'+String(m[1]).padStart(2,'0');
+    const v=_numBR(m[3]);
+    if(v!==null) out[comp]=v;
+  });
+  return out;
+}
+/* ===== Outras cidades — histórico municipal ===== */
+let cidadesCache=null, cidadeSel=null;
+
+/* Busca automática do que falta: ao escolher a empresa, o sistema descobre a
+   cidade dela e os meses vazios do RBT12, e já deixa o download a um clique —
+   com o período certo preenchido. */
+async function verificarPendencias(){
+  const box=$('#pendBox'); if(!box || !certSel) return;
+  const daEmpresa=certSel;                       // pode trocar durante a consulta
+  box.classList.remove('hidden');
+  box.innerHTML='<div style="font-size:10.5px;color:var(--muted);padding:4px 2px">⏳ Verificando o que falta no RBT12…</div>';
+  try{
+    const r=await api('/api/prefeituras/pendencias?id='+encodeURIComponent(daEmpresa));
+    if(daEmpresa!==certSel) return;              // trocou de empresa: descarta
+    if(!r.ok){ box.classList.add('hidden'); return; }
+    const c=r.cidade, n=(r.buscaveis||[]).length, vaz=(r.meses_vazios||[]).length;
+    if(!vaz){ box.classList.add('hidden'); box.innerHTML=''; return; }  // RBT12 completo
+    const mes=x=>x.slice(5)+'/'+x.slice(0,4);
+    if(c && c.pronto && n){
+      const p=r.periodo_sugerido;
+      box.innerHTML=`<div style="border:1px solid #F0DCA8;background:#FDF8EC;border-radius:11px;padding:11px 13px">
+        <div style="font-size:11px;font-weight:700;color:#7a5a10">
+          ⚠ Faltam ${vaz} mês(es) no RBT12 — ${n} pode(m) vir da prefeitura de ${c.nome}</div>
+        <div style="font-size:10.5px;color:#7a5a10;margin-top:3px">
+          ${mes(r.buscaveis[0])} a ${mes(r.buscaveis[r.buscaveis.length-1])} ·
+          ${c.provedor}${c.testado?'':' · <b>não testado ainda</b>'}
+          ${c.aderiu_nacional?` · a partir de ${mes(c.aderiu_nacional)} a NFS-e Nacional já traz`:''}</div>
+        <button class="btn btn-primary" style="margin-top:9px;font-size:11px;padding:7px 12px"
+          onclick="prepararBusca('${c.ibge}','${p.ini}','${p.fim}')">⬇ Buscar esses meses em ${c.nome}</button>
+      </div>`;
+    }else{
+      const motivo = !c ? 'não identifiquei o município das notas'
+        : (!c.pronto ? `o download de ${c.nome} ainda não está disponível` : 'nada anterior à adesão ao nacional');
+      box.innerHTML=`<div style="border:1px solid var(--borda);background:#F7F9FA;border-radius:11px;padding:10px 12px;
+        font-size:10.5px;color:var(--muted)">⚠ Faltam <b>${vaz} mês(es)</b> no RBT12, mas ${motivo}.
+        Informe as receitas desses meses no <b>Classificador</b> para o DAS sair correto.</div>`;
+    }
+  }catch(e){
+    // falhar aqui não pode travar a tela, mas também não some sem dizer nada
+    box.innerHTML=`<div style="font-size:10.5px;color:var(--muted);padding:4px 2px">
+      Não consegui verificar o RBT12 agora (${e.message||'falha'}).</div>`;
+  }
+}
+/* Atalhos de período da sub-tela de cidades — mesmo comportamento dos atalhos
+   das outras pesquisas (mês anterior relativo ao "De", ano inteiro). Aqui não
+   dispara consulta: baixar da prefeitura é ação explícita, no botão Baixar. */
+function cidMesAnterior(){
+  const ref=($('#cid_ini').value||'').slice(0,7) || isoLocal(new Date()).slice(0,7);
+  let [y,m]=ref.split('-').map(Number);
+  m--; if(m===0){ m=12; y--; }
+  const mm=String(m).padStart(2,'0'), ult=new Date(y,m,0).getDate();
+  $('#cid_ini').value=`${y}-${mm}-01`;
+  $('#cid_fim').value=`${y}-${mm}-${String(ult).padStart(2,'0')}`;
+}
+function cidAno(delta){
+  const y=new Date().getFullYear()+delta;
+  $('#cid_ini').value=`${y}-01-01`; $('#cid_fim').value=`${y}-12-31`;
+}
+// Do início do ano anterior até o mês em que a cidade entrou no nacional — que
+// é exatamente o buraco que a prefeitura precisa cobrir.
+function cidAteAdesao(){
+  if(!cidadeSel || !cidadeSel.aderiu_nacional){ cidAno(-1); return; }
+  const [ay,am]=cidadeSel.aderiu_nacional.split('-').map(Number);
+  let y=ay, m=am-1; if(m===0){ m=12; y--; }
+  const mm=String(m).padStart(2,'0'), ult=new Date(y,m,0).getDate();
+  $('#cid_ini').value=`${y-1}-01-01`;
+  $('#cid_fim').value=`${y}-${mm}-${String(ult).padStart(2,'0')}`;
+}
+
+async function prepararBusca(ibge, ini, fim){
+  if(!cidadesCache) await carregarCidades();
+  $('#cidadesBox').classList.remove('hidden');
+  $('#btnCidades').textContent='ocultar ▴';
+  escolherCidade(ibge);
+  $('#cid_ini').value=ini; $('#cid_fim').value=fim;
+  $('#cidadeForm').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function toggleCidades(){
+  const bx=$('#cidadesBox'), abrir=bx.classList.contains('hidden');
+  bx.classList.toggle('hidden', !abrir);
+  $('#btnCidades').textContent = abrir ? 'ocultar ▴' : 'ver cidades ▾';
+  if(abrir && !cidadesCache) carregarCidades();
+}
+async function carregarCidades(){
+  try{
+    const r=await api('/api/prefeituras');
+    cidadesCache=r.cidades||[];
+    $('#cidadesLista').innerHTML = cidadesCache.map(c=>{
+      const nac=c.aderiu_nacional ? `nacional desde ${c.aderiu_nacional.slice(5)}/${c.aderiu_nacional.slice(0,4)}` : '';
+      const selo = c.pronto ? '<span style="font-size:9.5px;font-weight:700;color:#0F8A5F">· download direto</span>'
+                 : (c.importa_xml ? '<span style="font-size:9.5px;font-weight:700;color:#0E7490">· importar XML do portal</span>'
+                                  : '<span style="font-size:9.5px;font-weight:700;color:#B07D10">· sem caminho ainda</span>');
+      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--borda);
+                border-radius:10px;margin-bottom:7px;background:${c.tem_caminho?'#F4FBF7':'#FAFBFB'}">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:11.5px">${c.nome}/${c.uf} ${selo}</div>
+          <div class="muted" style="font-size:10.5px">${c.provedor} · ${c.layout}${nac?' · '+nac:''}</div>
+          ${c.observacao?`<div class="muted" style="font-size:10px;color:#9a3412;margin-top:3px">⚠ ${c.observacao}</div>`:''}
+        </div>
+        ${c.tem_caminho?`<button class="btn" style="font-size:11px;padding:6px 11px" onclick="escolherCidade('${c.ibge}')">usar</button>`:''}
+      </div>`;
+    }).join('');
+  }catch(e){ $('#cidadesLista').innerHTML=`<p class="muted">${e.message}</p>`; }
+}
+/* Procurador: quem assina a consulta na prefeitura. Muitas prefeituras só
+   liberam as notas a quem tem procuração — então o certificado que autentica
+   pode ser o do CONTADOR (e-CPF), enquanto as notas são as da empresa. */
+function preencherProcuradores(){
+  const sel=$('#cid_proc'); if(!sel) return;
+  const proc=(certs||[]).filter(c=>c.procurador);
+  const pj=(certs||[]).filter(c=>!c.procurador && c.id!==certSel);
+  sel.innerHTML='<option value="">a própria empresa (certificado dela)</option>'
+    + (proc.length?`<optgroup label="Procuradores (e-CPF)">`
+        + proc.map(c=>`<option value="${c.id}">${c.apelido?c.apelido+' — ':''}${c.nome}</option>`).join('')
+        + '</optgroup>':'')
+    + (pj.length?`<optgroup label="Outros certificados (e-CNPJ)">`
+        + pj.map(c=>`<option value="${c.id}">${c.apelido?c.apelido+' — ':''}${c.nome}</option>`).join('')
+        + '</optgroup>':'');
+  // Lembra a escolha por empresa. Se ainda não houver escolha e existir um
+  // procurador cadastrado, já vem selecionado — no escritório o acesso à
+  // prefeitura é pela procuração, não pelo certificado de cada empresa.
+  const salvo=localStorage.getItem('proc_'+certSel);
+  if(salvo && [...sel.options].some(o=>o.value===salvo)) sel.value=salvo;
+  else if(!salvo && proc.length===1 && proc[0].id!==certSel) sel.value=proc[0].id;
+  aoTrocarProcurador();
+}
+function aoTrocarProcurador(){
+  const v=$('#cid_proc').value;
+  $('#cid_procSenhaBox').style.display = v ? 'block' : 'none';
+  if(certSel){ v ? localStorage.setItem('proc_'+certSel, v) : localStorage.removeItem('proc_'+certSel); }
+  const c=(certs||[]).find(x=>x.id===v);
+  if(c) $('#cid_procSenha').placeholder = c.senha_salva ? 'salva ✓ — deixe em branco' : 'digite a senha';
+}
+
+function escolherCidade(ibge){
+  cidadeSel=(cidadesCache||[]).find(c=>c.ibge===ibge);
+  if(!cidadeSel) return;
+  preencherProcuradores();
+  const ate = cidadeSel.aderiu_nacional
+    ? `${cidadeSel.aderiu_nacional.slice(5)}/${cidadeSel.aderiu_nacional.slice(0,4)}` : '';
+  // cidade cujo portal exporta XML: mostra a área de soltar, não o download
+  if(cidadeSel.importa_xml && !cidadeSel.pronto){
+    $('#cidadeForm').classList.add('hidden');
+    $('#cidadeImport').classList.remove('hidden');
+    $('#importInfo').innerHTML =
+      `<b>${cidadeSel.nome}</b> (${cidadeSel.provedor}) não libera consulta por certificado, mas o portal
+       <b>exporta os XML</b>. No portal: <b>NFS-e Antiga → XML Notas</b>, baixe o período
+       ${ate?`<b>anterior a ${ate}</b>`:'que falta'} e solte os arquivos abaixo.`;
+    return;
+  }
+  $('#cidadeImport').classList.add('hidden');
+  $('#cidadeForm').classList.remove('hidden');
+  $('#cid_im').placeholder = cidadeSel.im_obrigatoria ? 'obrigatória nesta cidade' : 'opcional';
+  const st=$('#cid_status'); st.classList.remove('hidden');
+  st.className='status-op'; st.innerHTML=`Cidade escolhida: <b>${cidadeSel.nome}</b> (${cidadeSel.provedor}).`
+    + (ate?` Baixe o período <b>anterior a ${ate}</b> — o resto já vem pela NFS-e Nacional.`:'');
+}
+
+/* ── Importar os XML que o portal da prefeitura exporta ── */
+function soltarXmlMunicipal(ev){
+  ev.preventDefault(); ev.currentTarget.style.borderColor='var(--borda)';
+  enviarXmlMunicipal([...ev.dataTransfer.files].filter(f=>/\.(xml|zip)$/i.test(f.name)));
+}
+function escolherXmlMunicipal(ev){ enviarXmlMunicipal([...ev.target.files]); ev.target.value=''; }
+function _lerArqMun(f){
+  return new Promise(res=>{
+    const r=new FileReader();
+    if(/\.zip$/i.test(f.name)){ r.onload=()=>res({nome:f.name, zip:String(r.result)}); r.readAsDataURL(f); }
+    else { r.onload=()=>res({nome:f.name, xml:r.result}); r.readAsText(f); }
+    r.onerror=()=>res(null);
+  });
+}
+async function enviarXmlMunicipal(files){
+  const st=$('#imp_status'); st.classList.remove('hidden');
+  if(!certSel){ st.className='status-op err'; st.textContent='Selecione a empresa primeiro.'; return; }
+  if(!files.length){ st.className='status-op err'; st.textContent='Solte arquivos .xml ou .zip.'; return; }
+  st.className='status-op load'; st.textContent=`⏳ Lendo ${files.length} arquivo(s)...`;
+  try{
+    const arquivos=(await Promise.all(files.map(_lerArqMun))).filter(Boolean);
+    const r=await api('/api/prefeituras/importar-xml',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id:certSel, arquivos})});
+    const comps=Object.entries(r.competencias||{});
+    st.className='status-op ok';
+    st.innerHTML=`✓ <b>${r.importadas}</b> nota(s) importada(s) de ${r.lidos} arquivo(s).`
+      + (r.repetidas?` ${r.repetidas} já existiam.`:'')
+      + (r.de_outra_empresa?` <b>${r.de_outra_empresa}</b> eram de outra empresa (ignoradas).`:'')
+      + (r.invalidos?` ${r.invalidos} não são NFS-e.`:'')
+      + (comps.length?`<br><span class="muted">Competências: ${comps.map(([c,q])=>`${c.slice(5)}/${c.slice(0,4)} (${q})`).join(' · ')}</span>`:'')
+      + `<br><span class="muted">Já entram no RBT12 e no DAS.</span>`;
+    if(r.importadas){ await carregarDas(); verificarPendencias(); }
+  }catch(e){ st.className='status-op err'; st.textContent=e.message; }
+}
+async function baixarCidade(){
+  if(!cidadeSel){ return; }
+  if(!certSel){ return; }
+  const ini=$('#cid_ini').value, fim=$('#cid_fim').value;
+  const st=$('#cid_status'); st.classList.remove('hidden');
+  if(!ini || !fim){ st.className='status-op err'; st.textContent='Informe o período (De / Até).'; return; }
+  const b=$('#btnCidBaixar'); b.disabled=true; const t0=b.textContent; b.textContent='Baixando...';
+  st.className='status-op load'; st.textContent=`⏳ Consultando a prefeitura de ${cidadeSel.nome}...`;
+  try{
+    const r=await api('/api/prefeituras/sincronizar',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id:certSel, ibge:cidadeSel.ibge, data_ini:ini, data_fim:fim,
+        senha:$('#cid_senha').value||null, inscricao_municipal:$('#cid_im').value||null,
+        cert_procurador:$('#cid_proc').value||null,
+        senha_procurador:$('#cid_procSenha').value||null})});
+    if(!r.ok){
+      st.className='status-op err';
+      st.innerHTML = `<b>${r.erro||'Não foi possível baixar.'}</b>`
+        + ((r.detalhes||[]).length ? `<br><span style="font-size:10.5px">${r.detalhes.join('<br>')}</span>` : '')
+        + (r.dica ? `<br><span style="font-size:10.5px;opacity:.85">${r.dica}</span>` : '');
+      return;
+    }
+    st.className='status-op ok';
+    st.innerHTML=`✓ ${r.cidade}: <b>${r.baixadas}</b> nota(s) lida(s), <b>${r.novas}</b> nova(s) — total guardado ${r.total}.`
+      + (r.mensagens&&r.mensagens.length?`<br><span class="muted">${r.mensagens.join(' · ')}</span>`:'')
+      + '<br><span class="muted">Entram no RBT12 do Classificador nos meses em que a base nacional não tem nota.</span>';
+    $('#cid_senha').value=''; $('#cid_procSenha').value='';
+    verificarPendencias();
+  }catch(e){ st.className='status-op err'; st.textContent=e.message; }
+  finally{ b.disabled=false; b.textContent=t0; }
+}
+
+/* Preenche o RBT12 sem sair desta tela. Grava na MESMA configuração que o
+   Classificador usa (state 'classificador' → cfgs[cnpj].manuais), então os dois
+   módulos passam a ver o mesmo RBT12 — não existe "o valor daqui" e "o de lá". */
+async function salvarRbt12(){
+  const msg=$('#rbtFixMsg'); if(!certSel) return;
+  const campos=[...document.querySelectorAll('.rbtFix')];
+  const novos={};
+  campos.forEach(i=>{
+    const v=parseFloat((i.value||'').replace(/\./g,'').replace(',','.'));
+    if(v>0) novos[i.dataset.comp]=v;
+  });
+  if(!Object.keys(novos).length){ msg.style.color='#B3382C'; msg.textContent='Informe ao menos um valor.'; return; }
+  msg.style.color='var(--muted)'; msg.textContent='⏳ Salvando...';
+  try{
+    const st=await fetch('/api/state/classificador').then(r=>r.ok?r.json():null) || {};
+    const cfgs=st.cfgs||{};
+    const c=cfgs[certSel]||{fatorR:false,folha12m:'',anexoServico:'',issFixo:false,manuais:'',lancamentos:[]};
+    // formato do Classificador: uma linha "MM/AAAA valor"
+    const linhas=(c.manuais||'').split('\n').filter(x=>x.trim());
+    const jaTem=new Set(linhas.map(l=>{
+      const m=l.match(/(\d{2})\/(\d{4})/); return m?`${m[2]}-${m[1]}`:''; }));
+    Object.entries(novos).forEach(([comp,v])=>{
+      if(jaTem.has(comp)) return;
+      linhas.push(`${comp.slice(5)}/${comp.slice(0,4)} ${v.toFixed(2)}`);
+    });
+    c.manuais=linhas.join('\n');
+    cfgs[certSel]=c;
+    await fetch('/api/state/classificador',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({...st, cfgs})});
+    msg.style.color='var(--ok)';
+    msg.textContent=`✓ ${Object.keys(novos).length} mês(es) salvo(s) — recalculando o DAS...`;
+    await carregarDas();          // reflete na hora, com o RBT12 completo
+    verificarPendencias();
+  }catch(e){ msg.style.color='#B3382C'; msg.textContent=e.message||'Falha ao salvar.'; }
+}
+
+async function carregarDas(){
+  const box=$('#dasBox'); if(!box) return;
+  box.innerHTML='';
+  if(modo!=='emitidas' || !certSel) return;   // DAS = receita = notas emitidas
+  let cfg={};
+  try{ const st=await fetch('/api/state/classificador').then(r=>r.ok?r.json():null);
+    if(st && st.cfgs && st.cfgs[certSel]) cfg=st.cfgs[certSel];
+  }catch(e){}
+  try{
+    // Manda a configuração INTEIRA do Classificador — inclusive os lançamentos de
+    // receita sem nota (aluguel). Se faltar qualquer campo aqui, esta tela mostra
+    // um DAS diferente do Classificador para a mesma empresa.
+    const r=await fetch('/api/classificador',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id:certSel, data_ini:$('#dataIni').value||null, data_fim:$('#dataFim').value||null,
+        fator_r:!!cfg.fatorR, folha12m:cfg.folha12m?parseFloat(cfg.folha12m):null,
+        anexo_servico:cfg.anexoServico||null, iss_fixo:!!cfg.issFixo,
+        // regime vazio de propósito: quem manda é o cadastro do Clientes
+        regime:cfg.regime||null, inicio_atividade:cfg.inicioAtividade||null,
+        receitas_manuais:_manuaisDoTexto(cfg.manuais),
+        lancamentos:cfg.lancamentos||[]})});
+    if(!r.ok) return;
+    const d=await r.json();
+    // Fora do Simples não existe DAS. Em vez de sumir com o quadro (o que
+    // deixaria a dúvida "cadê o DAS?"), dizer por que ele não está aqui.
+    // Fora do Simples não existe DAS: o quadro sai da tela inteiro. O regime
+    // já fica evidente no quadro de tributos federais logo abaixo — repetir
+    // aqui só ocuparia espaço com informação que não serve para esta empresa.
+    if(d.regime==='presumido' || d.regime==='real'){ box.innerHTML=''; return; }
+    if(!d.das || !d.das.length) return;
+    const fmtC=c=>c?c.slice(5,7)+'/'+c.slice(0,4):'';
+    let total=0, semAnexo=0, linhas=[], faltando=new Set();
+    // Competência de fora da janela pesquisada (nota emitida num mês com
+    // competência de outro) não entra no total — senão o número parece somar o
+    // mês anterior. Fica visível na tabela, marcada.
+    const fora=d.das.filter(m=>m.fora_do_periodo);
+    const totalFora=fora.reduce((s,m)=>s+(m.das_estimado||0),0);
+    d.das.forEach(m=>{
+      if(!m.fora_do_periodo) total+=m.das_estimado||0;
+      (m.rbt12_sem_dados||[]).forEach(x=>faltando.add(x));
+      m.linhas.forEach((l,i)=>{
+        const ok=l.efetiva!=null;
+        if(!ok) semAnexo+=l.receita||0;   // receita fora do total abaixo
+        linhas.push(`<tr class="${ok?'':'semanexo'}${m.fora_do_periodo?' foraper':''}"><td>${i===0?'<b>'+fmtC(m.competencia)+'</b>'+(m.fora_do_periodo?' <span class="fflag" title="Competência fora do período pesquisado — não entra no total">fora</span>':''):''}</td>
+          <td class="num">${i===0?BRL(m.rbt12):''}</td>
+          <td>${l.anexo}${l.iss_retido?` <span style="font-size:9px" title="${(l.motivo||'ISS fora do DAS').replace(/"/g,'')}">(${/fixo/i.test(l.motivo||'')?'ISS fixo':'ISS ret.'})</span>`:''}</td>
+          <td class="num">${l.faixa?l.faixa+'ª':'—'}</td>
+          <td class="num">${BRL(l.receita)}</td>
+          <td class="num">${ok?(l.efetiva*100).toFixed(4)+'%':'—'}</td>
+          <td class="num tot">${ok?BRL(l.das):'—'}</td></tr>`);
+      });
+    });
+    // Início de atividade: o RBT12 é proporcional (média × 12), não a soma dos
+    // meses. Sem dizer isso, o número parece errado — é maior que a receita real
+    // acumulada, e é assim que a lei manda.
+    const blocoFora = fora.length ? `
+      <div class="alerta" style="background:#F1F5F9;border-color:#CBD5E1;color:#334155">
+        <b>Competência fora do período:</b> ${fora.map(m=>fmtC(m.competencia)).join(', ')}
+        (${BRL(totalFora)}) — <b>não somada</b> ao total acima.<br>
+        Alguma nota do período pesquisado tem competência de outro mês (substituta
+        emitida no mês seguinte, ou serviço faturado depois). O DAS daquele mês
+        aparece aqui para conferência, mas pertence à apuração dele.
+      </div>` : '';
+    const prop=d.das.map(m=>m.rbt12_proporcional).find(Boolean);
+    const blocoProp = prop ? `
+      <div class="alerta" style="background:#EFF6FF;border-color:#BFDBFE;color:#1E40AF">
+        <b>ℹ️ Início de atividade — RBT12 proporcional.</b>
+        A empresa ainda não tem 12 meses de histórico, então o RBT12 é a
+        <b>média mensal × 12</b>, e não a soma do que foi faturado
+        (${prop.regra}).<br>
+        Média de ${prop.meses_considerados} ${prop.meses_considerados===1?'mês':'meses'}:
+        <b>${BRL(prop.media_mensal)}</b> × 12.
+        Somar direto deixaria a alíquota mais baixa e o DAS menor que o devido.
+      </div>` : '';
+    const avisos=[];
+    if(semAnexo) avisos.push(`<b>O total abaixo está incompleto.</b> ${BRL(semAnexo)} de receita está em `+
+      `serviço(s) sem Anexo definido (linhas "CONFIGURAR") e não entrou na conta. `+
+      `Defina o Anexo no módulo <b>Classificador</b> para fechar o valor.`);
+    // RBT12 furado deixa o DAS MENOR que o devido — isso não pode ser um aviso
+    // discreto no meio dos outros. Vira bloco próprio, com os campos para
+    // preencher ali mesmo (grava na mesma configuração do Classificador).
+    const falt=[...faltando].sort();
+    const blocoFalta = falt.length ? `
+      <div class="alerta" style="background:#FDECEC;border-color:#F0B4B4">
+        <b>⛔ O DAS acima está MENOR que o real.</b> O RBT12 não tem receita de
+        <b>${falt.map(fmtC).join(', ')}</b> — sem esses meses a faixa cai e a alíquota sai baixa.
+        <div style="margin-top:9px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
+          ${falt.map(m=>`<div style="flex:0 0 118px">
+            <label style="font-size:9.5px;display:block;margin-bottom:2px">${fmtC(m)}</label>
+            <input class="rbtFix" data-comp="${m}" placeholder="0,00"
+              style="width:100%;font-size:11px;padding:6px 8px;border:1px solid var(--borda);border-radius:8px"></div>`).join('')}
+          <button class="btn btn-primary" style="font-size:11px;padding:7px 12px" onclick="salvarRbt12()">✓ Salvar e recalcular</button>
+        </div>
+        <div style="font-size:10px;margin-top:6px">Os valores estão no <b>PGDAS-D</b> que você declarou naqueles meses.
+          Digita uma vez e fica salvo — vale para o Classificador também.
+          Se a cidade tiver download, use <b>🏛 Outras cidades</b> acima e o preenchimento é automático.</div>
+        <div id="rbtFixMsg" style="font-size:10.5px;margin-top:5px"></div>
+      </div>` : '';
+    box.innerHTML=`<div class="das-faixa${semAnexo||falt.length?' parcial':''}">
+      <div class="tit"><span>💰 Simples Nacional — Prévia do DAS</span>
+        <span class="tot">Total no período: ${BRL(total)}${semAnexo||falt.length?' <span class="pflag">⚠ parcial</span>':''}</span></div>
+      <table><thead><tr><th>Competência</th><th class="num">RBT12 (12m ant.)</th><th>Anexo</th>
+        <th class="num">Faixa</th><th class="num">Receita</th><th class="num">Alíq. efetiva</th>
+        <th class="num">DAS</th></tr></thead><tbody>${linhas.join('')}</tbody></table>
+      ${blocoFora}
+      ${blocoProp}
+      ${blocoFalta}
+      ${avisos.length?`<div class="alerta">⚠️ ${avisos.join('<br>⚠️ ')}</div>`:''}
+      <div class="obs"><b>Prévia para conferência — não substitui o PGDAS-D.</b>
+        O valor oficial só se constitui na transmissão do <b>PGDAS-D</b>, que tem
+        caráter declaratório e vale como confissão de dívida.
+        Fórmula oficial [(RBT12 × Alíq) − PD] ÷ RBT12, com o RBT12 dos 12 meses anteriores.
+        Ajuste Fator R, Folha e histórico no módulo <b>Classificador</b>.<br>
+        Cada competência acima é calculada sobre <b>o mês inteiro</b> — por isso a receita aqui
+        pode não bater com o total das notas listadas abaixo, que segue o período pesquisado.</div>
+    </div>`;
+  }catch(e){}
+}
+
+// ── Baixar PDFs em lote ──
+async function baixarPdfs(){
+  const di=$('#dataIni').value, df=$('#dataFim').value, base=$('#baseData').value;
+  if(!di && !df){ toast('Informe o período antes de baixar os PDFs.','err'); return; }
+  const check=$('#filtroCheck').checked;
+  const corpo = modo==='recebidas'
+    ? {id:certSel,data_ini:di,data_fim:df,base_data:base,papel:'recebidas',somente_validas:true,somente_retidas:check}
+    : {id:certSel,data_ini:di,data_fim:df,base_data:base,papel:'emitidas',somente_validas:check,somente_retidas:false};
+  corpo.pasta_saida=$('#pastaSaida').value.trim()||null;
+  const b=$('#btnPdfs'); b.disabled=true; b.innerHTML='<span class="spin"></span> Baixando PDFs...';
+  setOp('⏳ Baixando os PDFs das notas... (pode demorar; a Receita limita o ritmo)','load');
+  try{
+    const r=await api('/api/exportar-pdfs',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(corpo)});
+    let msg=`✓ ${r.baixados} de ${r.total} PDF(s) salvos`;
+    if(r.restantes>0) msg+=` • faltaram ${r.restantes}`;
+    setOp(msg, r.restantes>0?'err':'ok');
+    if(r.avisos && r.avisos.length) setTimeout(()=>toast(r.avisos.join(' '),'err'),1200);
+    if(r.baixados>0 && confirm(`${r.baixados} PDF(s) salvos em:\n${r.pasta}\n\nAbrir a pasta?`))
+      api('/api/abrir-pasta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({caminho:r.pasta})});
+  }catch(e){ setOp(e.message,'err'); }
+  finally{ b.disabled=false; b.innerHTML='📄 Baixar PDFs'; }
+}
+
+// ── Pasta de saída ──
+function salvarPasta(){
+  const v=$('#pastaSaida').value.trim();
+  if(v) localStorage.setItem('pastaSaida',v); else localStorage.removeItem('pastaSaida');
+}
+/* Isto chamava `/api/escolher-pasta`, que abria uma janela do `tkinter` no
+   servidor. A rota SAIU na PORT 4 (o tkinter foi removido da distribuição
+   portátil) e ninguém percebeu aqui: o botão só mostrava "Cole o caminho da
+   pasta manualmente" — a mensagem de erro parecia instrução, e por isso o
+   defeito passou despercebido.
+
+   Agora usa o MESMO seletor da tela NF-e (`/fiscale-pasta.js`, servido pelo
+   `fiscale_server` a partir de `web/`), que lista pastas pelo servidor e
+   navega na tela — funciona igual pela rede. */
+async function escolherPasta(){
+  if(!window.FiscalePasta){
+    toast('O seletor de pastas não carregou. Cole o caminho da pasta.','err');
+    return;
+  }
+  const escolhida = await FiscalePasta.escolher({
+    inicial: $('#pastaSaida').value.trim(),
+    titulo: 'Pasta de saída dos arquivos'});
+  if(escolhida){
+    $('#pastaSaida').value = escolhida;
+    salvarPasta();
+    toast('Pasta de saída definida.','ok');
+  }
+}
+
+// ── Exportar ──
+async function exportar(){
+  const di=$('#dataIni').value, df=$('#dataFim').value, base=$('#baseData').value;
+  if(!di && !df){ toast('Informe o período antes de exportar.','err'); return; }
+  const check=$('#filtroCheck').checked;
+  const corpo = modo==='recebidas'
+    ? {id:certSel,data_ini:di,data_fim:df,base_data:base,papel:'recebidas',somente_validas:true,somente_retidas:check}
+    : {id:certSel,data_ini:di,data_fim:df,base_data:base,papel:'emitidas',somente_validas:check,somente_retidas:false};
+  corpo.pasta_saida=$('#pastaSaida').value.trim()||null;
+  const b=$('#btnExportar'); b.disabled=true; b.innerHTML='<span class="spin"></span> Exportando...';
+  setOp('⏳ Exportando os XMLs e o CSV...','load');
+  try{
+    const r=await api('/api/exportar',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(corpo)});
+    const extra = modo==='recebidas' ? `contrib. ${BRL(r.total_retido)}` : BRL(r.total_servico);
+    const rets=[];
+    if((r.total_inss||0)>0) rets.push(`INSS ${BRL(r.total_inss)}`);
+    if((r.total_iss_retido||0)>0) rets.push(`ISS ${BRL(r.total_iss_retido)}`);
+    const extraRet = rets.length ? ' • '+rets.join(' • ') : '';
+    setOp(`✓ ${r.quantidade} XML(s) exportados • ${extra}${extraRet}`,'ok');
+    if(r.avisos && r.avisos.length) setTimeout(()=>toast(r.avisos.join(' '),'err'),1200);
+    if(confirm(`${r.quantidade} arquivo(s) salvos em:\n${r.pasta}\n\nAbrir a pasta?`))
+      api('/api/abrir-pasta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({caminho:r.pasta})});
+  }catch(e){ setOp(e.message,'err'); }
+  finally{ b.disabled=false; b.innerHTML='⬇ Exportar XMLs + CSV'; }
+}
+
+// Inicialização
+// Dentro do Fiscale a página é servida como /nfse.html — mostra o botão Home.
+if(location.pathname.toLowerCase().endsWith('/nfse.html')) $('#barraFiscale').classList.remove('hidden');
+$('#pastaSaida').value = localStorage.getItem('pastaSaida') || '';
+carregarCerts();
+pintarCertificado();
+
+// O painel de cidades passa a viver DENTRO do modal de Prefeituras. É o mesmo
+// elemento, movido: nada foi copiado, então todos os ids, handlers e o fluxo
+// de importação de XML continuam valendo.
+(function moverPainelCidades(){
+  const p = document.getElementById('painelCidades');
+  const destino = document.getElementById('corpoPrefeituras');
+  if(!p || !destino) return;
+  p.style.marginTop = '0';
+  p.style.borderTop = 'none';
+  p.style.paddingTop = '0';
+  destino.appendChild(p);
+})();
+</script>
+<script src="/fiscale-pasta.js"></script>
+<script src="/fiscale-nav.js"></script>
+</body>
+</html>

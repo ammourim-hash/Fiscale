@@ -1,0 +1,50 @@
+# Ambiente de desenvolvimento do Elo.
+#
+# So o PostgreSQL. Redis esta previsto em ELO_DECISOES.md (sessao, presenca,
+# Socket.IO) mas nada no MVP 1.0 o usa — servico que ninguem consome so
+# consome memoria e mascara dependencia. Entra no MVP 1.1.
+#
+# O PostgreSQL 9.6 instalado na maquina fica intocado: ele escuta na 5432,
+# este container publica na 5433, e os dados vivem num volume proprio.
+
+services:
+  postgres:
+    image: postgres:16.10-alpine
+    container_name: elo-postgres
+    restart: unless-stopped
+    # 127.0.0.1 de proposito: o banco nao aparece para a rede do escritorio,
+    # so para esta maquina.
+    ports:
+      - "127.0.0.1:${ELO_DB_PORT:-5433}:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?defina POSTGRES_SUPERUSER_PASSWORD no .env}
+      POSTGRES_DB: postgres
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+      ELO_DB_NAME: ${ELO_DB_NAME:-elo}
+      # Banco da suite. O bootstrap cria os dois; o healthcheck continua
+      # olhando so o de cima, que e o que a aplicacao usa.
+      ELO_TEST_DB_NAME: ${ELO_TEST_DB_NAME:-elo_test}
+      # Banco de desenvolvimento manual. Nasce vazio; nada do escritorio
+      # entra nele.
+      ELO_DEV_DB_NAME: ${ELO_DEV_DB_NAME:-elo_dev}
+      ELO_OWNER_USER: ${ELO_OWNER_USER:-elo_owner}
+      ELO_OWNER_PASSWORD: ${ELO_OWNER_PASSWORD:?defina ELO_OWNER_PASSWORD no .env}
+      ELO_APP_USER: ${ELO_APP_USER:-elo_app}
+      ELO_APP_PASSWORD: ${ELO_APP_PASSWORD:?defina ELO_APP_PASSWORD no .env}
+    volumes:
+      - elo-pgdata:/var/lib/postgresql/data
+      # Roda uma unica vez, quando o volume e criado.
+      - ./docker/postgres/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # Contra o banco do Elo, nao contra o `postgres`: so passa quando o
+      # script de bootstrap terminou.
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${ELO_DB_NAME:-elo}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+volumes:
+  elo-pgdata:
+    name: elo-pgdata

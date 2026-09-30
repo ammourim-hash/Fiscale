@@ -1,0 +1,152 @@
+/* =====================================================================
+   Fiscale Elo — sistema visual
+   ---------------------------------------------------------------------
+   A familia vem do Fiscale: petroleo #10444E e ciano #7FD1DE, a mesma
+   dupla do simbolo. O Elo evolui isso para uma interface de trabalho —
+   azul como cor de acao, petroleo como assinatura institucional.
+
+   Verde nao entra. Seria imitar o WhatsApp, e o Elo nao e o WhatsApp:
+   e a mesa de trabalho do escritorio, que por acaso fala WhatsApp.
+
+   O modo escuro NAO e o claro invertido. Tem paleta propria, azul-marinho
+   esverdeado, porque quem atende passa o dia aqui e contraste puro
+   preto/branco cansa em duas horas.
+   ===================================================================== */
+
+:root {
+  /* --- superficies ------------------------------------------------ */
+  --fundo: #eef3f5;
+  --superficie: #ffffff;
+  --superficie-2: #f7fafb;
+  --superficie-3: #eaf1f3;
+  --borda: #d6e0e4;
+  --borda-forte: #b9c8ce;
+
+  /* --- texto ------------------------------------------------------- */
+  --tinta: #12242e;
+  --tinta-media: #4a5f6a;
+  --tinta-suave: #6f8590;
+
+  /* --- marca e acao ------------------------------------------------ */
+  --petroleo: #10444e;
+  --ciano: #2b93a8;
+  --acao: #1668b3;
+  --acao-forte: #10528f;
+  --acao-fraca: #e4eefa;
+  --acao-tinta: #ffffff;
+
+  /* --- semanticas -------------------------------------------------- */
+  --ok: #17795b;
+  --ok-fraca: #e2f3ed;
+  --atencao: #9a6510;
+  --atencao-fraca: #fbf0dc;
+  --erro: #b3382c;
+  --erro-fraca: #fbe9e7;
+
+  /* --- forma ------------------------------------------------------- */
+  --raio: 12px;
+  --raio-g: 16px;
+  --raio-p: 8px;
+  --sombra: 0 1px 2px rgb(18 36 46 / 6%);
+  --sombra-flutuante: 0 8px 28px rgb(18 36 46 / 14%);
+  --foco: 0 0 0 2px var(--superficie), 0 0 0 4px var(--acao);
+
+  --nav-largura: 15rem;
+  --lista-largura: 21rem;
+
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --fundo: #0b1620;
+  --superficie: #12212c;
+  --superficie-2: #172935;
+  --superficie-3: #1e3543;
+  --borda: #263c4a;
+  --borda-forte: #365060;
+
+  --tinta: #e8eff3;
+  --tinta-media: #a9bdc8;
+  --tinta-suave: #7e94a1;
+
+  --petroleo: #7fd1de;
+  --ciano: #7fd1de;
+  --acao: #4ea8e8;
+  --acao-forte: #6fbcf2;
+  --acao-fraca: #16324a;
+  --acao-tinta: #08151d;
+
+  --ok: #59c39d;
+  --ok-fraca: #14332b;
+  --atencao: #e0b168;
+  --atencao-fraca: #33280f;
+  --erro: #f08b7e;
+  --erro-fraca: #3a1c18;
+
+  --sombra: 0 1px 2px rgb(0 0 0 / 30%);
+  --sombra-flutuante: 0 10px 34px rgb(0 0 0 / 45%);
+  --foco: 0 0 0 2px var(--superficie), 0 0 0 4px var(--acao);
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--tinta);
+  font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Foco visivel sempre, e so quando veio do teclado. Remover outline
+   "porque fica feio" quebra a navegacao de quem nao usa mouse. */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--foco);
+  border-radius: var(--raio-p);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: var(--acao);
+}
+
+/* Pular para o conteudo: primeiro item do tab, invisivel ate receber foco. */
+.pular {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 0.6rem 1rem;
+  background: var(--acao);
+  color: var(--acao-tinta);
+  border-radius: 0 0 var(--raio-p) 0;
+}
+.pular:focus {
+  left: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
