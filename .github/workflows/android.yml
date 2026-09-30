@@ -32,8 +32,8 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - uses: android-actions/setup-android@v3
-
+      # O ubuntu-latest já traz o SDK Android (ANDROID_HOME) com licenças
+      # aceitas; o Gradle baixa sozinho a plataforma que faltar.
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Compilar APK debug (instala direto no Android)
