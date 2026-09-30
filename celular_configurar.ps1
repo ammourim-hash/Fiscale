@@ -21,9 +21,10 @@
         celular.
 
   COMO USAR
-      Prévia, sem alterar nada:     .\celular_configurar.ps1 -Simular
+      Prévia, sem alterar nada:     celular_configurar.bat -Simular
       Configurar:                   celular_configurar.bat   (pede administrador)
-      Desfazer a regra criada:      .\celular_configurar.ps1 -Desfazer
+      Desfazer a regra criada:      PowerShell como administrador, nesta pasta:
+          powershell -ExecutionPolicy Bypass -File celular_configurar.ps1 -Desfazer
 
   NO CELULAR (depois)
       1. Play Store → instalar "Tailscale" → entrar com a MESMA conta.
@@ -196,7 +197,7 @@ if ($ip) {
             "2. Deixar o Tailscale conectado.",
             "3. App FISCALE: segurar o ícone > Alterar servidor > digitar o endereço > Testar > Salvar.",
             "",
-            "Para desfazer a regra de firewall: celular_configurar.ps1 -Desfazer"
+            "Para desfazer a regra de firewall: celular_configurar.ps1 -Desfazer (como administrador)"
         ) | Set-Content -Path $txt -Encoding UTF8
         Ok "Endereço salvo em $txt"
     }
