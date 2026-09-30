@@ -101,6 +101,14 @@ certificado vai para o celular (D63, D72, D97).
 
 Detalhes técnicos e build local: `android/README.md`.
 
+**Fora do escritório** (4G, casa, viagem): pela rede privada Tailscale
+(D72/D97), sem abrir porta no roteador. No servidor, rode uma vez
+`celular_configurar.bat`: ele instala e liga o Tailscale, libera a 8777
+**só** para a rede privada (`100.64.0.0/10`) e mostra o endereço `100.x.x.x`
+para o app. Prévia sem alterar nada: `celular_configurar.ps1 -Simular`;
+desfazer: `celular_configurar.ps1 -Desfazer`. No celular: instalar o
+Tailscale da Play Store, entrar com a mesma conta e usar esse endereço no app.
+
 ---
 
 ## Módulos

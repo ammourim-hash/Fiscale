@@ -100,7 +100,7 @@ object Servidor {
             try {
                 InetAddress.getByName(host)
             } catch (e: Exception) {
-                return Teste.Falha("O nome \"$host\" não foi encontrado nesta rede. Confira se o celular está na rede do escritório (Wi-Fi ou rede privada).")
+                return Teste.Falha("O nome \"$host\" não foi encontrado nesta rede. Confira se o celular está na rede do escritório ou, fora dela, se o Tailscale está conectado.")
             }
             val c = URL("$url/login.html").openConnection() as HttpURLConnection
             c.connectTimeout = 8000
