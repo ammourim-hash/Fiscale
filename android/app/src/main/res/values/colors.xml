@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- DNA da marca: #10444E (FISCALE_PORTAL_PLANO.md, Fase 1). -->
+    <color name="fiscale">#10444E</color>
+    <color name="fiscale_escuro">#0A2F36</color>
+    <color name="fiscale_claro">#E7F0F1</color>
+    <color name="fundo">#F6F8F8</color>
+    <color name="texto">#14262A</color>
+    <color name="texto_suave">#5A6B6F</color>
+    <color name="ok">#1E7B45</color>
+    <color name="erro">#B3261E</color>
+    <color name="branco">#FFFFFF</color>
+</resources>

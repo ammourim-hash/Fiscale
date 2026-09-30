@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  HTTP simples é permitido porque hoje a produção provisória roda em
+  http://AMMOURIM:8777 dentro da rede do escritório (FISCALE_HTTPS.md, D-AMB-1).
+  O app avisa quando o endereço é HTTP fora de rede privada (D72).
+  Só as autoridades do sistema são confiáveis: o HTTPS previsto é Let's Encrypt
+  real (FISCALE_HTTPS.md §2), nada de certificado improvisado.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

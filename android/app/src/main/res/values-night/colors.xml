@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="fundo">#0F1A1C</color>
+    <color name="texto">#E3ECEE</color>
+    <color name="texto_suave">#9FB2B6</color>
+    <color name="fiscale_claro">#16363C</color>
+    <color name="ok">#6FCF97</color>
+    <color name="erro">#F2B8B5</color>
+</resources>

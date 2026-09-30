@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FISCALE</string>
+    <string name="titulo_servidor">Servidor FISCALE</string>
+    <string name="atalho_servidor">Alterar servidor</string>
+    <string name="subtitulo">Plataforma Fiscal do Escritório</string>
+    <string name="explica_servidor">Informe o endereço do Sistema Web FISCALE do escritório. O app só funciona dentro da rede privada — o FISCALE nunca é publicado na internet (D72/D97).</string>
+    <string name="rotulo_endereco">Endereço do servidor</string>
+    <string name="dica_endereco">https://app.sistemafiscale.com.br</string>
+    <string name="exemplos">Exemplos: https://app.sistemafiscale.com.br · http://AMMOURIM:8777 · http://192.168.0.10:8777\nSem porta e sem http(s)://, o app usa http:// e a porta 8777.</string>
+    <string name="testar">Testar conexão</string>
+    <string name="salvar">Salvar e abrir</string>
+    <string name="testando">Testando…</string>
+</resources>

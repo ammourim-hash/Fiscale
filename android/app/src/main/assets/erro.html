@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FISCALE — sem conexão</title>
+<style>
+  :root { --marca:#10444E; --fundo:#F6F8F8; --texto:#14262A; --suave:#5A6B6F; --cartao:#FFFFFF; --borda:#DCE5E6; }
+  @media (prefers-color-scheme: dark) {
+    :root { --fundo:#0F1A1C; --texto:#E3ECEE; --suave:#9FB2B6; --cartao:#15262A; --borda:#23393E; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--fundo); color:var(--texto); }
+  header { background:var(--marca); color:#fff; padding:28px 20px 22px; }
+  header b { font-size:24px; letter-spacing:.08em; }
+  header div { color:#CFE3E5; font-size:14px; margin-top:4px; }
+  main { padding:20px 16px; max-width:560px; margin:0 auto; }
+  .cartao { background:var(--cartao); border:1px solid var(--borda); border-radius:12px; padding:18px; }
+  h1 { font-size:19px; margin:0 0 8px; }
+  p { line-height:1.5; margin:8px 0; }
+  .suave { color:var(--suave); font-size:13px; word-break:break-all; }
+  ul { padding-left:20px; line-height:1.55; margin:8px 0; }
+  .botoes { display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; }
+  button { flex:1 1 140px; min-height:46px; border-radius:10px; font-size:15px; font-weight:600; border:1px solid var(--marca); cursor:pointer; }
+  .primario { background:var(--marca); color:#fff; }
+  .secundario { background:transparent; color:var(--texto); }
+</style>
+</head>
+<body>
+<header><b>FISCALE</b><div>Plataforma Fiscal do Escritório</div></header>
+<main>
+  <div class="cartao">
+    <h1>O FISCALE não respondeu</h1>
+    <p id="motivo">Não foi possível falar com o servidor.</p>
+    <p class="suave" id="servidor"></p>
+    <p>Verifique:</p>
+    <ul>
+      <li>se o celular está na <b>rede do escritório</b> (Wi-Fi ou rede privada);</li>
+      <li>se o servidor FISCALE está ligado;</li>
+      <li>se o endereço do servidor está correto.</li>
+    </ul>
+    <div class="botoes">
+      <button class="primario" onclick="FiscaleApp.tentarNovamente()">Tentar de novo</button>
+      <button class="secundario" onclick="FiscaleApp.alterarServidor()">Alterar servidor</button>
+    </div>
+  </div>
+</main>
+<script>
+  // Os dados vêm no fragmento (#motivo=…&url=…&servidor=…) e vão só como texto.
+  var q = {};
+  location.hash.replace(/^#/, '').split('&').forEach(function (par) {
+    var i = par.indexOf('=');
+    if (i > 0) q[par.slice(0, i)] = decodeURIComponent(par.slice(i + 1));
+  });
+  if (q.motivo) document.getElementById('motivo').textContent = 'Detalhe: ' + q.motivo;
+  if (q.servidor) document.getElementById('servidor').textContent = 'Servidor: ' + q.servidor;
+</script>
+</body>
+</html>
