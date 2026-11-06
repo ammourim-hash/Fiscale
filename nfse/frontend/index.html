@@ -503,11 +503,17 @@
     <div id="painelSync" class="hidden">
       <div id="rowSync">
         <div class="row" style="align-items:flex-end">
-          <div style="flex:2"><label>Certificado selecionado</label><input id="certSelNome" readonly></div>
-          <div style="flex:2"><label>Senha do certificado</label><input id="senha" type="password" placeholder="Digite a senha"></div>
+          <div style="flex:2"><label>Empresa consultada</label><input id="certSelNome" readonly></div>
+          <div style="flex:2"><label>Senha do certificado da empresa</label><input id="senha" type="password" placeholder="Digite a senha"></div>
           <div style="flex:0 0 auto"><button class="btn btn-primary" id="btnSync" onclick="sincronizar()">🔄 Sincronizar</button></div>
         </div>
-        <p class="muted" style="margin-top:8px">Na primeira vez o sistema baixa seu histórico (uma vez); depois só o que é novo.</p>
+        <div class="row" style="align-items:flex-end;margin-top:8px">
+          <div style="flex:1 1 280px"><label>Consultar usando representação (opcional)</label>
+            <select id="adn_proc" onchange="aoTrocarProcuradorAdn()"><option value="">Certificado da própria empresa</option></select></div>
+          <div id="adn_procSenhaBox" style="flex:1 1 170px;display:none"><label>Senha do certificado procurador</label>
+            <input id="adn_procSenha" type="password" placeholder="salva ✓ — deixe em branco"></div>
+        </div>
+        <p class="muted" style="margin-top:8px">Na primeira vez o sistema baixa o histórico; depois somente documentos novos. Na representação, o ADN valida a autorização da empresa consultada.</p>
       </div>
       <div id="statusOp" class="status-op hidden"></div>
 
@@ -858,6 +864,7 @@ function selecionar(id){
   setOp('', '');
   $('#senha').value='';
   $('#senha').placeholder = c.senha_salva ? 'Senha salva ✓ — deixe em branco' : 'Digite a senha';
+  preencherProcuradoresAdn();
   if(!c.senha_salva) $('#senha').focus();
   modo='emitidas';
   $('#tabEmitidas').classList.add('ativo'); $('#tabRecebidas').classList.remove('ativo');
@@ -876,15 +883,44 @@ async function remover(id){
 }
 
 // ── Sincronizar ──
+function preencherProcuradoresAdn(){
+  const sel=$('#adn_proc'); if(!sel) return;
+  const atual=sel.value;
+  const proc=(certs||[]).filter(c=>c.procurador && c.id!==certSel);
+  sel.innerHTML='<option value="">Certificado da própria empresa</option>'+
+    (proc.length?'<optgroup label="Certificados procuradores">'+
+      proc.map(c=>'<option value="'+esc(c.id)+'">'+esc((c.apelido?c.apelido+' — ':'')+c.nome)+'</option>').join('')+
+      '</optgroup>':'');
+  if(proc.some(c=>c.id===atual)) sel.value=atual;
+  aoTrocarProcuradorAdn();
+}
+function aoTrocarProcuradorAdn(){
+  const id=$('#adn_proc')?.value||'';
+  const box=$('#adn_procSenhaBox'); if(box) box.style.display=id?'block':'none';
+  const c=(certs||[]).find(x=>x.id===id);
+  const inp=$('#adn_procSenha');
+  if(inp) inp.placeholder=c&&c.senha_salva?'salva ✓ — deixe em branco':'Digite a senha';
+}
 async function sincronizar(){
   const senha=$('#senha').value;
   const c=certs.find(x=>x.id===certSel);
-  if(!senha && !(c && c.senha_salva)){ toast('Digite a senha do certificado.','err'); return; }
+  const procurador=$('#adn_proc')?.value||'';
+  const cp=procurador?certs.find(x=>x.id===procurador):null;
+  if(procurador){
+    if(!cp || !cp.procurador){toast('Certificado procurador inválido.','err');return;}
+    const sp=$('#adn_procSenha').value;
+    if(!sp && !cp.senha_salva){toast('Digite a senha do certificado procurador.','err');return;}
+  }else if(!senha && !(c && c.senha_salva)){ toast('Digite a senha do certificado.','err'); return; }
   const b=$('#btnSync'); b.disabled=true; b.innerHTML='<span class="spin"></span> Sincronizando...';
   try{
     setOp('⏳ Baixando suas notas da Receita... (pode demorar na primeira vez)','load');
+    const corpo={id:certSel};
+    if(procurador){
+      corpo.cert_procurador=procurador;
+      corpo.senha_procurador=$('#adn_procSenha').value||null;
+    }else corpo.senha=senha||null;
     const r=await api('/api/sincronizar',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({id:certSel,senha:senha||null})});
+      body:JSON.stringify(corpo)});
     setOp(r.novos>0?`✓ ${r.novos} documento(s) baixado(s).`:'✓ Notas atualizadas.','ok');
     $('#painelComp').classList.remove('hidden');
     const tem=await recarregarCompetencias();
