@@ -21,6 +21,7 @@ import time
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlencode
 from typing import Callable, Iterable, Optional
 
 import requests
@@ -149,18 +150,54 @@ def _decodificar_arquivo(b64: str) -> str:
     return bruto.decode("utf-8")
 
 
+
+def cnpj_valido(valor: str) -> bool:
+    """Valida CNPJ numérico para o parâmetro de representação do ADN."""
+    c = re.sub(r"\D", "", str(valor or ""))
+    if len(c) != 14 or c == c[0] * 14:
+        return False
+    for tam in (12, 13):
+        pesos = list(range(tam - 7, 1, -1)) + list(range(9, 1, -1))
+        resto = sum(int(d) * p for d, p in zip(c[:tam], pesos)) % 11
+        esperado = 0 if resto < 2 else 11 - resto
+        if int(c[tam]) != esperado:
+            return False
+    return True
+
+
+def normalizar_cnpj_consulta(valor: str) -> str:
+    """Devolve CNPJ de consulta com 14 dígitos ou falha antes da rede."""
+    c = re.sub(r"\D", "", str(valor or ""))
+    if not cnpj_valido(c):
+        raise ValueError("Informe um CNPJ válido de 14 dígitos para a empresa representada.")
+    return c
+
+
+def montar_url_distribuicao(base: str, nsu: int | str,
+                             cnpj_consulta: str | None = None) -> str:
+    """Monta GET /contribuintes/DFe/{NSU}; inclui cnpjConsulta só em representação."""
+    url = base.rstrip("/") + ROTA_DFE.format(nsu=nsu)
+    if cnpj_consulta:
+        cnpj = normalizar_cnpj_consulta(cnpj_consulta)
+        url += "?" + urlencode({"cnpjConsulta": cnpj})
+    return url
+
 def sincronizar(
     pfx_path: str,
     senha: str,
     pasta_cnpj: str | Path,
     ambiente: str = "producao",
     progresso: Optional[Callable[[int, int], None]] = None,
+    cnpj_consulta: str | None = None,
 ) -> dict:
     """
     Baixa todos os DFe novos (a partir do último NSU salvo) para
     `pasta_cnpj/xmls`, salvando o estado do NSU. Retorna um resumo.
     """
     base = BASES_ADN[ambiente]
+    # O ADN valida se o certificado mTLS possui representação válida. O FISCALE
+    # apenas envia o CNPJ explicitamente solicitado; não presume autorização.
+    cnpj_consulta = normalizar_cnpj_consulta(cnpj_consulta) if cnpj_consulta else None
     pasta = Path(pasta_cnpj)
     xml_dir = pasta / "xmls"
     xml_dir.mkdir(parents=True, exist_ok=True)
@@ -178,7 +215,7 @@ def sincronizar(
     novos = 0
 
     while True:
-        url = base + ROTA_DFE.format(nsu=nsu)
+        url = montar_url_distribuicao(base, nsu, cnpj_consulta)
         r = _get_com_retry(sess, url)
 
         # 404 + NENHUM_DOCUMENTO_LOCALIZADO = fim normal da distribuição
@@ -210,7 +247,8 @@ def sincronizar(
         nsu = max_nsu
         time.sleep(0.5)  # cortesia contra rate-limit (429)
 
-    return {"novos": novos, "ultimoNSU": nsu}
+    return {"novos": novos, "ultimoNSU": nsu,
+            "cnpjConsulta": cnpj_consulta}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
