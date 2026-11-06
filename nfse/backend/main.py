@@ -626,9 +626,11 @@ def listar_pastas(caminho: str | None = None):
 
 # ── Sincronização e consulta ─────────────────────────────────────────────────
 class Senha(BaseModel):
-    id: str
-    senha: str | None = None
+    id: str                         # empresa consultada (conta de destino)
+    senha: str | None = None       # senha do certificado direto, se aplicável
     ambiente: str = "producao"
+    cert_procurador: str | None = None
+    senha_procurador: str | None = None
 
 
 def _resolver_senha(cert: dict, senha_informada: str | None) -> str:
@@ -647,12 +649,19 @@ def _resolver_senha(cert: dict, senha_informada: str | None) -> str:
 
 @app.post("/api/sincronizar")
 def sincronizar(req: Senha):
-    cert = _cert_por_id(req.id)
-    if not Path(cert["caminho"]).exists():
-        raise HTTPException(400, "O arquivo do certificado não está mais nesse caminho.")
-    senha = _resolver_senha(cert, req.senha)
+    # A conta selecionada continua sendo a empresa consultada; a credencial
+    # procuradora é apenas a identidade mTLS. A autorização é validada pelo ADN.
+    empresa = _cert_por_id(req.id)
+    credencial = _cert_por_id(req.cert_procurador) if req.cert_procurador else empresa
+    if not Path(credencial["caminho"]).exists():
+        raise HTTPException(400, "O arquivo do certificado de acesso não está mais nesse caminho.")
+    if req.cert_procurador and req.cert_procurador == req.id:
+        raise HTTPException(400, "Selecione um certificado procurador diferente da empresa.")
+    senha = _resolver_senha(credencial, req.senha_procurador if req.cert_procurador else req.senha)
     try:
-        res = core.sincronizar(cert["caminho"], senha, _pasta_cnpj(cert["cnpj"]), req.ambiente)
+        res = core.sincronizar(
+            credencial["caminho"], senha, _pasta_cnpj(empresa["cnpj"]), req.ambiente,
+            cnpj_consulta=empresa["cnpj"] if req.cert_procurador else None)
     except core.LimiteRequisicoes as e:
         raise HTTPException(429, str(e))
     except Exception as e:
