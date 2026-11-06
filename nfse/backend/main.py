@@ -657,6 +657,8 @@ def sincronizar(req: Senha):
         raise HTTPException(400, "O arquivo do certificado de acesso não está mais nesse caminho.")
     if req.cert_procurador and req.cert_procurador == req.id:
         raise HTTPException(400, "Selecione um certificado procurador diferente da empresa.")
+    if req.cert_procurador and not credencial.get("procurador"):
+        raise HTTPException(400, "O certificado selecionado não está identificado como procurador.")
     senha = _resolver_senha(credencial, req.senha_procurador if req.cert_procurador else req.senha)
     try:
         res = core.sincronizar(
@@ -672,9 +674,9 @@ def sincronizar(req: Senha):
             raise HTTPException(429, "Limite de requisições atingido. Aguarde alguns minutos.")
         raise HTTPException(500, f"Falha na sincronização: {msg}")
 
-    notas = core.carregar_notas(_pasta_cnpj(cert["cnpj"]))
-    comps = core.competencias_disponiveis(notas, cert["cnpj"], "emitidas")
-    comps_rec = core.competencias_disponiveis(notas, cert["cnpj"], "recebidas")
+    notas = core.carregar_notas(_pasta_cnpj(empresa["cnpj"]))
+    comps = core.competencias_disponiveis(notas, empresa["cnpj"], "emitidas")
+    comps_rec = core.competencias_disponiveis(notas, empresa["cnpj"], "recebidas")
     return {"novos": res["novos"], "ultimoNSU": res["ultimoNSU"],
             "competencias": comps, "competencias_recebidas": comps_rec}
 
